@@ -1,0 +1,2 @@
+# Loterry
+python
