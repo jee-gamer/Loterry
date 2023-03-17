@@ -11,9 +11,11 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
 
+from os import environ
+
 logging.basicConfig(level=logging.INFO)
 
-API_TOKEN = 'BOT_TOKEN_HERE'
+API_TOKEN = environ.get('BotApi')
 
 
 bot = Bot(token=API_TOKEN)
