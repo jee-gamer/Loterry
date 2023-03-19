@@ -14,7 +14,9 @@ from aiogram.utils.exceptions import MessageNotModified
 from os import environ
 import time
 
-logging.basicConfig(level=logging.INFO)
+from lottery import Lottery
+
+logging.basicConfig(level=logging.DEBUG)
 
 API_TOKEN = environ.get('BotApi')
 
@@ -26,19 +28,20 @@ dp.middleware.setup(LoggingMiddleware())
 
 vote_cb = CallbackData('vote', 'action')  # vote:<action>
 likes = {}  # user_id: amount_of_likes
+BotLottery = Lottery()
 
 
 def get_keyboard():
     keyboard = types.InlineKeyboardMarkup()
 
     keyboard.row(
-        types.InlineKeyboardButton('🍓', callback_data=vote_cb.new(action='Strawberry')),
-        types.InlineKeyboardButton('🍎', callback_data=vote_cb.new(action='Apple'))
+        types.InlineKeyboardButton('🍓', callback_data=vote_cb.new(action='strawberry')),
+        types.InlineKeyboardButton('🍎', callback_data=vote_cb.new(action='apple'))
                  )
 
     keyboard.row(
-        types.InlineKeyboardButton('🍐', callback_data=vote_cb.new(action='Pear')),
-        types.InlineKeyboardButton('🍌', callback_data=vote_cb.new(action='Banana'))
+        types.InlineKeyboardButton('🍐', callback_data=vote_cb.new(action='pear')),
+        types.InlineKeyboardButton('🍌', callback_data=vote_cb.new(action='banana'))
                 )
     return keyboard
 
@@ -84,7 +87,7 @@ async def cmd_start(message: types.Message):
         await message.reply(f'Lottery have not started!')
 
 timeout = 0
-@dp.callback_query_handler(vote_cb.filter(action=['Strawberry', 'Apple', 'Pear', 'Banana']))
+@dp.callback_query_handler(vote_cb.filter(action=['strawberry', 'apple', 'pear', 'banana']))
 async def callback_vote_action(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     logging.info('Got this callback data: %r', callback_data)  # callback_data contains all info from callback data
     await query.answer()  # don't forget to answer callback query as soon as possible
@@ -141,9 +144,3 @@ if __name__ == '__main__':
 #                 query.message.message_id,
 #                 reply_markup=get_keyboard(),
 #             )
-
-
-
-
-
-
