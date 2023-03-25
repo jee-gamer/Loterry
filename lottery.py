@@ -36,6 +36,9 @@ class Lottery(object):
     def get_scores(self):
         return self._state
 
+    def get_score(self, action):
+        return self._state[action]
+
     def finish(self):
         pass
 
@@ -44,5 +47,7 @@ if __name__ == "__main__":
     l = Lottery()
     print(l.get_start())
     l.increment('banana', 'foo')
+    l.increment('banana', 'foo')
     l.increment('foo', 'foo')
     print(l.get_scores())
+    print(l.get_score('banana'))
