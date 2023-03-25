@@ -14,6 +14,8 @@ from aiogram.utils.exceptions import MessageNotModified
 from os import environ
 import time
 from datetime import datetime
+import threading
+import random
 
 from lottery import Lottery
 
@@ -46,14 +48,22 @@ class LotteryStore(object):
         }
         self._votes = {}
 
-    def increment(self, action, user):
+    def store_vote(self, action, user):
         if action in self._state.keys():
             self._state[action] += 1
+            vote = self._votes
+            if user not in self._votes:
+                vote[user] = {}
+                vote[user][action] = 1
+            else:
+                vote[user][action] = 1
         else:
             logging.error(f"access to non-existent key {action}")
 
     def get_scores(self):
         return self._state
+
+
 
     def get_score(self, action):
         return self._state[action]
@@ -64,16 +74,29 @@ class LotteryStore(object):
 l = LotteryStore()
 lottery_start = 0
 timeleftround = ''
-
+timegiven = 0.1
 def calculatetime():
     timenow2 = time.time()
     difference = int(timenow2) - int(timenow)
-    differnece_min = difference / 60
-    timeleft = 60 - differnece_min
+    difference_min = difference / 60
+    timeleft = timegiven - difference_min
     global timeleftround
     timeleftround = round(timeleft, 1)
     return timeleftround
 
+def calculatewinner(fruit1):
+    for user_id, user_votes in l._votes.items():
+        print(f"{user_id}")
+
+        for option, count in user_votes.items():
+            print(f"  {option}: {count}")
+            if option == fruit1 and count == 1:
+                print(f'user {user_id} won!')
+                win = 1
+            else:
+                win = 0
+
+    return user_id, win
 def get_keyboard():
     keyboard = types.InlineKeyboardMarkup()
 
@@ -88,32 +111,55 @@ def get_keyboard():
                 )
     return keyboard
 
-
-
-
+"""
+        lottery_start = 0 :  the lottery have not started
+        lottery_start = 1 :  the lottery is ongoing
+        lottery_start = 2 :  the lottery ended and we have to result
+"""
+def round_over():
+    global lottery_start
+    while True:
+        time.sleep(1)
+        print('working')
+        if calculatetime() <= 0:
+            lottery_start = 2
+            l.votes = {}
+t1 = threading.Thread(target=round_over)
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
     await message.reply(f'Welcome here. This is a Lottery bot where people play against each other'
                         f'\n'
                         f'type /startLottery to start Lottery'
                         f'\n'
-                        f'type /Lottery to see ongoing Lottery')
+                        f'type /Lottery to see ongoing Lottery'
+                        f'\n'
+                        f'type /result to see the Lottery results'
+                        )
 
-
+random_fruit = ''
 @dp.message_handler(commands=['startLottery'])
 async def cmd_start(message: types.Message):
     global lottery_start
-    if lottery_start == 0:
+    if lottery_start == 0 or lottery_start == 2:
+
         global timenow
         timenow = time.time()
-        await message.reply(f'Loterry Started!' f'\n'
-                            f'Vote! You have 4 fruits to choose from.', reply_markup=get_keyboard())
+        await message.reply(f'Lottery Started!' f'\n'
+                            f'Vote! You have 4 fruits to choose from.'
+                            f'\n'
+                            f'{timegiven} minutes left!', reply_markup=get_keyboard())
         lottery_start = 1
+        t1.start()
+
+        global random_fruit
+        fruitlist = ['strawberry', 'pear', 'apple', 'banana']
+        random_fruit = random.choice(fruitlist)
+        print(random_fruit)
     else:
         await message.reply(f'Lottery was already started!')
 
 
-@dp.message_handler(commands=['Lottery'])
+@dp.message_handler(commands=['Lottery']) #lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
     global lottery_start
     if lottery_start == 1:
@@ -123,34 +169,59 @@ async def cmd_start(message: types.Message):
     else:
         await message.reply(f'Lottery have not started!')
 
+@dp.message_handler(commands=['result'])
+async def cmd_start(message: types.Message):
+    global lottery_start
+    if lottery_start == 1:
+        await message.reply(f'Lottery is ongoing!')
+    elif lottery_start == 2:
+        winner, win = calculatewinner(random_fruit)
+        if win == 0:
+            await message.reply(f'User {winner} had lost the Lottery!')
+        elif win == 1:
+            await message.reply(f'User {winner} had won the Lottery!')
+
+    else:
+        await message.reply(f'The lottery have not started!')
+
+
 timeout = 0
 @dp.callback_query_handler(vote_cb.filter(action=['strawberry', 'apple', 'pear', 'banana']))
 async def callback_vote_action(query: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     logging.info('Got this callback data: %r', callback_data)  # callback_data contains all info from callback data
     await query.answer()  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data['action']
-    user_id = query.message.from_user.id
-    l.increment(callback_data_action, user_id)
+    user_id = query.from_user.username
+    print(user_id)
+    l.store_vote(callback_data_action, user_id)
 
     calculatetime()
 
     likes_count = l.get_score(callback_data_action)
 
+    if lottery_start == 1:
+        await bot.edit_message_text(
+            f'You voted {callback_data_action}! Now {callback_data_action} have {likes_count} vote[s]. '
+            f'{timeleftround} Minutes Left ',
+            query.message.chat.id,
+            query.message.message_id,
+            reply_markup=get_keyboard(),
+        )
+    else:
+        await bot.edit_message_text(
+            f'The lottery have ended!',
+            query.message.chat.id,
+            query.message.message_id
 
-
-    await bot.edit_message_text(
-        f'You voted {callback_data_action}! Now {callback_data_action} have {likes_count} vote[s]. '
-        f'{timeleftround} Minutes Left ',
-        query.message.chat.id,
-        query.message.message_id,
-        reply_markup=get_keyboard(),
-    )
+        )
 
 
 
 @dp.errors_handler(exception=MessageNotModified)  # handle the cases when this exception raises
 async def message_not_modified_handler(update, error):
     return True # errors_handler must return True if error was handled correctly
+
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)

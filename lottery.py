@@ -27,9 +27,15 @@ class Lottery(object):
         """
         return self._start
 
-    def increment(self, action, user):
+    def store_vote(self, action, user):
         if action in self._state.keys():
             self._state[action] += 1
+            vote = self._votes
+            if user not in self._votes:
+                vote[user] = {}
+                vote[user][action] = 1
+            else:
+                vote[user][action] = 1
         else:
             logging.error(f"access to non-existent key {action}")
 
@@ -42,12 +48,19 @@ class Lottery(object):
     def finish(self):
         pass
 
-
 if __name__ == "__main__":
     l = Lottery()
     print(l.get_start())
-    l.increment('banana', 'foo')
-    l.increment('banana', 'foo')
-    l.increment('foo', 'foo')
+    l.store_vote('strawberry', 'jee')
+    l.store_vote('banana', 'jee')
+    l.store_vote('strawberry', 'dag')
+    #l.increment('foo', 'foo')
     print(l.get_scores())
     print(l.get_score('banana'))
+
+    for user, user_votes in l._votes.items():
+        print(f"{user}")
+        for option, count in user_votes.items():
+            print(f"  {option}: {count}")
+            if option == 'banana' and count == 1:
+                print("JEE WIN")
