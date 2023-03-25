@@ -53,14 +53,13 @@ if __name__ == "__main__":
     print(l.get_start())
     l.store_vote('strawberry', 'jee')
     l.store_vote('banana', 'jee')
-    l.store_vote('strawberry', 'dag')
+    l.store_vote('pear', 'jee')
+    print(l._votes['jee'])
+    jeevote = l._votes['jee']
+    count = len(jeevote)
+    print(count)
+
+    l.store_vote('apple', 'jee')
     #l.increment('foo', 'foo')
     print(l.get_scores())
-    print(l.get_score('banana'))
 
-    for user, user_votes in l._votes.items():
-        print(f"{user}")
-        for option, count in user_votes.items():
-            print(f"  {option}: {count}")
-            if option == 'banana' and count == 1:
-                print("JEE WIN")

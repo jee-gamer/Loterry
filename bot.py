@@ -30,7 +30,7 @@ dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
 vote_cb = CallbackData('vote', 'action')  # vote:<action>
-likes = {}  # user_id: amount_of_likes
+
 BotLottery = Lottery()
 
 class LotteryStore(object):
@@ -63,18 +63,18 @@ class LotteryStore(object):
     def get_scores(self):
         return self._state
 
-
-
     def get_score(self, action):
         return self._state[action]
 
+    def reset_score(self):
+        self._votes = {}
     def finish(self):
         pass
 
 l = LotteryStore()
 lottery_start = 0
 timeleftround = ''
-timegiven = 0.1
+timegiven = 0.3
 def calculatetime():
     timenow2 = time.time()
     difference = int(timenow2) - int(timenow)
@@ -84,17 +84,14 @@ def calculatetime():
     timeleftround = round(timeleft, 1)
     return timeleftround
 
-def calculatewinner(fruit1):
-    for user_id, user_votes in l._votes.items():
-        print(f"{user_id}")
-
-        for option, count in user_votes.items():
-            print(f"  {option}: {count}")
-            if option == fruit1 and count == 1:
-                print(f'user {user_id} won!')
-                win = 1
-            else:
-                win = 0
+def calculatewinner(fruit1, user_id):
+    user_votes = l._votes[user_id]
+    win = 0
+    for option, count in user_votes.items():
+        print(f"  {option}: {count}")
+        if option == fruit1 and count == 1:
+            print(f'user {user_id} won!')
+            win = 1
 
     return user_id, win
 def get_keyboard():
@@ -120,11 +117,11 @@ def round_over():
     global lottery_start
     while True:
         time.sleep(1)
-        print('working')
         if calculatetime() <= 0:
             lottery_start = 2
-            l.votes = {}
+
 t1 = threading.Thread(target=round_over)
+thread_start = 0
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
     await message.reply(f'Welcome here. This is a Lottery bot where people play against each other'
@@ -140,16 +137,23 @@ random_fruit = ''
 @dp.message_handler(commands=['startLottery'])
 async def cmd_start(message: types.Message):
     global lottery_start
+    global thread_start
+
+    if thread_start == 0:
+        t1.start()
+        thread_start = 1
+
     if lottery_start == 0 or lottery_start == 2:
 
         global timenow
         timenow = time.time()
+        l.reset_score()
         await message.reply(f'Lottery Started!' f'\n'
-                            f'Vote! You have 4 fruits to choose from.'
+                            f'Vote! You have 4 fruits to choose from. You can choose up to 3 fruits'
                             f'\n'
                             f'{timegiven} minutes left!', reply_markup=get_keyboard())
         lottery_start = 1
-        t1.start()
+
 
         global random_fruit
         fruitlist = ['strawberry', 'pear', 'apple', 'banana']
@@ -164,7 +168,7 @@ async def cmd_start(message: types.Message):
     global lottery_start
     if lottery_start == 1:
         calculatetime()
-        await message.reply(f'Vote! You have 4 fruits to choose from.' f'\n'
+        await message.reply(f'Vote! You have 4 fruits to choose from. You can choose up to 3 fruits' f'\n'
                             f'{timeleftround} Minutes Left', reply_markup=get_keyboard())
     else:
         await message.reply(f'Lottery have not started!')
@@ -175,11 +179,11 @@ async def cmd_start(message: types.Message):
     if lottery_start == 1:
         await message.reply(f'Lottery is ongoing!')
     elif lottery_start == 2:
-        winner, win = calculatewinner(random_fruit)
-        if win == 0:
-            await message.reply(f'User {winner} had lost the Lottery!')
-        elif win == 1:
-            await message.reply(f'User {winner} had won the Lottery!')
+        player, win = calculatewinner(random_fruit, message.from_user.username )
+        if win == 1:
+            await message.reply(f'User {player} had won the Lottery!')
+        else:
+            await message.reply(f'User {player} had lost the Lottery!')
 
     else:
         await message.reply(f'The lottery have not started!')
@@ -192,21 +196,47 @@ async def callback_vote_action(query: types.CallbackQuery, callback_data: typing
     await query.answer()  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data['action']
     user_id = query.from_user.username
-    print(user_id)
-    l.store_vote(callback_data_action, user_id)
-
     calculatetime()
+    vote_count = 0
 
-    likes_count = l.get_score(callback_data_action)
+    user_vote = l._votes.get(user_id, {})
+    vote_count = len(user_vote)
+
+    samefruitvote = l._votes.get(user_id, {}).get(callback_data_action, 0)
 
     if lottery_start == 1:
-        await bot.edit_message_text(
-            f'You voted {callback_data_action}! Now {callback_data_action} have {likes_count} vote[s]. '
-            f'{timeleftround} Minutes Left ',
-            query.message.chat.id,
-            query.message.message_id,
-            reply_markup=get_keyboard(),
-        )
+        if samefruitvote == 1:
+            await bot.edit_message_text(
+                f'You have already voted this fruit! \n'
+                f'{timeleftround} Minutes Left ',
+                query.message.chat.id,
+                query.message.message_id,
+                reply_markup=get_keyboard(),
+            )
+        elif vote_count <= 2 and samefruitvote == 0:
+            l.store_vote(callback_data_action, user_id)
+            print(f'voted {callback_data_action}')
+
+            likes_count = l.get_score(callback_data_action)
+
+            await bot.edit_message_text(
+                f'You voted {callback_data_action}! Now {callback_data_action} have {likes_count} vote[s]. \n'
+                f'{timeleftround} Minutes Left ',
+                query.message.chat.id,
+                query.message.message_id,
+                reply_markup=get_keyboard(),
+            )
+
+        else:
+            await bot.edit_message_text(
+                f'You have already voted 3 fruit! \n'
+                f'{timeleftround} Minutes Left ',
+                query.message.chat.id,
+                query.message.message_id,
+                reply_markup=get_keyboard(),
+            )
+
+
     else:
         await bot.edit_message_text(
             f'The lottery have ended!',
