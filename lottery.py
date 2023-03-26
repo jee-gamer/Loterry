@@ -45,6 +45,11 @@ class Lottery(object):
     def get_score(self, action):
         return self._state[action]
 
+    def get_user_vote(self, user_id):
+        if user_id not in self._votes.keys():
+            self._votes[user_id] = {}
+        return self._votes[user_id]
+
     def finish(self):
         pass
 

@@ -66,6 +66,11 @@ class LotteryStore(object):
     def get_score(self, action):
         return self._state[action]
 
+    def get_user_vote(self, user_id):
+        if user_id not in self._votes.keys():
+            self._votes[user_id] = {}
+        return self._votes[user_id]
+
     def reset_score(self):
         self._votes = {}
     def finish(self):
@@ -74,7 +79,7 @@ class LotteryStore(object):
 l = LotteryStore()
 lottery_start = 0
 timeleftround = ''
-timegiven = 0.3
+timegiven = 0.4
 def calculatetime():
     timenow2 = time.time()
     difference = int(timenow2) - int(timenow)
@@ -85,15 +90,19 @@ def calculatetime():
     return timeleftround
 
 def calculatewinner(fruit1, user_id):
-    user_votes = l._votes[user_id]
-    win = 0
-    for option, count in user_votes.items():
+    user_vote = l.get_user_vote(user_id)
+    winner = user_id
+    loser = []
+
+    for option, count in user_vote.items():
         print(f"  {option}: {count}")
         if option == fruit1 and count == 1:
             print(f'user {user_id} won!')
             win = 1
 
-    return user_id, win
+
+
+    return winner, win
 def get_keyboard():
     keyboard = types.InlineKeyboardMarkup()
 
@@ -159,8 +168,11 @@ async def cmd_start(message: types.Message):
         fruitlist = ['strawberry', 'pear', 'apple', 'banana']
         random_fruit = random.choice(fruitlist)
         print(random_fruit)
-    else:
-        await message.reply(f'Lottery was already started!')
+
+    elif lottery_start == 1:
+        calculatetime()
+        await message.reply(f'Vote! You have 4 fruits to choose from. You can choose up to 3 fruits' f'\n'
+                            f'{timeleftround} Minutes Left', reply_markup=get_keyboard())
 
 
 @dp.message_handler(commands=['Lottery']) #lottery = 2 is when we got the result
@@ -199,10 +211,11 @@ async def callback_vote_action(query: types.CallbackQuery, callback_data: typing
     calculatetime()
     vote_count = 0
 
-    user_vote = l._votes.get(user_id, {})
+    user_vote = l.get_user_vote(user_id)
+
     vote_count = len(user_vote)
 
-    samefruitvote = l._votes.get(user_id, {}).get(callback_data_action, 0)
+    samefruitvote = user_vote.get(callback_data_action, 0)
 
     if lottery_start == 1:
         if samefruitvote == 1:
