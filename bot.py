@@ -13,7 +13,6 @@ from aiogram.utils.exceptions import MessageNotModified
 
 from os import environ
 import time
-from datetime import datetime
 import threading
 import random
 
@@ -32,19 +31,19 @@ dp.middleware.setup(LoggingMiddleware())
 vote_cb = CallbackData("vote", "action")  # vote:<action>
 
 l = Lottery()
-lottery_start = 0
-timeleftround = ""
+lotteryStart = 0
+timeLeftRound = ""
 timegiven = 0.4
 
 
 def calculate_time():
-    timenow2 = time.time()
-    difference = int(timenow2) - int(timenow)
+    timeNow2 = time.time()
+    difference = int(timeNow2) - int(timeNow)
     difference_min = difference / 60
-    timeleft = timegiven - difference_min
-    global timeleftround
-    timeleftround = round(timeleft, 1)
-    return timeleftround
+    timeLeft = timegiven - difference_min
+    global timeLeftRound
+    timeLeftRound = round(timeLeft, 1)
+    return timeLeftRound
 
 
 def get_keyboard():
@@ -63,34 +62,34 @@ def get_keyboard():
 
 
 """
-        lottery_start = 0 :  the lottery have not started
-        lottery_start = 1 :  the lottery is ongoing
-        lottery_start = 2 :  the lottery ended and we have to result
+        lotteryStart = 0 :  the lottery have not started
+        lotteryStart = 1 :  the lottery is ongoing
+        lotteryStart = 2 :  the lottery ended and we have to result
 """
 
 
 def round_over():
-    global lottery_start
+    global lotteryStart
     while True:
         time.sleep(1)
         if calculate_time() <= 0:
-            lottery_start = 2
+            lotteryStart = 2
 
 
 t1 = threading.Thread(target=round_over)
-thread_start = 0
+threadStart = 0
 
 
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
     await message.reply(
-        f"Welcome here. This is a Lottery bot where people play against each other"
-        f"\n"
-        f"type /startLottery to start Lottery"
-        f"\n"
-        f"type /Lottery to see ongoing Lottery"
-        f"\n"
-        f"type /result to see the Lottery results"
+        "Welcome here. This is a Lottery bot where people play against each other"
+        "\n"
+        "type /startLottery to start Lottery"
+        "\n"
+        "type /Lottery to see ongoing Lottery"
+        "\n"
+        "type /result to see the Lottery results"
     )
 
 
@@ -99,16 +98,16 @@ random_fruit = ""
 
 @dp.message_handler(commands=["startLottery"])
 async def cmd_start(message: types.Message):
-    global lottery_start
-    global thread_start
+    global lotteryStart
+    global threadStart
 
-    if thread_start == 0:
+    if threadStart == 0:
         t1.start()
-        thread_start = 1
+        threadStart = 1
 
-    if lottery_start == 0 or lottery_start == 2:
-        global timenow
-        timenow = time.time()
+    if lotteryStart == 0 or lotteryStart == 2:
+        global timeNow
+        timeNow = time.time()
         l.reset_score()
         await message.reply(
             f"Lottery Started!"
@@ -118,44 +117,43 @@ async def cmd_start(message: types.Message):
             f"{timegiven} minutes left!",
             reply_markup=get_keyboard(),
         )
-        lottery_start = 1
+        lotteryStart = 1
 
         global random_fruit
         fruitlist = ["strawberry", "pear", "apple", "banana"]
         random_fruit = random.choice(fruitlist)
         print(random_fruit)
 
-    elif lottery_start == 1:
+    elif lotteryStart == 1:
         calculate_time()
         await message.reply(
             f"Vote! You have 4 fruits to choose from. You can choose up to 3 fruits"
             f"\n"
-            f"{timeleftround} Minutes Left",
+            f"{timeLeftRound} Minutes Left",
             reply_markup=get_keyboard(),
         )
 
 
 @dp.message_handler(commands=["Lottery"])  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
-    global lottery_start
-    if lottery_start == 1:
+    if lotteryStart == 1:
         calculate_time()
         await message.reply(
             f"Vote! You have 4 fruits to choose from. You can choose up to 3 fruits"
             f"\n"
-            f"{timeleftround} Minutes Left",
+            f"{timeLeftRound} Minutes Left",
             reply_markup=get_keyboard(),
         )
     else:
-        await message.reply(f"Lottery have not started!")
+        await message.reply("Lottery have not started!")
 
 
 @dp.message_handler(commands=["result"])
 async def cmd_start(message: types.Message):
-    global lottery_start
-    if lottery_start == 1:
-        await message.reply(f"Lottery is ongoing!")
-    elif lottery_start == 2:
+    global lotteryStart
+    if lotteryStart == 1:
+        await message.reply("Lottery is ongoing!")
+    elif lotteryStart == 2:
         player, win = l.calculate_winner(random_fruit, message.from_user.username)
         if win == 1:
             await message.reply(f"User {player} had won the Lottery!")
@@ -163,7 +161,7 @@ async def cmd_start(message: types.Message):
             await message.reply(f"User {player} had lost the Lottery!")
 
     else:
-        await message.reply(f"The lottery have not started!")
+        await message.reply("The lottery have not started!")
 
 
 timeout = 0
@@ -188,18 +186,18 @@ async def callback_vote_action(
 
     vote_count = len(user_vote)
 
-    samefruitvote = user_vote.get(callback_data_action, 0)
+    sameFruitVote = user_vote.get(callback_data_action, 0)
 
-    if lottery_start == 1:
-        if samefruitvote == 1:
+    if lotteryStart == 1:
+        if sameFruitVote == 1:
             await bot.edit_message_text(
                 f"You have already voted this fruit! \n"
-                f"{timeleftround} Minutes Left ",
+                f"{timeLeftRound} Minutes Left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),
             )
-        elif vote_count <= 2 and samefruitvote == 0:
+        elif vote_count <= 2 and sameFruitVote == 0:
             l.store_vote(callback_data_action, user_id)
             print(f"voted {callback_data_action}")
 
@@ -207,7 +205,7 @@ async def callback_vote_action(
 
             await bot.edit_message_text(
                 f"You voted {callback_data_action}! Now {callback_data_action} have {likes_count} vote[s]. \n"
-                f"{timeleftround} Minutes Left ",
+                f"{timeLeftRound} Minutes Left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),
@@ -215,7 +213,7 @@ async def callback_vote_action(
 
         else:
             await bot.edit_message_text(
-                f"You have already voted 3 fruit! \n" f"{timeleftround} Minutes Left ",
+                f"You have already voted 3 fruit! \n" f"{timeLeftRound} Minutes Left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),
@@ -223,7 +221,7 @@ async def callback_vote_action(
 
     else:
         await bot.edit_message_text(
-            f"The lottery have ended!", query.message.chat.id, query.message.message_id
+            "The lottery have ended!", query.message.chat.id, query.message.message_id
         )
 
 

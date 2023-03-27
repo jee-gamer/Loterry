@@ -45,20 +45,20 @@ class Lottery(object):
             self._votes[user_id] = {}
         return self._votes[user_id]
 
-    def get_top_fruit(self):
-        total_count = {}
-        top_fruit = "none"
+    def get_topFruit(self):
+        totalCount = {}
+        topFruit = "none"
         for user in self._votes.keys():
             votes = self._votes[user]
             for f, v in votes.items():
-                if f in total_count.keys():
-                    total_count[f] += v
+                if f in totalCount.keys():
+                    totalCount[f] += v
                 else:
-                    total_count[f] = 0
-                v = [v for f, v in total_count.items()]
-                fruits = [f for f, v in total_count.items()]
-                top_fruit = fruits[v.index(max(v))]
-        return top_fruit
+                    totalCount[f] = 0
+                v = [v for f, v in totalCount.items()]
+                fruits = [f for f, v in totalCount.items()]
+                topFruit = fruits[v.index(max(v))]
+        return topFruit
 
     def reset_score(self):
         self._votes = {}
@@ -71,12 +71,12 @@ class Lottery(object):
         winner = user_id
         fruits = [f for f, c in user_vote.items()]
         counts = [c for f, c in user_vote.items()]
-        user_top_fruit = fruits[counts.index(max(counts))]
-        global_top_fruit = self.get_top_fruit()
-        print(f"user top fruit {user_top_fruit} vs {global_top_fruit}")
+        user_topFruit = fruits[counts.index(max(counts))]
+        global_topFruit = self.get_topFruit()
+        print(f"user top fruit {user_topFruit} vs {global_topFruit}")
         win = 0
 
-        if user_top_fruit == global_top_fruit:
+        if user_topFruit == global_topFruit:
             print(f"user {user_id} won!")
             win = 1
         return winner, win
