@@ -33,14 +33,14 @@ vote_cb = CallbackData("vote", "action")  # vote:<action>
 l = Lottery()
 lotteryStart = 0
 timeLeftRound = ""
-timegiven = 0.4
-
+timeGiven = 0.4
+timeNow = 0
 
 def calculate_time():
     timeNow2 = time.time()
     difference = int(timeNow2) - int(timeNow)
-    difference_min = difference / 60
-    timeLeft = timegiven - difference_min
+    differenceMin = difference / 60
+    timeLeft = timeGiven - differenceMin
     global timeLeftRound
     timeLeftRound = round(timeLeft, 1)
     return timeLeftRound
@@ -114,7 +114,7 @@ async def cmd_start(message: types.Message):
             f"\n"
             f"Vote! You have 4 fruits to choose from. You can choose up to 3 fruits"
             f"\n"
-            f"{timegiven} minutes left!",
+            f"{timeGiven} minutes left!",
             reply_markup=get_keyboard(),
         )
         lotteryStart = 1
