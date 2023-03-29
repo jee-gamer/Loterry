@@ -100,11 +100,12 @@ async def cmd_start(message: types.Message):
     global lotteryStart
     global threadStart
 
-    if threadStart == 0:
-        t1.start()
-        threadStart = 1
-
     if lotteryStart == 0 or lotteryStart == 2:
+
+        if threadStart == 0:
+            t1.start()
+            threadStart = 1
+
         global timeNow
         timeNow = time.time()
         l.reset_score()
