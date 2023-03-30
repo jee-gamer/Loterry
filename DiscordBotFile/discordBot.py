@@ -6,6 +6,7 @@ from lottery import Lottery
 import time
 import threading
 import random
+import asyncio
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -43,9 +44,9 @@ def round_over():
 
 
 t1 = threading.Thread(target=round_over)
-threadStart = 0
 randomFruit = ""
 
+t2 = threading.Thread(target=round_over)
 
 def handle_response(message) -> Union[tuple[str, int], str]:
     p_message = message.lower()
@@ -57,10 +58,7 @@ def handle_response(message) -> Union[tuple[str, int], str]:
         global lotteryStart
         if lotteryStart == 0 or lotteryStart == 2:
 
-            global threadStart
-            if threadStart == 0:
-                t1.start()
-                threadStart = 1
+            t1.start()
 
             global timeNow
             timeNow = time.time()
@@ -73,12 +71,18 @@ def handle_response(message) -> Union[tuple[str, int], str]:
 
             timeLeft = calculate_time()
 
-        return f'Startt! {timeLeft} minutes left!', 1
+            return f'Startt! {timeLeft} minutes left!', 1
+
+        elif lotteryStart == 1:
+            timeLeft = calculate_time()
+            return f'is it running??? {timeLeft} minutes left!', 1
 
     elif p_message == '!lottery':
-        timeLeft = calculate_time()
-        return f'is it running??? {timeLeft} minutes left!', 1
-
+        if lotteryStart == 1:
+            timeLeft = calculate_time()
+            return f'is it running??? {timeLeft} minutes left!', 1
+        else:
+            return "lottery isn't running!", 0
     elif p_message == '!help':
         reply = "Welcome here. This is a Lottery bot where people play against each other" \
                 "\n \n" \
@@ -92,15 +96,12 @@ def handle_response(message) -> Union[tuple[str, int], str]:
 
         return reply, 0
     else:
-        return 'what the hell u saying, type !help for commands', 0
+        return 'nah', 0  # meaning it doesn't match with any command
 
 
-async def send_message(message, user_message, is_private):
+async def send_message(message, user_message, response, emoji, is_private):
     print(user_message)
     try:
-
-        response, emoji = handle_response(user_message)
-        print(f'emoji {emoji}')
 
         if is_private:
             reply = await message.author.send(response)
@@ -114,6 +115,7 @@ async def send_message(message, user_message, is_private):
             await reply.add_reaction('🍐')
             await reply.add_reaction('🍌')
 
+            return reply
     except Exception as e:
         print(e)
 
@@ -139,11 +141,34 @@ def run_discord_bot():
         channel = str(message.channel)
         print(f'{username} said {userMessage} in {channel}')
 
+        private = False  # private chat or not?
+
         if userMessage[0] == '?':
+            private = True
             userMessage = userMessage[1:]
-            await send_message(message, userMessage, is_private=True)
         else:
-            await send_message(message, userMessage, is_private=False)
+            private = False
+
+        response, emoji = handle_response(userMessage)
+
+        if response == 'nah':
+            response = 'what the hell u saying, type !help for commands.'
+            reply = await send_message(message, userMessage, response, emoji, is_private=False)
+        else:
+            reply = await send_message(message, userMessage, response, emoji, is_private=private)
+
+        def check(reaction, user):
+            return user == message.author and str(reaction.emoji) == '🍓'
+
+        try:
+            reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+        except asyncio.TimeoutError:
+            print('time out')
+        else:
+            reply = await send_message(message, userMessage, f'{user} reacted sheeesh', 0, is_private=private)
+
+
+
 
     print(API_TOKEN)
     bot.run(API_TOKEN)

@@ -76,7 +76,6 @@ def round_over():
 
 
 t1 = threading.Thread(target=round_over)
-threadStart = 0
 
 
 @dp.message_handler(commands=["start"])
@@ -98,13 +97,10 @@ randomFruit = ""
 @dp.message_handler(commands=["startLottery"])
 async def cmd_start(message: types.Message):
     global lotteryStart
-    global threadStart
 
     if lotteryStart == 0 or lotteryStart == 2:
 
-        if threadStart == 0:
-            t1.start()
-            threadStart = 1
+        t1.start()
 
         global timeNow
         timeNow = time.time()
