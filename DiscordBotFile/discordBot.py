@@ -14,7 +14,7 @@ bot = discord.Client(intents=intents)
 
 l = Lottery()
 lotteryStart = 0
-timeGiven = 0.4
+timeGiven = 1
 timeNow = 0
 
 
@@ -35,30 +35,25 @@ def calculate_time():
     return timeLeftRound
 
 
-def round_over():
-    global lotteryStart
-    while True:
-        time.sleep(1)
-        if calculate_time() <= 0:
-            lotteryStart = 2
-
-
 t1 = threading.Thread(target=round_over)
 randomFruit = ""
+threadRunning = 0
 
-t2 = threading.Thread(target=round_over)
 
 def handle_response(message) -> Union[tuple[str, int], str]:
     p_message = message.lower()
     print(f'He said {p_message}')
 
     # the value after reply is the emoji status
+    global lotteryStart
     if p_message == '!startlottery':
 
-        global lotteryStart
         if lotteryStart == 0 or lotteryStart == 2:
 
-            t1.start()
+            global threadRunning
+            if threadRunning == 0:
+                t1.start()
+                threadRunning = 1
 
             global timeNow
             timeNow = time.time()
@@ -71,18 +66,19 @@ def handle_response(message) -> Union[tuple[str, int], str]:
 
             timeLeft = calculate_time()
 
-            return f'Startt! {timeLeft} minutes left!', 1
+            return f'Startt! {timeLeft} minutes left!, please vote in 1 minute', 1
 
         elif lotteryStart == 1:
             timeLeft = calculate_time()
-            return f'is it running??? {timeLeft} minutes left!', 1
+            return f'is it running??? {timeLeft} minutes left, please vote in 1 minute!', 1
 
     elif p_message == '!lottery':
         if lotteryStart == 1:
             timeLeft = calculate_time()
-            return f'is it running??? {timeLeft} minutes left!', 1
+            return f'is it running??? {timeLeft} minutes left!, please vote in 1 minute', 1
         else:
             return "lottery isn't running!", 0
+
     elif p_message == '!help':
         reply = "Welcome here. This is a Lottery bot where people play against each other" \
                 "\n \n" \
@@ -95,12 +91,27 @@ def handle_response(message) -> Union[tuple[str, int], str]:
                 "you can use command without capital letters"
 
         return reply, 0
+
+    elif p_message == '!result':
+        if lotteryStart == 1:
+            reply = "Lottery is ongoing!"
+        elif lotteryStart == 2:
+            player, win = l.calculate_winner(randomFruit, message.from_user.username)
+            if win == 1:
+                reply = f"User {player} had won the Lottery!"
+            else:
+                reply = f"User {player} had lost the Lottery!"
+
+        else:
+            reply = "The lottery have not started!"
+        return reply, 0
+
     else:
         return 'nah', 0  # meaning it doesn't match with any command
 
 
 async def send_message(message, user_message, response, emoji, is_private):
-    print(user_message)
+
     try:
 
         if is_private:
@@ -119,6 +130,8 @@ async def send_message(message, user_message, response, emoji, is_private):
     except Exception as e:
         print(e)
 
+l = Lottery()
+
 
 def run_discord_bot():
     API_TOKEN = environ.get('BotApi')
@@ -135,6 +148,8 @@ def run_discord_bot():
     async def on_message(message):
         if message.author == bot.user:
             return
+
+        print('he did something')
 
         username = str(message.author)
         userMessage = str(message.content)
@@ -157,18 +172,57 @@ def run_discord_bot():
         else:
             reply = await send_message(message, userMessage, response, emoji, is_private=private)
 
+        emojis = ["🍓", "🍎", "🍐", "🍌"]
+
         def check(reaction, user):
-            return user == message.author and str(reaction.emoji) == '🍓'
+            print(reaction)
+            return user == message.author and str(reaction.emoji) in emojis
 
-        try:
-            reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
-        except asyncio.TimeoutError:
-            print('time out')
-        else:
-            reply = await send_message(message, userMessage, f'{user} reacted sheeesh', 0, is_private=private)
+        while lotteryStart == 1:
+            time.sleep(1)
+            try:
+                reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+            except asyncio.TimeoutError:
+                print('time out')
+            else:
+                weirdEmoji = False
 
+                if reaction.emoji == '🍓':
+                    reaction = 'strawberry'
+                    print('he reacted strawberry')
+                elif reaction.emoji == "🍎":
+                    reaction = 'apple'
+                elif reaction.emoji == "🍐":
+                    reaction = 'pear'
+                elif reaction.emoji == "🍌":
+                    reaction = 'banana'
+                else:
+                    weirdEmoji = True
 
+                print(weirdEmoji)
+                print(reaction)
 
+                if not weirdEmoji:
+                    print('lets go vote')
+
+                    userVote = l.get_user_vote(username)
+
+                    vote_count = len(userVote)
+
+                    sameFruitVote = userVote.get(reaction, 0)
+
+                    if sameFruitVote == 1:
+                        response = 'You already voted this fruit!'
+                        reply = await send_message(message, userMessage, response, 0, is_private=private)
+
+                    elif vote_count <= 2 and sameFruitVote == 0:
+                        response = f'{user} voted {reaction}'
+                        reply = await send_message(message, userMessage, response, 0, is_private=private)
+                        l.store_vote(reaction, username)
+
+                    else:
+                        response = 'You already voted 3 fruit!'
+                        reply = await send_message(message, userMessage, response, 0, is_private=private)
 
     print(API_TOKEN)
     bot.run(API_TOKEN)

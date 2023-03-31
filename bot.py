@@ -92,6 +92,7 @@ async def cmd_start(message: types.Message):
 
 
 randomFruit = ""
+threadRunning = 0
 
 
 @dp.message_handler(commands=["startLottery"])
@@ -100,6 +101,10 @@ async def cmd_start(message: types.Message):
 
     if lotteryStart == 0 or lotteryStart == 2:
 
+        global threadRunning
+        if threadRunning == 0:
+            t1.start()
+            threadRunning = 1
         t1.start()
 
         global timeNow
@@ -176,13 +181,13 @@ async def callback_vote_action(
     callback_data_action = callback_data["action"]
     user_id = query.from_user.username
     calculate_time()
-    vote_count = 0
+    voteCount = 0
 
-    user_vote = l.get_user_vote(user_id)
+    userVote = l.get_user_vote(user_id)
 
-    vote_count = len(user_vote)
+    voteCount = len(userVote)
 
-    sameFruitVote = user_vote.get(callback_data_action, 0)
+    sameFruitVote = userVote.get(callback_data_action, 0)
 
     if lotteryStart == 1:
         timeLeftRound = calculate_time()
@@ -195,7 +200,7 @@ async def callback_vote_action(
                 query.message.message_id,
                 reply_markup=get_keyboard(),
             )
-        elif vote_count <= 2 and sameFruitVote == 0:
+        elif voteCount <= 2 and sameFruitVote == 0:
             l.store_vote(callback_data_action, user_id)
             print(f"voted {callback_data_action}")
 
