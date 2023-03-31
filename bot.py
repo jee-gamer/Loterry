@@ -104,7 +104,7 @@ async def cmd_start(message: types.Message):
 
         global timeNow
         timeNow = time.time()
-        l.reset_score()
+        l.reset()
         await message.reply(
             f"Lottery Started!"
             f"\n"
@@ -150,7 +150,7 @@ async def cmd_start(message: types.Message):
     if lotteryStart == 1:
         await message.reply("Lottery is ongoing!")
     elif lotteryStart == 2:
-        player, win = l.calculate_winner(randomFruit, message.from_user.username)
+        player, win = l.check_winner(randomFruit, message.from_user.username)
         if win == 1:
             await message.reply(f"User {player} had won the Lottery!")
         else:

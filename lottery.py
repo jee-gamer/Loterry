@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from random import randrange, seed
 
 
 class Lottery(object):
@@ -8,91 +9,91 @@ class Lottery(object):
     """
 
     _start: int
-    _state: dict
+    _hits: dict
     _votes: dict
 
     def __init__(self):
         logging.debug("Lottery object created")
         self._start = datetime.now().timestamp()
-        self._state = {
+        self._hits = {
             "strawberry": 0,
             "apple": 0,
             "pear": 0,
             "banana": 0,
         }
+        self._win_hit_map = {
+            0: "strawberry",
+            1: "apple",
+            2: "pear",
+            3: "banana",
+        }
+        self._max_votes = 1
         self._votes = {}
+        self._win_hit = -1
 
     def store_vote(self, action, user):
-        if action in self._state.keys():
-            self._state[action] += 1
+        if action in self._hits.keys():
+            self._hits[action] += 1
             vote = self._votes
-            if user not in self._votes:
-                vote[user] = {}
-                vote[user][action] = 1
+            if user in self._votes:
+                s = sum([v for v in vote[user].values()])
+                if self._max_votes < s:
+                    vote[user][action] += 1
             else:
-                vote[user][action] = 1
+                vote[user] = {action: 1}
         else:
             logging.error(f"access to non-existent key {action}")
 
     def get_scores(self):
-        return self._state
+        return self._hits
 
     def get_score(self, action):
-        return self._state[action]
+        return self._hits[action]
 
     def get_user_vote(self, user_id):
         if user_id not in self._votes.keys():
             self._votes[user_id] = {}
         return self._votes[user_id]
 
-    def get_topFruit(self):
-        totalCount = {}
-        topFruit = "none"
-        for user in self._votes.keys():
-            votes = self._votes[user]
-            for f, v in votes.items():
-                if f in totalCount.keys():
-                    totalCount[f] += v
-                else:
-                    totalCount[f] = 0
-                v = [v for f, v in totalCount.items()]
-                fruits = [f for f, v in totalCount.items()]
-                topFruit = fruits[v.index(max(v))]
-        return topFruit
-
-    def reset_score(self):
+    def reset(self):
         self._votes = {}
+        self._win_hit = -1
 
-    def finish(self):
-        pass
+    def finish(self, as_int = False):
+        self._win_hit = randrange(0, 3, 1)
+        if as_int:
+            return self._win_hit
+        else:
+            return self._win_hit_map[self._win_hit]
 
-    def calculate_winner(self, fruit1, user_id):
+    def check_winner(self, user_id):
+        if self._win_hit < 0:
+            logging.warning(f"requested result from not finished lottery")
+            return user_id, 0
+        fruit_hit = self._win_hit_map[self._win_hit]
         user_vote = self.get_user_vote(user_id)
-        winner = user_id
-        fruits = [f for f, c in user_vote.items()]
-        counts = [c for f, c in user_vote.items()]
-        user_topFruit = fruits[counts.index(max(counts))]
-        global_topFruit = self.get_topFruit()
-        print(f"user top fruit {user_topFruit} vs {global_topFruit}")
-        win = 0
-
-        if user_topFruit == global_topFruit:
-            print(f"user {user_id} won!")
-            win = 1
-        return winner, win
+        fruits = [f for f in user_vote.keys()]
+        if fruit_hit not in fruits:
+            return user_id, 0
+        counts = [c for c in user_vote.values()]
+        return user_id, counts[fruits.index(fruit_hit)]
 
 
 if __name__ == "__main__":
     lottery = Lottery()
-    print(lottery.get_start())
+    logging.info("initializing lottery")
     lottery.store_vote("strawberry", "jee")
     lottery.store_vote("banana", "jee")
     lottery.store_vote("pear", "jee")
-    print(lottery._votes["jee"])
-    jeevote = lottery._votes["jee"]
-    count = len(jeevote)
-    print(count)
+    result = lottery.get_user_vote("jee")
+    assert result == {'strawberry': 1}
+    result = lottery.get_scores()
+    assert result == {'strawberry': 1, 'apple': 0, 'pear': 1, 'banana': 1}
+    logging.info("testing vote-win scenario")
+    seed(1)
+    winning = lottery.finish()
+    assert winning == 'strawberry'
+    assert lottery.check_winner("jee") == ('jee', 1)
 
-    lottery.store_vote("apple", "jee")
-    # l.increment('foo', 'foo')
-    print(lottery.get_scores())
+
+
