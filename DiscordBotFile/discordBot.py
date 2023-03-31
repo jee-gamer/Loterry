@@ -12,32 +12,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Client(intents=intents)
 
-l = Lottery()
+l = 0
 lotteryStart = 0
-timeGiven = 1
-timeNow = 0
-
-
-def round_over():
-    global lotteryStart
-    while True:
-        time.sleep(1)
-        if calculate_time() <= 0:
-            lotteryStart = 2
-
-
-def calculate_time():
-    timeNow2 = time.time()
-    difference = int(timeNow2) - int(timeNow)
-    differenceMin = difference / 60
-    timeLeft = timeGiven - differenceMin
-    timeLeftRound = round(timeLeft, 1)
-    return timeLeftRound
-
-
-t1 = threading.Thread(target=round_over)
-randomFruit = ""
-threadRunning = 0
 
 
 def handle_response(message) -> Union[tuple[str, int], str]:
@@ -50,32 +26,25 @@ def handle_response(message) -> Union[tuple[str, int], str]:
 
         if lotteryStart == 0 or lotteryStart == 2:
 
-            global threadRunning
-            if threadRunning == 0:
-                t1.start()
-                threadRunning = 1
-
-            global timeNow
-            timeNow = time.time()
             lotteryStart = 1
 
-            global randomFruit
-            fruitList = ["strawberry", "pear", "apple", "banana"]
-            randomFruit = random.choice(fruitList)
-            print(randomFruit)
+            global l
+            l = Lottery(time_delta=30)
 
-            timeLeft = calculate_time()
+            timeLeft = l.time_left()
 
-            return f'Startt! {timeLeft} minutes left!, please vote in 1 minute', 1
+            return f'Startt! {timeLeft} seconds left!, please vote in 1 minute', 1
 
         elif lotteryStart == 1:
-            timeLeft = calculate_time()
-            return f'is it running??? {timeLeft} minutes left, please vote in 1 minute!', 1
+            timeLeft = l.time_left()
+            if l.end_lottery():
+                lotteryStart = 2
+            return f'is it running??? {timeLeft} seconds left, please vote in 1 minute!', 1
 
     elif p_message == '!lottery':
         if lotteryStart == 1:
-            timeLeft = calculate_time()
-            return f'is it running??? {timeLeft} minutes left!, please vote in 1 minute', 1
+            timeLeft = l.time_left()
+            return f'is it running??? {timeLeft} seconds left!, please vote in 1 minute', 1
         else:
             return "lottery isn't running!", 0
 
@@ -129,8 +98,6 @@ async def send_message(message, user_message, response, emoji, is_private):
             return reply
     except Exception as e:
         print(e)
-
-l = Lottery()
 
 
 def run_discord_bot():

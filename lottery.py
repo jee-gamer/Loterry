@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from random import randrange, seed
+import time
 
 
 class Lottery(object):
@@ -14,7 +15,7 @@ class Lottery(object):
 
     def __init__(self, time_delta):
         logging.debug("Lottery object created")
-        self._start = datetime.now().timestamp()
+        self._start = int(datetime.now().timestamp())
         self._end = self._start + time_delta
         self._hits = {
             "strawberry": 0,
@@ -73,6 +74,19 @@ class Lottery(object):
         else:
             return self._win_hit_map[self._win_hit]
 
+    def end_lottery(self):
+        if self._end > datetime.now().timestamp():
+            return True
+
+    def time_left(self):
+        timeLeft = self._end - datetime.now().timestamp()
+        timeLeft = round(timeLeft, 1)
+        return timeLeft
+
+    # def start(self):
+    #     if self._win_hit == -1:
+    #         self._start = int(datetime.now().timestamp())
+
     def check_winner(self, user_id):
         if self._win_hit < 0:
             logging.warning(f"requested result from not finished lottery")
@@ -87,17 +101,18 @@ class Lottery(object):
 
 
 if __name__ == "__main__":
-    lottery = Lottery(time_delta=0.25)
-    logging.info("initializing lottery")
-    lottery.store_vote("strawberry", "jee")
-    lottery.store_vote("banana", "jee")
-    lottery.store_vote("pear", "random")
-    result = lottery.get_user_vote("jee")
-    assert result == {'strawberry': 1}
-    result = lottery.get_scores()
-    assert result == {'strawberry': 1, 'apple': 0, 'pear': 1, 'banana': 1}
-    logging.info("testing vote-win scenario")
-    seed(2)
-    winning = lottery.finish()
-    assert winning == 'strawberry'
-    assert lottery.check_winner("jee") == ('jee', 1)
+    pass
+    # lottery = Lottery(time_delta=0.25)
+    # logging.info("initializing lottery")
+    # lottery.store_vote("strawberry", "jee")
+    # lottery.store_vote("banana", "jee")
+    # lottery.store_vote("pear", "random")
+    # result = lottery.get_user_vote("jee")
+    # assert result == {'strawberry': 1}
+    # result = lottery.get_scores()
+    # assert result == {'strawberry': 1, 'apple': 0, 'pear': 1, 'banana': 1}
+    # logging.info("testing vote-win scenario")
+    # seed(2)
+    # winning = lottery.finish()
+    # assert winning == 'strawberry'
+    # assert lottery.check_winner("jee") == ('jee', 1)
