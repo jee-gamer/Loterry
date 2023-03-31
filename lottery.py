@@ -12,9 +12,10 @@ class Lottery(object):
     _hits: dict
     _votes: dict
 
-    def __init__(self):
+    def __init__(self, time_delta):
         logging.debug("Lottery object created")
         self._start = datetime.now().timestamp()
+        self._end = self._start + time_delta
         self._hits = {
             "strawberry": 0,
             "apple": 0,
@@ -60,7 +61,13 @@ class Lottery(object):
         self._win_hit = -1
 
     def finish(self, as_int = False):
-        self._win_hit = randrange(0, 3, 1)
+        if self._end < datetime.now().timestamp():
+            logging.warning("tried to finish earlier than specified")
+            return -1
+        if self._win_hit > 0:
+            logging.warning("tried to finish already finished lottery")
+            return -1
+        self._win_hit = randrange(0, 4, 1)
         if as_int:
             return self._win_hit
         else:
@@ -80,20 +87,17 @@ class Lottery(object):
 
 
 if __name__ == "__main__":
-    lottery = Lottery()
+    lottery = Lottery(time_delta=0.25)
     logging.info("initializing lottery")
     lottery.store_vote("strawberry", "jee")
     lottery.store_vote("banana", "jee")
-    lottery.store_vote("pear", "jee")
+    lottery.store_vote("pear", "random")
     result = lottery.get_user_vote("jee")
     assert result == {'strawberry': 1}
     result = lottery.get_scores()
     assert result == {'strawberry': 1, 'apple': 0, 'pear': 1, 'banana': 1}
     logging.info("testing vote-win scenario")
-    seed(1)
+    seed(2)
     winning = lottery.finish()
     assert winning == 'strawberry'
     assert lottery.check_winner("jee") == ('jee', 1)
-
-
-
