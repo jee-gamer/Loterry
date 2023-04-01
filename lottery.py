@@ -29,7 +29,7 @@ class Lottery(object):
             2: "pear",
             3: "banana",
         }
-        self._max_votes = 1
+        self._max_votes = 3
         self._votes = {}
         self._win_hit = -1
 
@@ -39,8 +39,11 @@ class Lottery(object):
             vote = self._votes
             if user in self._votes:
                 s = sum([v for v in vote[user].values()])
-                if self._max_votes < s:
-                    vote[user][action] += 1
+                if self._max_votes >= s:
+                    if action in vote[user]:
+                        vote[user][action] += 1
+                    else:
+                        vote[user][action] = 1
             else:
                 vote[user] = {action: 1}
         else:
@@ -61,13 +64,7 @@ class Lottery(object):
         self._votes = {}
         self._win_hit = -1
 
-    def finish(self, as_int = False):
-        if self._end < datetime.now().timestamp():
-            logging.warning("tried to finish earlier than specified")
-            return -1
-        if self._win_hit > 0:
-            logging.warning("tried to finish already finished lottery")
-            return -1
+    def finish(self, as_int=False):
         self._win_hit = randrange(0, 4, 1)
         if as_int:
             return self._win_hit
@@ -75,17 +72,15 @@ class Lottery(object):
             return self._win_hit_map[self._win_hit]
 
     def end_lottery(self):
-        if self._end > datetime.now().timestamp():
+        if self._end < datetime.now().timestamp():
             return True
+        else:
+            return False
 
     def time_left(self):
         timeLeft = self._end - datetime.now().timestamp()
         timeLeft = round(timeLeft, 1)
         return timeLeft
-
-    # def start(self):
-    #     if self._win_hit == -1:
-    #         self._start = int(datetime.now().timestamp())
 
     def check_winner(self, user_id):
         if self._win_hit < 0:
@@ -102,17 +97,17 @@ class Lottery(object):
 
 if __name__ == "__main__":
     pass
-    # lottery = Lottery(time_delta=0.25)
-    # logging.info("initializing lottery")
-    # lottery.store_vote("strawberry", "jee")
-    # lottery.store_vote("banana", "jee")
-    # lottery.store_vote("pear", "random")
-    # result = lottery.get_user_vote("jee")
-    # assert result == {'strawberry': 1}
-    # result = lottery.get_scores()
-    # assert result == {'strawberry': 1, 'apple': 0, 'pear': 1, 'banana': 1}
-    # logging.info("testing vote-win scenario")
-    # seed(2)
-    # winning = lottery.finish()
-    # assert winning == 'strawberry'
-    # assert lottery.check_winner("jee") == ('jee', 1)
+    lottery = Lottery(time_delta=0.1)
+    logging.info("initializing lottery")
+    lottery.store_vote("strawberry", "jee")
+    lottery.store_vote("banana", "jee")
+    lottery.store_vote("pear", "random")
+    result = lottery.get_user_vote("jee")
+    print(result)
+    result = lottery.get_scores()
+    assert result == {'strawberry': 1, 'apple': 0, 'pear': 1, 'banana': 1}
+    logging.info("testing vote-win scenario")
+    seed(44)
+    print(lottery.finish())
+    lottery.check_winner("jee")
+    print(lottery.check_winner("jee"))

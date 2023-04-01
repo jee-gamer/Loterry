@@ -16,7 +16,7 @@ l = 0
 lotteryStart = 0
 
 
-def handle_response(message) -> Union[tuple[str, int], str]:
+def handle_response(message, username) -> Union[tuple[str, int], str]:
     p_message = message.lower()
     print(f'He said {p_message}')
 
@@ -29,22 +29,31 @@ def handle_response(message) -> Union[tuple[str, int], str]:
             lotteryStart = 1
 
             global l
-            l = Lottery(time_delta=30)
+            l = Lottery(time_delta=10)
 
             timeLeft = l.time_left()
 
             return f'Startt! {timeLeft} seconds left!, please vote in 1 minute', 1
 
         elif lotteryStart == 1:
-            timeLeft = l.time_left()
             if l.end_lottery():
+                print(l.finish())
                 lotteryStart = 2
-            return f'is it running??? {timeLeft} seconds left, please vote in 1 minute!', 1
+                return "lottery isn't running!", 0
+            else:
+                timeLeft = l.time_left()
+                return f'is it running??? {timeLeft} seconds left!, please vote in 1 minute', 1
 
     elif p_message == '!lottery':
         if lotteryStart == 1:
-            timeLeft = l.time_left()
-            return f'is it running??? {timeLeft} seconds left!, please vote in 1 minute', 1
+
+            if l.end_lottery():
+                print(l.finish())
+                lotteryStart = 2
+                return "lottery isn't running!", 0
+            else:
+                timeLeft = l.time_left()
+                return f'is it running??? {timeLeft} seconds left!, please vote in 1 minute', 1
         else:
             return "lottery isn't running!", 0
 
@@ -62,10 +71,26 @@ def handle_response(message) -> Union[tuple[str, int], str]:
         return reply, 0
 
     elif p_message == '!result':
+
         if lotteryStart == 1:
-            reply = "Lottery is ongoing!"
+            if l.end_lottery():
+                print(l.finish())
+                lotteryStart = 2
+
+                player, win = l.check_winner(username)
+
+                if win == 1:
+                    reply = f"User {player} had won the Lottery!"
+                else:
+                    reply = f"User {player} had lost the Lottery!"
+
+            else:
+                reply = "Lottery is ongoing!"
+
         elif lotteryStart == 2:
-            player, win = l.calculate_winner(randomFruit, message.from_user.username)
+            l.finish()
+            player, win = l.check_winner(username)
+
             if win == 1:
                 reply = f"User {player} had won the Lottery!"
             else:
@@ -116,8 +141,6 @@ def run_discord_bot():
         if message.author == bot.user:
             return
 
-        print('he did something')
-
         username = str(message.author)
         userMessage = str(message.content)
         channel = str(message.channel)
@@ -131,7 +154,7 @@ def run_discord_bot():
         else:
             private = False
 
-        response, emoji = handle_response(userMessage)
+        response, emoji = handle_response(userMessage, username)
 
         if response == 'nah':
             response = 'what the hell u saying, type !help for commands.'
@@ -142,11 +165,12 @@ def run_discord_bot():
         emojis = ["🍓", "🍎", "🍐", "🍌"]
 
         def check(reaction, user):
-            print(reaction)
             return user == message.author and str(reaction.emoji) in emojis
 
         while lotteryStart == 1:
             time.sleep(1)
+            if l.end_lottery():
+                return
             try:
                 reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
             except asyncio.TimeoutError:
@@ -166,7 +190,6 @@ def run_discord_bot():
                 else:
                     weirdEmoji = True
 
-                print(weirdEmoji)
                 print(reaction)
 
                 if not weirdEmoji:
