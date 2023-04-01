@@ -49,6 +49,9 @@ class Lottery(object):
         else:
             logging.error(f"access to non-existent key {action}")
 
+    def get_max_vote(self):
+        return self._max_votes
+
     def get_scores(self):
         return self._hits
 
