@@ -12,7 +12,8 @@ bot = discord.Client(intents=intents)
 
 l = 0
 lotteryStart = 0
-givenTime = 10 #seconds
+givenTime = 30  # seconds
+
 
 def handle_response(message, username) -> Union[tuple[str, int], str]:
     p_message = message.lower()
@@ -20,6 +21,8 @@ def handle_response(message, username) -> Union[tuple[str, int], str]:
 
     # the value after reply is the emoji status
     global lotteryStart
+    maxVotes = l.get_max_vote()
+
     if p_message == '!startlottery':
 
         if lotteryStart == 0 or lotteryStart == 2:
