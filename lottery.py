@@ -17,6 +17,7 @@ class Lottery(object):
         logging.debug("Lottery object created")
         self._start = 0
         self._delta = time_delta
+        self._end = None
         self._hits = {
             "strawberry": 0,
             "apple": 0,
@@ -32,6 +33,13 @@ class Lottery(object):
         self._max_votes = 3
         self._votes = {}
         self._win_hit = -1
+
+        self._emoji_dict = {
+            '🍓': 'strawberry',
+            '🍎': 'apple',
+            '🍐': 'pear',
+            '🍌': 'banana'
+        }
 
     def store_vote(self, action, user):
         if action in self._hits.keys():
@@ -52,6 +60,9 @@ class Lottery(object):
     def get_max_vote(self):
         return self._max_votes
 
+    def get_emoji_dict(self):
+        return self._emoji_dict
+
     def get_scores(self):
         return self._hits
 
@@ -69,8 +80,6 @@ class Lottery(object):
             return
         self._start = int(datetime.now().timestamp())
         self._end = self._start + self._delta
-
-    def reset(self):
         self._votes = {}
         self._win_hit = -1
 
@@ -81,12 +90,6 @@ class Lottery(object):
         else:
             return self._win_hit_map[self._win_hit]
 
-    def end_lottery(self):
-        if self._end < datetime.now().timestamp():
-            return True
-        else:
-            return False
-
     def time_left(self):
         if self._start == 0:
             return 0
@@ -95,6 +98,9 @@ class Lottery(object):
             result = self.finish()
             logging.debug(f"finished lottery {result}")
         return timeLeft
+
+    def reset(self):
+        self._start = 0
 
     def get_winner(self):
         if self._win_hit < 0:
