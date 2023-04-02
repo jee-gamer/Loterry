@@ -15,8 +15,8 @@ class Lottery(object):
 
     def __init__(self, time_delta):
         logging.debug("Lottery object created")
-        self._start = int(datetime.now().timestamp())
-        self._end = self._start + time_delta
+        self._start = 0
+        self._delta = time_delta
         self._hits = {
             "strawberry": 0,
             "apple": 0,
@@ -63,6 +63,13 @@ class Lottery(object):
             self._votes[user_id] = {}
         return self._votes[user_id]
 
+    def start(self):
+        if self._start > 0:
+            logging.warning("trying to start already started lottery")
+            return
+        self._start = int(datetime.now().timestamp())
+        self._end = self._start + self._delta
+
     def reset(self):
         self._votes = {}
         self._win_hit = -1
@@ -81,9 +88,25 @@ class Lottery(object):
             return False
 
     def time_left(self):
+        if self._start == 0:
+            return 0
         timeLeft = self._end - datetime.now().timestamp()
-        timeLeft = round(timeLeft, 1)
+        if timeLeft < 0:
+            result = self.finish()
+            logging.debug(f"finished lottery {result}")
         return timeLeft
+
+    def get_winner(self):
+        if self._win_hit < 0:
+            logging.warning(f"requested result from not finished lottery")
+            return None
+        fruit_hit = self._win_hit_map[self._win_hit]
+        users = [v for v in self._votes.keys()]
+        winner = []
+        for u in users:
+            if fruit_hit in self._votes[u].keys():
+                winner.append(u)
+        return winner
 
     def check_winner(self, user_id):
         if self._win_hit < 0:
@@ -114,3 +137,4 @@ if __name__ == "__main__":
     print(lottery.finish())
     lottery.check_winner("jee")
     print(lottery.check_winner("jee"))
+    print(lottery.get_winner())

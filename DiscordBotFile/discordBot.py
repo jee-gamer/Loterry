@@ -10,56 +10,42 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Client(intents=intents)
 
-l = 0
-lotteryStart = 0
 givenTime = 30  # seconds
+lottery = Lottery(time_delta=givenTime)
 
 
 def handle_response(message, username) -> Union[tuple[str, int], str]:
+    timeLeft = lottery.time_left()
+
     p_message = message.lower()
     print(f'He said {p_message}')
 
     # the value after reply is the emoji status
     global lotteryStart
-    maxVotes = l.get_max_vote()
+    maxVotes = lottery.get_max_vote()
 
     if p_message == '!startlottery':
-
-        if lotteryStart == 0 or lotteryStart == 2:
-
-            lotteryStart = 1
-
-            global l
-            l = Lottery(time_delta=givenTime)
-
-            timeLeft = l.time_left()
-
-            return f'Startt! {timeLeft} seconds left!, please vote in 1 minute', 1
-
-        elif lotteryStart == 1:
-            if l.end_lottery():
-                print(l.finish())
-
-                lotteryStart = 1
-                l = Lottery(time_delta=givenTime)
-                timeLeft = l.time_left()
-                return f'Startt! {timeLeft} seconds left!, please vote in 1 minute', 1
-            else:
-                timeLeft = l.time_left()
-                return f'is it running??? {timeLeft} seconds left!, please vote in 1 minute', 1
+        if timeLeft == 0:
+            lottery.start()
+            return "Lottery started"
 
     elif p_message == '!lottery':
-        if lotteryStart == 1:
-
-            if l.end_lottery():
-                print(l.finish())
-                lotteryStart = 2
-                return "lottery isn't running!", 0
-            else:
-                timeLeft = l.time_left()
-                return f'is it running??? {timeLeft} seconds left!, please vote in 1 minute', 1
+        if timeLeft > 0:
+            return f'lottery is running. {timeLeft} seconds left!, please vote in {givenTime - timeLeft} minute', 1
+        elif timeLeft == 0:
+            return "lottery isn't running! Start Lottery", 0
         else:
-            return "lottery isn't running!", 0
+            return "lottery is expired! Print results", 0
+
+    elif p_message == '!result':
+        if timeLeft < 0:
+            winners = lottery.get_winner()
+            winners_str = ", ".join(winners)
+            return f"User {winners_str} had won the Lottery!"
+        elif timeLeft == 0:
+            return "lottery isn't running! Start Lottery", 0
+        else:
+            return f'lottery is running. {timeLeft} seconds left!, please vote in {givenTime - timeLeft} minute', 1
 
     elif p_message == '!help':
         reply = "Welcome here. This is a Lottery bot where people play against each other" \
@@ -73,38 +59,6 @@ def handle_response(message, username) -> Union[tuple[str, int], str]:
                 "you can use command without capital letters"
 
         return reply, 0
-
-    elif p_message == '!result':
-
-        if lotteryStart == 1:
-            if l.end_lottery():
-                print(l.finish())
-                lotteryStart = 2
-
-                player, win = l.check_winner(username)
-
-                if win == 1:
-                    reply = f"User {player} had won the Lottery!"
-                else:
-                    reply = f"User {player} had lost the Lottery!"
-
-            else:
-                timeLeft = l.time_left()
-                reply = f"Lottery is ongoing! {timeLeft} seconds left!"
-
-        elif lotteryStart == 2:
-            l.finish()
-            player, win = l.check_winner(username)
-
-            if win == 1:
-                reply = f"User {player} had won the Lottery!"
-            else:
-                reply = f"User {player} had lost the Lottery!"
-
-        else:
-            reply = "The lottery have not started!"
-        return reply, 0
-
     else:
         return 'nah', 0  # meaning it doesn't match with any command
 
@@ -183,7 +137,7 @@ def run_discord_bot():
             if lotteryStart == 0:
                 await sent('The lottery have not started!')
                 return
-            elif l.end_lottery():
+            elif lottery.end_lottery():
                 await sent('The lottery is not running!')
                 return
 
@@ -201,13 +155,13 @@ def run_discord_bot():
 
             if not weirdEmoji:
 
-                userVote = l.get_user_vote(username)
+                userVote = lottery.get_user_vote(username)
 
                 vote_count = len(userVote)
 
                 sameFruitVote = userVote.get(reaction, 0)
 
-                maxVotes = l.get_max_vote()
+                maxVotes = lottery.get_max_vote()
 
                 if sameFruitVote == 1:
                     response = ', you already voted this fruit!'
@@ -216,7 +170,7 @@ def run_discord_bot():
                 elif vote_count < maxVotes and sameFruitVote == 0:
                     response = f'{user} voted {reaction}'
                     reply = await sent(response)
-                    l.store_vote(reaction, username)
+                    lottery.store_vote(reaction, username)
 
                 else:
                     response = ', you already voted 3 fruit!'

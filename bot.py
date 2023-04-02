@@ -30,7 +30,7 @@ dp.middleware.setup(LoggingMiddleware())
 
 vote_cb = CallbackData("vote", "action")  # vote:<action>
 
-l = 0
+l = None
 lotteryStart = 0
 givenTime = 30  # seconds
 
@@ -74,11 +74,11 @@ async def cmd_start(message: types.Message):
 async def cmd_start(message: types.Message):
     global lotteryStart
     global l
-    
+
     if lotteryStart == 0 or lotteryStart == 2:
 
         l = Lottery(time_delta=givenTime)
-        
+
         timeLeft = l.time_left()
         maxVotes = l.get_max_vote()
 
