@@ -114,8 +114,6 @@ async def on_message(message):
     if userMessage[0] == '?':
         private = True
         userMessage = userMessage[1:]
-    else:
-        private = False
 
     response, emoji = handle_response(userMessage)
 
