@@ -26,6 +26,7 @@ def handle_response(message) -> Union[tuple[str, int], str]:
 
     if p_message == '!startlottery':
         if timeLeft <= 0:
+            lottery.reset()
             lottery.start()
 
             return f"Lottery started! {givenTime} seconds left!", 1
@@ -42,6 +43,7 @@ def handle_response(message) -> Union[tuple[str, int], str]:
 
     elif p_message == '!result':
         if timeLeft < 0:
+
             winners = lottery.get_winner()
             winners_str = ", ".join(winners)
             print(f' winner is {winners}')
@@ -114,8 +116,6 @@ async def on_message(message):
     if userMessage[0] == '?':
         private = True
         userMessage = userMessage[1:]
-    else:
-        private = False
 
     response, emoji = handle_response(userMessage)
 
