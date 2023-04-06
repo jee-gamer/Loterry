@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from random import randrange, seed
-import time
 
 
 class Lottery(object):
@@ -107,6 +106,7 @@ class Lottery(object):
             logging.warning(f"requested result from not finished lottery")
             return None
         fruit_hit = self._win_hit_map[self._win_hit]
+        print(fruit_hit)
         users = [v for v in self._votes.keys()]
         winner = []
         for u in users:
