@@ -120,6 +120,9 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    if not message.content.startswith('!'):
+        return
+
     if message.author == bot.user:
         return
 
@@ -158,7 +161,7 @@ async def on_reaction_add(reaction, user):
         timeLeft = lottery.time_left()
 
         if timeLeft <= 0:
-            await sent("The lottery is not running!")
+            await sent("The time is up!")
             return
 
         emojiDict = lottery.get_emoji_dict()
