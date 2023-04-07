@@ -23,12 +23,27 @@ def handle_response(message) -> Union[tuple[str, int], str]:
     # the value after reply is the emoji status
 
     if p_message == "!startlottery":
-        if timeLeft <= 0:
-            lottery.reset()
+        if timeLeft == 0:
             lottery.start()
-
             return f"Lottery started! {givenTime} seconds left!", 1
-        elif timeLeft > 0:
+        elif timeLeft < 0:
+            winners = lottery.get_winner()
+            print(winners)
+            winners_str = ", ".join(winners)
+
+            if winners:
+                lottery.reset()
+                lottery.start()
+                return f"The last lottery winners are {winners_str} \n" \
+                   f"Lottery started! {givenTime} seconds left!", 1
+
+            else:
+                lottery.reset()
+                lottery.start()
+                return f"No one had won the last lottery!\n" \
+                       f"Lottery started! {givenTime} seconds left!", 1
+
+        else:
             return f"lottery is running. {timeLeft} seconds left!", 1
 
     elif p_message == "!lottery":
@@ -37,7 +52,12 @@ def handle_response(message) -> Union[tuple[str, int], str]:
         elif timeLeft == 0:
             return "lottery isn't running! Start Lottery by typing !startLottery", 0
         else:
-            return "lottery is expired! Print results", 0
+            winners = lottery.get_winner()
+            winners_str = ", ".join(winners)
+            if winners:
+                return f"lottery is expired! User {winners_str} had won the Lottery!", 0
+            else:
+                return "lottery is expired! No one had won the Lottery!", 0
 
     elif p_message == "!result":
         if timeLeft < 0:
