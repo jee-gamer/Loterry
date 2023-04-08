@@ -1,14 +1,14 @@
 FROM python:3.10-slim
 
 RUN mkdir -p "/app"
-COPY ./discordBot.py /app
+COPY DiscordBotFile/discordBot.py /app
 
 WORKDIR /app
 
-ENV BotApi="MTA5MjcyNDc0NTQxNTQzMDE1NA.G_OCFi.szV8bVK2E6XdhX84XjlntPOEXyCCxhtvM3qS34"
+ENV BotApi=""
 
 RUN pip install discord
-COPY ./lottery.py /app
+COPY lottery.py /app
 
 ENTRYPOINT [ "python" ]
 
