@@ -35,7 +35,7 @@ def handle_response(message) -> Union[tuple[str, int], str]:
                 lottery.reset()
                 lottery.start()
                 return f"The last lottery winners are {winners_str} \n" \
-                   f"Lottery started! {givenTime} seconds left!", 1
+                       f"Lottery started! {givenTime} seconds left!", 1
 
             else:
                 lottery.reset()
@@ -157,6 +157,7 @@ async def on_reaction_add(reaction, user):
         sent = channel.send
         username = user.name + "#" + user.discriminator
         print(username)
+        message = reaction.message
 
         timeLeft = lottery.time_left()
 
@@ -179,17 +180,17 @@ async def on_reaction_add(reaction, user):
             maxVotes = lottery.get_max_vote()
 
             if sameFruitVote == 1:
-                response = ", you already voted this fruit!"
-                await sent(user.name + response)
+                response = f"{user.name}, you already voted this fruit!"
+                await message.edit(content=response)
 
             elif vote_count < maxVotes and sameFruitVote == 0:
                 response = f"{user} voted {reaction}"
-                await sent(response)
+                await message.edit(content=response)
                 lottery.store_vote(reaction, username)
 
             else:
-                response = ", you already voted 3 fruit!"
-                await sent(user.name + response)
+                response = f"{user.name}, you already voted 3 fruit!"
+                await message.edit(content=response)
     else:
         logging.warning("This function doesn't work in private messages!")
 
