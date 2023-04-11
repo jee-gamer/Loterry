@@ -11,7 +11,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Client(intents=intents)
 
-givenTime = 10  # seconds
+givenTime = 10  # minutes
 lottery = Lottery(time_delta=givenTime)
 
 
@@ -19,13 +19,15 @@ def handle_response(message) -> Union[tuple[str, int], str]:
     timeLeft = lottery.time_left()
 
     p_message = message.lower()
+    maxVote = lottery.get_max_vote()
 
     # the value after reply is the emoji status
 
     if p_message == "!startlottery":
         if timeLeft == 0:
             lottery.start()
-            return f"Lottery started! {givenTime} seconds left!", 1
+            return f"Lottery started! {givenTime} minutes left! \n" \
+                   f"You can vote up to {maxVote} fruit", 1
         elif timeLeft < 0:
             winners = lottery.get_winner()
             print(winners)
@@ -35,20 +37,22 @@ def handle_response(message) -> Union[tuple[str, int], str]:
                 lottery.reset()
                 lottery.start()
                 return f"The last lottery winners are {winners_str} \n" \
-                       f"Lottery started! {givenTime} seconds left!", 1
+                       f"Lottery started! {givenTime} minutes left!", 1
 
             else:
                 lottery.reset()
                 lottery.start()
                 return f"No one had won the last lottery!\n" \
-                       f"Lottery started! {givenTime} seconds left!", 1
+                       f"Lottery started! {givenTime} minutes left!", 1
 
         else:
-            return f"lottery is running. {timeLeft} seconds left!", 1
+            return f"lottery is running. {timeLeft} minutes left! \n" \
+                   f"You can vote up to {maxVote} fruit", 1
 
     elif p_message == "!lottery":
         if timeLeft > 0:
-            return f"lottery is running. {timeLeft} seconds left!", 1
+            return f"lottery is running. {timeLeft} minutes left! \n" \
+                   f"You can vote up to {maxVote} fruit", 1
         elif timeLeft == 0:
             return "lottery isn't running! Start Lottery by typing !startLottery", 0
         else:
@@ -71,7 +75,8 @@ def handle_response(message) -> Union[tuple[str, int], str]:
         elif timeLeft == 0:
             return "lottery isn't running! Start Lottery by typing !startLottery", 0
         else:
-            return f"lottery is running. {timeLeft} seconds left!", 1
+            return f"lottery is running. {timeLeft} minutes left! \n" \
+                   f"You can vote up to {maxVote} fruit", 1
 
     elif p_message == "!help":
         reply = (
@@ -168,6 +173,7 @@ async def on_reaction_add(reaction, user):
         emojiDict = lottery.get_emoji_dict()
         weirdEmoji = False
         reaction = emojiDict.get(reaction.emoji)
+        maxVote = lottery.get_max_vote()
 
         if reaction is None:
             weirdEmoji = True
@@ -180,16 +186,19 @@ async def on_reaction_add(reaction, user):
             maxVotes = lottery.get_max_vote()
 
             if sameFruitVote == 1:
-                response = f"{user.name}, you already voted this fruit!"
+                response = f"You can vote up to {maxVote} fruit" \
+                           f"{user.name}, you already voted this fruit!"
                 await message.edit(content=response)
 
             elif vote_count < maxVotes and sameFruitVote == 0:
-                response = f"{user} voted {reaction}"
+                response = f"You can vote up to {maxVote} fruit" \
+                           f"{user} voted {reaction}"
                 await message.edit(content=response)
                 lottery.store_vote(reaction, username)
 
             else:
-                response = f"{user.name}, you already voted 3 fruit!"
+                response = f"You can vote up to {maxVote} fruit" \
+                           f"{user.name}, you already voted 3 fruit!"
                 await message.edit(content=response)
     else:
         logging.warning("This function doesn't work in private messages!")

@@ -78,7 +78,7 @@ class Lottery(object):
             logging.warning("trying to start already started lottery")
             return
         self._start = int(datetime.now().timestamp())
-        self._end = self._start + self._delta
+        self._end = self._start + (self._delta * 60)
         self._votes = {}
         self._win_hit = -1
 
@@ -89,13 +89,14 @@ class Lottery(object):
         else:
             return self._win_hit_map[self._win_hit]
 
-    def time_left(self):
+    def time_left(self):  # in minutes
         if self._start == 0:
             return 0
         timeLeft = self._end - datetime.now().timestamp()
         if timeLeft < 0:
             result = self.finish()
             logging.debug(f"finished lottery {result}")
+        timeLeft = (timeLeft/60)
         return timeLeft
 
     def reset(self):
