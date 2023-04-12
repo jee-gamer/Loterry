@@ -37,3 +37,17 @@ class User(Base):
 
 # create tables
 Base.metadata.create_all(engine)
+
+if __name__ == "__main__":
+    from sqlalchemy.orm import sessionmaker
+
+    # create a Session
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Create objects
+    user = User(9, "@NotJaykayy", "Jiramate", "Kedmake")
+    session.add(user)
+
+    # commit the record the database
+    session.commit()
