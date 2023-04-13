@@ -2,8 +2,10 @@ from datetime import datetime
 
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String, Boolean
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import sessionmaker
+import logging
 
 engine = create_engine("sqlite:///user.db", echo=True)
 Base = declarative_base()
@@ -19,8 +21,8 @@ class User(Base):
     alias = Column(String)
     firstName = Column(String)
     lastName = Column(String)
-    createdAt = Column(String)  # timestamp
-    updatedAt = Column(String)  # timestamp
+    createdAt = Column(Integer)  # timestamp
+    updatedAt = Column(Integer)  # timestamp
     enabled = Column(Boolean)
 
     # ----------------------------------------------------------------------
@@ -39,14 +41,14 @@ class User(Base):
 Base.metadata.create_all(engine)
 
 if __name__ == "__main__":
-    from sqlalchemy.orm import sessionmaker
 
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
     # create a Session
     Session = sessionmaker(bind=engine)
     session = Session()
 
     # Create objects
-    user = User(9, "@NotJaykayy", "Jiramate", "Kedmake")
+    user = User(1121, "@NotJaykayy", "Jiramate", "Kedmake")
     session.add(user)
 
     # commit the record the database

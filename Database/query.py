@@ -1,4 +1,5 @@
 import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from model import User
@@ -9,12 +10,22 @@ engine = create_engine('sqlite:///user.db', echo=False)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+# edit table
+user = session.query(User).filter_by(idUser=9).first()
+
+user.username = "@NewUsername"
+user.firstName = "FirstName"
+user.lastName = "NewLastName"
+
+session.commit()
+
 # Create objects
 aliases = []
 print(f"\tFirst Name\tLast Name\tEnabled")
 
 for u in session.query(User).filter(User.firstName == "Jiramate"):
-    print(f"\t{u.firstName}\t{u.lastName}\t{u.enabled}")
+    print(f"\t{u.firstName}\t{u.lastName.strip()}\t\t{u.enabled}")
+
 
 
 
