@@ -23,6 +23,10 @@ class User(Base):
     lastName = Column(String)
     createdAt = Column(Integer)  # timestamp
     updatedAt = Column(Integer)  # timestamp
+    F1 = Column(Integer) # Fruit 1
+    F2 = Column(Integer)
+    F3 = Column(Integer)
+    F4 = Column(Integer)
     enabled = Column(Boolean)
 
     # ----------------------------------------------------------------------
@@ -32,6 +36,10 @@ class User(Base):
         self.alias = alias
         self.firstName = firstName
         self.lastName = lastName
+        self.F1 = 0
+        self.F2 = 0
+        self.F3 = 0
+        self.F4 = 0
         self.createdAt = datetime.now().timestamp()
         self.updatedAt = self.createdAt
         self.enabled = False
@@ -48,7 +56,7 @@ if __name__ == "__main__":
     session = Session()
 
     # Create objects
-    user = User(1121, "@NotJaykayy", "Jiramate", "Kedmake")
+    user = User(11121, "@NotJaykayy", "Jiramate", "Kedmake")
     session.add(user)
 
     # commit the record the database
