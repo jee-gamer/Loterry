@@ -27,7 +27,7 @@ class User(Base):
     enabled = Column(Boolean)
 
     # ----------------------------------------------------------------------
-    def __init__(self, idUser, alias, firstName, lastName, lotteryId):
+    def __init__(self, idUser, alias, firstName, lastName):
         """"""
         self.idUser = idUser
         self.alias = alias
@@ -35,7 +35,7 @@ class User(Base):
         self.lastName = lastName
         self.createdAt = datetime.now().timestamp()
         self.updatedAt = self.createdAt
-        self.lotteryId = lotteryId
+        self.lotteryId = None
         self.enabled = False
 
 
@@ -77,8 +77,8 @@ if __name__ == "__main__":
     session = Session()
 
     # Create objects
-    user = User(11121, "@NotJaykayy", "Jiramate", "Kedmake")
-    session.add(user)
+    # user = User(11, "@NotJaykayy", "Jiramate", "Kedmake")
+    # session.add(user)
 
     # commit the record the database
     session.commit()

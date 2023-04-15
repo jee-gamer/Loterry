@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,12 +12,14 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # edit table
-user = session.query(User).filter_by(idUser=9).first()
+user = session.query(User).filter_by(idUser=11).first()
 
-user.username = "@NewUsername"
-user.firstName = "FirstName"
-user.lastName = "NewLastName"
-
+if user:
+    user.username = "@NewUsername"
+    user.firstName = "FirstName"
+    user.lastName = "NewLastName"
+else:
+    logging.warning("user not found")
 session.commit()
 
 # Create objects
