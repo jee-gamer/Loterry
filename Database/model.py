@@ -23,10 +23,6 @@ class User(Base):
     lastName = Column(String)
     createdAt = Column(Integer)  # timestamp
     updatedAt = Column(Integer)  # timestamp
-    F1 = Column(Integer) # Fruit 1
-    F2 = Column(Integer)
-    F3 = Column(Integer)
-    F4 = Column(Integer)
     enabled = Column(Boolean)
 
     # ----------------------------------------------------------------------
@@ -36,12 +32,37 @@ class User(Base):
         self.alias = alias
         self.firstName = firstName
         self.lastName = lastName
+        self.createdAt = datetime.now().timestamp()
+        self.updatedAt = self.createdAt
+        self.enabled = False
+
+class Lottery(Base):
+    """"""
+
+    __tablename__ = "Lottery"
+
+    idUser = Column(Integer, primary_key=True)
+    alias = Column(String)
+    firstName = Column(String)
+    lastName = Column(String)
+    createdAt = Column(Integer)  # timestamp
+    updatedAt = Column(Integer)  # timestamp
+    F1 = Column(Integer)  # Fruit 1
+    F2 = Column(Integer)
+    F3 = Column(Integer)
+    F4 = Column(Integer)
+    enabled = Column(Boolean)
+
+    # ----------------------------------------------------------------------
+    def __init__(self, idUser, alias, firstName, lastName):
+        """"""
+        self.idUser = idUser
         self.F1 = 0
         self.F2 = 0
         self.F3 = 0
         self.F4 = 0
-        self.createdAt = datetime.now().timestamp()
-        self.updatedAt = self.createdAt
+        self.createdAt = datetime.now().timestamp()  # first time user voted
+        self.updatedAt = self.createdAt  # last time user voted
         self.enabled = False
 
 
