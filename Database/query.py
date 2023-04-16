@@ -12,7 +12,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # edit table
-user = session.query(User).filter_by(idUser=11).first()
+user = session.query(User).filter_by(idUser=12).first()
 
 if user:
     user.username = "@NewUsername"
@@ -28,6 +28,9 @@ print(f"\tFirst Name\tLast Name\tEnabled")
 
 for u in session.query(User).filter(User.firstName == "Jiramate"):
     print(f"\t{u.firstName}\t{u.lastName.strip()}\t\t{u.enabled}")
+    l = u.lottery
+    print(l.idLottery)
+    print(f"\t{l.F1}\t{l.F2}\t\t{l.F3}\t{l.F4}")
 
 
 
