@@ -44,8 +44,6 @@ class User(Base):
 
 
 class Lottery(Base):
-    """"""
-
     __tablename__ = "Lottery"
 
     idLottery = mapped_column(Integer, primary_key=True)
@@ -53,27 +51,23 @@ class Lottery(Base):
     running = mapped_column(Boolean)
 
     # ----------------------------------------------------------------------
-    def __init__(self, id):
+    def __init__(self, idLottery):
         """"""
-        self.idLottery = id
+        self.idLottery = idLottery
         self.createdAt = datetime.now()
         self.running = False
 
 
 class Bet(Base):
-    """"""
-
     __tablename__ = "Bet"
-
     idBet = mapped_column(Integer, primary_key=True)
     idUser = mapped_column(Integer, ForeignKey("User.idUser"))
-    lotteryId = mapped_column(Integer)
-    # ForeignKey("Lottery.idLottery")
+    idLottery = mapped_column(Integer, ForeignKey("Lottery.idLottery"))
     userBet = mapped_column(Integer)
     createdAt = mapped_column(DateTime)
 
-    # lottery = relationship("Lottery", foreign_keys="Lottery.idLottery")
-    user = relationship("User", foreign_keys="User.idUser")
+    lottery = relationship("Lottery", foreign_keys="Bet.idLottery")
+    user = relationship("User", foreign_keys="Bet.idUser")
     # ----------------------------------------------------------------------
 
     def __init__(self, idUser, lotteryId, userBet):
@@ -94,7 +88,7 @@ if __name__ == "__main__":
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    lottery = Lottery(id=0)
+    lottery = Lottery(idLottery=0)
     session.add(lottery)
     session.commit()
 
