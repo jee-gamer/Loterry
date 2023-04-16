@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 RUN mkdir -p "/app"
-COPY Database/model.py /app
+COPY Database/database/model.py /app
 # uhh use query or model??
 
 

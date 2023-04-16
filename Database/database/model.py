@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String, Boolean, DateTime
 
@@ -7,20 +6,14 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import mapped_column
-
 import logging
 
-engine = create_engine("sqlite:///user.db", echo=True)
 
 class Base(DeclarativeBase):
     pass
 
-########################################################################
-
 
 class User(Base):
-    """"""
-
     __tablename__ = "User"
 
     idUser = mapped_column(Integer, primary_key=True)
@@ -31,7 +24,7 @@ class User(Base):
     updatedAt = mapped_column(DateTime)  # timestamp
     enabled = mapped_column(Boolean)
 
-    # ----------------------------------------------------------------------
+
     def __init__(self, idUser, alias, firstName, lastName):
         """"""
         self.idUser = idUser
@@ -68,20 +61,18 @@ class Bet(Base):
 
     lottery = relationship("Lottery", foreign_keys="Bet.idLottery")
     user = relationship("User", foreign_keys="Bet.idUser")
-    # ----------------------------------------------------------------------
 
     def __init__(self, idUser, lotteryId, userBet):
-        """"""
         self.idUser = idUser
         self.lotteryId = lotteryId
         self.userBet = userBet
         self.createdAt = datetime.now()
 
 
-# create tables
-Base.metadata.create_all(engine)
-
 if __name__ == "__main__":
+    engine = create_engine("sqlite:///user.db", echo=True)
+    # create tables
+    Base.metadata.create_all(engine)
 
     logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
     # create a Session
