@@ -16,6 +16,8 @@ class Base(DeclarativeBase):
     pass
 
 ########################################################################
+
+
 class User(Base):
     """"""
 
@@ -27,13 +29,10 @@ class User(Base):
     lastName = mapped_column(String)
     createdAt = mapped_column(DateTime)  # timestamp
     updatedAt = mapped_column(DateTime)  # timestamp
-    lotteryId = mapped_column(Integer, ForeignKey("Lottery.idLottery"))
     enabled = mapped_column(Boolean)
 
-    lottery = relationship("Lottery", foreign_keys="User.lotteryId")
-
     # ----------------------------------------------------------------------
-    def __init__(self, idUser, alias, firstName, lastName, lottery = None):
+    def __init__(self, idUser, alias, firstName, lastName):
         """"""
         self.idUser = idUser
         self.alias = alias
@@ -41,7 +40,6 @@ class User(Base):
         self.lastName = lastName
         self.createdAt = datetime.now()
         self.updatedAt = self.createdAt
-        self.lotteryId = lottery
         self.enabled = False
 
 
@@ -52,24 +50,38 @@ class Lottery(Base):
 
     idLottery = mapped_column(Integer, primary_key=True)
     createdAt = mapped_column(DateTime)
-    updatedAt = mapped_column(DateTime)
-    F1 = mapped_column(Integer)  # Fruit 1
-    F2 = mapped_column(Integer)
-    F3 = mapped_column(Integer)
-    F4 = mapped_column(Integer)
-    enabled = mapped_column(Boolean)
+    running = mapped_column(Boolean)
 
     # ----------------------------------------------------------------------
     def __init__(self, id):
         """"""
         self.idLottery = id
-        self.F1 = 0
-        self.F2 = 0
-        self.F3 = 0
-        self.F4 = 0
         self.createdAt = datetime.now()
-        self.updatedAt = self.createdAt
-        self.enabled = False
+        self.running = False
+
+
+class Bet(Base):
+    """"""
+
+    __tablename__ = "Bet"
+
+    idBet = mapped_column(Integer, primary_key=True)
+    idUser = mapped_column(Integer, ForeignKey("User.idUser"))
+    lotteryId = mapped_column(Integer)
+    # ForeignKey("Lottery.idLottery")
+    userBet = mapped_column(Integer)
+    createdAt = mapped_column(DateTime)
+
+    # lottery = relationship("Lottery", foreign_keys="Lottery.idLottery")
+    user = relationship("User", foreign_keys="User.idUser")
+    # ----------------------------------------------------------------------
+
+    def __init__(self, idUser, lotteryId, userBet):
+        """"""
+        self.idUser = idUser
+        self.lotteryId = lotteryId
+        self.userBet = userBet
+        self.createdAt = datetime.now()
 
 
 # create tables
@@ -87,9 +99,9 @@ if __name__ == "__main__":
     session.commit()
 
     # Create objects
-    user = User(11, "@NotJaykayy", "Jiramate", "Kedmake", lottery.idLottery)
+    user = User(11, "@NotJaykayy", "Jiramate", "Kedmake")
     session.add(user)
-    user = User(12, "@Someone", "Some", "Some", lottery.idLottery)
+    user = User(12, "@Someone", "Some", "Some")
     session.add(user)
 
     # commit the record the database
