@@ -62,34 +62,39 @@ class Bet(Base):
     lottery = relationship("Lottery", foreign_keys="Bet.idLottery")
     user = relationship("User", foreign_keys="Bet.idUser")
 
-    def __init__(self, idUser, lotteryId, userBet):
+    def __init__(self, idBet, idUser, idLottery, userBet):
+        self.idBet = idBet
         self.idUser = idUser
-        self.lotteryId = lotteryId
+        self.idLottery = idLottery
         self.userBet = userBet
         self.createdAt = datetime.now()
 
 
 if __name__ == "__main__":
-    engine = create_engine("sqlite:///user.db", echo=True)
-    # create tables
-    Base.metadata.create_all(engine)
-
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-    # create a Session
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    lottery = Lottery(idLottery=0)
-    session.add(lottery)
-    session.commit()
-
-    # Create objects
-    user = User(11, "@NotJaykayy", "Jiramate", "Kedmake")
-    session.add(user)
-    user = User(12, "@Someone", "Some", "Some")
-    session.add(user)
-
-    # commit the record the database
-    session.commit()
+    pass
+    # engine = create_engine("sqlite:///user.db", echo=True)
+    # # create tables
+    # Base.metadata.create_all(engine)
+    #
+    # logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+    # # create a Session
+    # Session = sessionmaker(bind=engine)
+    # session = Session()
+    #
+    # lottery = Lottery(idLottery=0)
+    # session.add(lottery)
+    # session.commit()
+    #
+    # # Create objects
+    # user = User(11, "@NotJaykayy", "Jiramate", "Kedmake")
+    # session.add(user)
+    # user = User(12, "@Someone", "Some", "Some")
+    # session.add(user)
+    # userVote = Bet(11, 1, 1)
+    # session.add(userVote)
+    # userVote = Bet(9, 1, 1)
+    # session.add(userVote)
+    # # commit the record the database
+    # session.commit()
 
 
