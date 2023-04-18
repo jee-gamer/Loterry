@@ -36,6 +36,15 @@ def get_users_vote():
     return f"<p>{output}</p>"
 
 
+@app.route("/lottery")
+def lottery_list():
+
+    output = ""
+    for lottery in session.query(Lottery):
+        output += f"\t{lottery.idLottery}\t{lottery.createdAt}\t{lottery.running}<br>"
+    return f"<p>{output}</p>"
+
+
 @app.route("/add_user", methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
