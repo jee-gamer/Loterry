@@ -1,7 +1,8 @@
-from flask import Flask
+from flask import Flask, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.serving import run_simple
 
+import Database.app
 # DB Stuff
 from Database.database import Base, User, Bet, Lottery
 from sqlalchemy import create_engine
@@ -33,6 +34,18 @@ def get_users_vote():
     for b in session.query(Bet):
         output += f"\t{b.idBet}\t{b.idUser}\t{b.idLottery}\t\t{b.userBet}<br>"
     return f"<p>{output}</p>"
+
+
+@app.route("/add_user", methods=['GET', 'POST'])
+def add_user():
+    if request.method == 'POST':
+        id = request.form['id']
+        user = User(id, "@EEE", "yeah", "deez")
+        session.add(user)
+        session.commit()
+        return 'User added to database'
+    else:
+        return render_template('add_user.html')
 
 
 if __name__ == '__main__':
