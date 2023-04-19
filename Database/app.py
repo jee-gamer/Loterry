@@ -44,6 +44,7 @@ def lottery_list():
         output += f"\t{lottery.idLottery}\t{lottery.createdAt}\t{lottery.running}\n"
     return render_template('message.html', message=f"{output}")
 
+
 @app.route("/add_user", methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
