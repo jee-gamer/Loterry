@@ -7,7 +7,13 @@
     <h1>Add User</h1>
     <form method="post">
       <label>ID:</label>
-      <input type="text" name="id">
+      <input type="text" name="id" value="{{lastId}}">
+      <label>Alias:</label>
+      <input type="text" name="alias" value="anonymous">
+      <label>First Name:</label>
+      <input type="text" name="firstName" value="anonymous">
+      <label>Last Name:</label>
+      <input type="text" name="lastName" value="anonymous">
       <br>
       <input type="submit" value="Add User">
     </form>

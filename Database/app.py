@@ -23,8 +23,8 @@ def get_users():
 
     output = ""
     for u in session.query(User):
-        output += f"\t{u.firstName}\t{u.lastName.strip()}\t\t{u.enabled}<br>"
-    return f"<p>{output}</p>"
+        output += f"\t{u.firstName}\t{u.lastName.strip()}\t\t{u.enabled}\n"
+    return render_template('message.html', message=f"{output}")
 
 
 @app.route("/users_vote")
@@ -32,8 +32,8 @@ def get_users_vote():
 
     output = ""
     for b in session.query(Bet):
-        output += f"\t{b.idBet}\t{b.idUser}\t{b.idLottery}\t\t{b.userBet}<br>"
-    return f"<p>{output}</p>"
+        output += f"\t{b.idBet}\t{b.idUser}\t{b.idLottery}\t\t{b.userBet}\n"
+    return render_template('message.html', message=f"{output}")
 
 
 @app.route("/lottery")
@@ -41,20 +41,24 @@ def lottery_list():
 
     output = ""
     for lottery in session.query(Lottery):
-        output += f"\t{lottery.idLottery}\t{lottery.createdAt}\t{lottery.running}<br>"
-    return f"<p>{output}</p>"
-
+        output += f"\t{lottery.idLottery}\t{lottery.createdAt}\t{lottery.running}\n"
+    return render_template('message.html', message=f"{output}")
 
 @app.route("/add_user", methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
+
         id = request.form['id']
-        user = User(id, "@EEE", "yeah", "deez")
+        alias = request.form['alias']
+        firstName = request.form['firstName']
+        lastName = request.form['lastName']
+        user = User(id, alias, firstName, lastName)
         session.add(user)
         session.commit()
-        return 'User added to database'
+        return render_template('message.html', message="User added to database")
     else:
-        return render_template('add_user.html')
+        size = len(session.query(User).all()) + 1
+        return render_template('add_user.html', lastId=size)
 
 
 if __name__ == '__main__':
