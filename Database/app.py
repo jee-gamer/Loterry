@@ -22,13 +22,14 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-### REST Application Programming Interface
+
+# REST Application Programming Interface
 @app.route("/api/users")
 def get_api_users():
     return jsonify([u.as_dict() for u in session.query(User)])
 
 
-### User Interface in Browser
+# User Interface in Browser
 @app.route("/users")
 def get_users():
     output = ""
@@ -37,12 +38,22 @@ def get_users():
     return render_template("message.html", message=f"{output}")
 
 
+@app.route("/api/users_vote")
+def get_api_users_vote():
+    return jsonify([u.as_dict() for u in session.query(Bet)])
+
+
 @app.route("/users_vote")
 def get_users_vote():
     output = ""
     for b in session.query(Bet):
         output += f"\t{b.idBet}\t{b.idUser}\t{b.idLottery}\t\t{b.userBet}\n"
     return render_template("message.html", message=f"{output}")
+
+
+@app.route("/api/lottery")
+def api_lottery_list():
+    return jsonify([u.as_dict() for u in session.query(Lottery)])
 
 
 @app.route("/lottery")
