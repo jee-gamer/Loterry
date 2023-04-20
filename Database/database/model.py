@@ -10,6 +10,8 @@ import logging
 
 
 class Base(DeclarativeBase):
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
     pass
 
 
@@ -24,7 +26,6 @@ class User(Base):
     updatedAt = mapped_column(DateTime)  # timestamp
     enabled = mapped_column(Boolean)
 
-
     def __init__(self, idUser, alias, firstName, lastName):
         """"""
         self.idUser = idUser
@@ -34,7 +35,6 @@ class User(Base):
         self.createdAt = datetime.now()
         self.updatedAt = self.createdAt
         self.enabled = False
-
 
 class Lottery(Base):
     __tablename__ = "Lottery"
@@ -96,5 +96,3 @@ if __name__ == "__main__":
     # session.add(userVote)
     # # commit the record the database
     # session.commit()
-
-

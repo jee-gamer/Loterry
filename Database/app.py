@@ -1,8 +1,9 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.serving import run_simple
-
+import json
 import Database.app
+
 # DB Stuff
 from Database.database import Base, User, Bet, Lottery
 from sqlalchemy import create_engine
@@ -11,63 +12,67 @@ from sqlalchemy.orm import sessionmaker
 import logging
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user.db'  # root is in big Database file
+app.config[
+    "SQLALCHEMY_DATABASE_URI"
+] = "sqlite:///user.db"  # root is in big Database file
 db = SQLAlchemy(app)
 
-engine = create_engine('sqlite:///user.db', echo=True)
+engine = create_engine("sqlite:///user.db", echo=True)
 Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+### REST Application Programming Interface
+@app.route("/api/users")
+def get_api_users():
+    return jsonify([u.as_dict() for u in session.query(User)])
 
 
+### User Interface in Browser
 @app.route("/users")
 def get_users():
-
     output = ""
     for u in session.query(User):
         output += f"\t{u.firstName}\t{u.lastName.strip()}\t\t{u.enabled}\n"
-    return render_template('message.html', message=f"{output}")
+    return render_template("message.html", message=f"{output}")
 
 
 @app.route("/users_vote")
 def get_users_vote():
-
     output = ""
     for b in session.query(Bet):
         output += f"\t{b.idBet}\t{b.idUser}\t{b.idLottery}\t\t{b.userBet}\n"
-    return render_template('message.html', message=f"{output}")
+    return render_template("message.html", message=f"{output}")
 
 
 @app.route("/lottery")
 def lottery_list():
-
     output = ""
     for lottery in session.query(Lottery):
         output += f"\t{lottery.idLottery}\t{lottery.createdAt}\t{lottery.running}\n"
-    return render_template('message.html', message=f"{output}")
+    return render_template("message.html", message=f"{output}")
 
 
-@app.route("/add_user", methods=['GET', 'POST'])
+@app.route("/add_user", methods=["GET", "POST"])
 def add_user():
-    if request.method == 'POST':
-
-        id = request.form['id']
-        alias = request.form['alias']
-        firstName = request.form['firstName']
-        lastName = request.form['lastName']
+    if request.method == "POST":
+        id = request.form["id"]
+        alias = request.form["alias"]
+        firstName = request.form["firstName"]
+        lastName = request.form["lastName"]
         user = User(id, alias, firstName, lastName)
         session.add(user)
         session.commit()
-        return render_template('message.html', message="User added to database")
+        return render_template("message.html", message="User added to database")
     else:
         size = len(session.query(User).all()) + 1
-        return render_template('add_user.html', lastId=size)
+        return render_template("add_user.html", lastId=size)
 
 
-if __name__ == '__main__':
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+if __name__ == "__main__":
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
     # create a Session
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
+    """
     lottery = Lottery(4245577817787)
     session.add(lottery)
     session.commit()
@@ -84,9 +89,10 @@ if __name__ == '__main__':
     session.add(userVote)
     # commit the record the database
     session.commit()
-
-    run_simple('localhost', 5000, app,
-               use_reloader=False, use_debugger=True, use_evalex=True)
+    """
+    run_simple(
+        "localhost", 5000, app, use_reloader=False, use_debugger=True, use_evalex=True
+    )
 
 # URI
 # http://localhost:5000
@@ -97,4 +103,3 @@ if __name__ == '__main__':
 # GET type of HTTP request, for example POST, PUT, DELETE etc
 # HTTP/1.1 -- protocol, may be HTTPS
 # 200 - Code of the response
-
