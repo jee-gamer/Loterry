@@ -105,6 +105,12 @@ if __name__ == "__main__":
         "localhost", 5000, app, use_reloader=False, use_debugger=True, use_evalex=True
     )
 
+# need to get
+# lottery start time
+# max votes
+# time left
+# vote from specific user on specific lottery
+
 # URI
 # http://localhost:5000
 # http -- protocol, also possible HTTPS
