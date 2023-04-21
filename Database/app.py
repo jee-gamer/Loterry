@@ -110,6 +110,7 @@ if __name__ == "__main__":
 # max votes
 # time left
 # vote from specific user on specific lottery
+# winning fruit
 
 # URI
 # http://localhost:5000
