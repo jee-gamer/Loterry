@@ -32,7 +32,7 @@ def api_users():
             data = request.get_json()
         except Exception as e:
             logging.error(f"Error parsing request data: {e}")
-            return jsonify({"status": "error", "result": "couldnt parse request"})
+            return jsonify({"status": "error", "result": "couldn't parse request"})
 
         if "id" not in data.keys():
             return jsonify({"status": "error", "result": "incorrect payload"})

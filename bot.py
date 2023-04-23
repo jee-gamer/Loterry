@@ -15,14 +15,14 @@ from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
 
 from os import environ
-
+from datetime import datetime
 from lottery import Lottery
 
 logging.basicConfig(level=logging.INFO)
 
 API_TOKEN = environ.get("BotApi")
-DATABASE_URL = environ.get("DATABASE_URL")
-
+# DATABASE_URL = environ.get("DATABASE_URL")
+DATABASE_URL = "http://localhost:5000"
 
 bot = Bot(token=API_TOKEN)
 
@@ -34,6 +34,29 @@ vote_cb = CallbackData("vote", "action")  # vote:<action>
 givenTime = 10  # minutes
 lottery = Lottery(time_delta=givenTime)
 
+
+def time_left():
+    DATABASE_URL2 = DATABASE_URL + "/api/lottery"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(DATABASE_URL2) as response:
+            if response.status != 200:
+                logging.error(f"Got {response.status} from the database")
+                msg = "Something wrong in the backend. Please try later"
+                logging.info(msg)
+                return
+            data = await response.json()
+            timeLeftUnix = data[0]["createdAt"]
+            now_datetime = datetime.strptime(timeLeftUnix, '%a, %d %b %Y %H:%M:%S %Z')
+            timeLeft = int(datetime.now().timestamp()) - int(now_datetime.timestamp())
+            timeLeft = timeLeft/60
+            print(timeLeft)
+
+            return
+    logging.info(data)
+    if not data or ("status" in data.keys() and data["status"] == "error"):
+        logging.error(f"Received {data} from the database")
+        msg = "Something wrong in the backend. Please try later"
+        return "reply"
 
 def get_keyboard():
     keyboard = types.InlineKeyboardMarkup()
@@ -59,6 +82,7 @@ def get_keyboard():
 
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
+    DATABASE_URL2 = DATABASE_URL+"/api/users"
     data = None
     user_data = {
         "id": message.from_user.id,
@@ -67,7 +91,7 @@ async def cmd_start(message: types.Message):
         "lastName": message.from_user.last_name,
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(DATABASE_URL, json=user_data) as response:
+        async with session.post(DATABASE_URL2, json=user_data) as response:
             if response.status != 200:
                 logging.error(f"Got {response.status} from the database")
                 msg = "Something wrong in the backend. Please try later"
@@ -93,8 +117,10 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
+
     timeLeft = lottery.time_left()
     maxVote = lottery.get_max_vote()
+
     if timeLeft == 0:
         lottery.start()
         await message.reply(
