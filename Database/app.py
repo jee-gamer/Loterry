@@ -38,8 +38,7 @@ def api_users():
             return jsonify({"status": "error", "result": "incorrect payload"})
 
         q = session.query(User).filter(User.idUser == data["id"])
-
-        if q.count() > 0:
+        if q.count() == 1:
             return jsonify({"status": "ok", "result": q.one().as_dict()})
 
         id = data["id"]

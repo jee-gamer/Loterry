@@ -24,13 +24,18 @@ else:
 session.commit()
 """
 
+q = session.query(User).filter(User.firstName == "Jiramate")
+print(q.count())
+print(f"q.all() = {type(q.all())}")
+#print(f"q.one() = {type(q.one())}")
+
+
 # Create objects
 aliases = []
 print(f"\tFirst Name\tLast Name\tEnabled")
-
-
 for u in session.query(User).filter(User.firstName == "Jiramate"):
+    print(f"{u.idUser}")
     print(f"\t{u.firstName}\t{u.lastName.strip()}\t\t{u.enabled}")
-    l = u.lottery
-    print(l.idLottery)
-    print(f"\t{l.F1}\t{l.F2}\t\t{l.F3}\t{l.F4}")
+    #l = u.lottery
+    #print(l.idLottery)
+    #print(f"\t{l.F1}\t{l.F2}\t\t{l.F3}\t{l.F4}")
