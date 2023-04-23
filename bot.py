@@ -2,9 +2,12 @@
 This is a simple example of usage of CallbackData factory
 For more comprehensive example see callback_data_factory.py
 """
-
+import json
 import logging
 import typing
+
+import aiohttp
+import asyncio
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
@@ -18,6 +21,7 @@ from lottery import Lottery
 logging.basicConfig(level=logging.INFO)
 
 API_TOKEN = environ.get("BotApi")
+DATABASE_URL = environ.get("DATABASE_URL")
 
 
 bot = Bot(token=API_TOKEN)
@@ -55,6 +59,27 @@ def get_keyboard():
 
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
+    data = None
+    user_data = {
+        "id": message.from_user.id,
+        "alias": message.from_user.username,
+        "firstName": message.from_user.first_name,
+        "lastName": message.from_user.last_name,
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(DATABASE_URL, json=user_data) as response:
+            if response.status != 200:
+                logging.error(f"Got {response.status} from the database")
+                msg = "Something wrong in the backend. Please try later"
+                return await message.reply(msg)
+            data = await response.json()
+
+    logging.info(data)
+    if not data or ("status" in data.keys() and data["status"] == "error"):
+        logging.error(f"Received {data} from the database")
+        msg = "Something wrong in the backend. Please try later"
+        return await message.reply(msg)
+
     await message.reply(
         "Welcome here. This is a Lottery bot where people play against each other"
         "\n"
@@ -72,8 +97,11 @@ async def cmd_start(message: types.Message):
     maxVote = lottery.get_max_vote()
     if timeLeft == 0:
         lottery.start()
-        await message.reply(f"Lottery started! {givenTime} minutes left! \n"
-                            f"You can vote up to {maxVote} fruit", reply_markup=get_keyboard())
+        await message.reply(
+            f"Lottery started! {givenTime} minutes left! \n"
+            f"You can vote up to {maxVote} fruit",
+            reply_markup=get_keyboard(),
+        )
     elif timeLeft < 0:
         winners = lottery.get_winner()
         print(winners)
@@ -82,34 +110,52 @@ async def cmd_start(message: types.Message):
         if winners:
             lottery.reset()
             lottery.start()
-            await message.reply(f"The last lottery winners are {winners_str} \n"
-                                f"Lottery started! {givenTime} minutes left!", reply_markup=get_keyboard())
+            await message.reply(
+                f"The last lottery winners are {winners_str} \n"
+                f"Lottery started! {givenTime} minutes left!",
+                reply_markup=get_keyboard(),
+            )
 
         else:
             lottery.reset()
             lottery.start()
-            await message.reply(f"No one had won the last lottery!\n"
-                                f"Lottery started! {givenTime} minutes left!", reply_markup=get_keyboard())
+            await message.reply(
+                f"No one had won the last lottery!\n"
+                f"Lottery started! {givenTime} minutes left!",
+                reply_markup=get_keyboard(),
+            )
 
     else:
-        await message.reply(f"Lottery is running! {timeLeft} minutes left! \n"
-                            f"You can vote up to {maxVote} fruit", reply_markup=get_keyboard())
+        await message.reply(
+            f"Lottery is running! {timeLeft} minutes left! \n"
+            f"You can vote up to {maxVote} fruit",
+            reply_markup=get_keyboard(),
+        )
 
 
-@dp.message_handler(commands=["Lottery", "lottery"])  # lottery = 2 is when we got the result
+@dp.message_handler(
+    commands=["Lottery", "lottery"]
+)  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
     timeLeft = lottery.time_left()
     maxVote = lottery.get_max_vote()
     if timeLeft > 0:
-        await message.reply(f"lottery is running. {timeLeft} minutes left! \n"
-                            f"You can vote up to {maxVote} fruit", reply_markup=get_keyboard())
+        await message.reply(
+            f"lottery is running. {timeLeft} minutes left! \n"
+            f"You can vote up to {maxVote} fruit",
+            reply_markup=get_keyboard(),
+        )
     elif timeLeft == 0:
-        await message.reply("lottery isn't running! Start Lottery by typing !startLottery")
+        await message.reply(
+            "lottery isn't running! Start Lottery by typing !startLottery"
+        )
     else:
         winners = lottery.get_winner()
         winners_str = ", ".join(winners)
         if winners:
-            await message.reply(f"lottery is expired! User {winners_str} had won the Lottery!")
+            await message.reply(
+                f"lottery is expired! User {winners_str} had won the Lottery!"
+            )
         else:
             await message.reply("lottery is expired! No one had won the Lottery!")
 
@@ -127,10 +173,15 @@ async def cmd_start(message: types.Message):
         else:
             await message.reply("No one had won the Lottery!")
     elif timeLeft == 0:
-        await message.reply("lottery isn't running! Start Lottery by typing !startLottery")
+        await message.reply(
+            "lottery isn't running! Start Lottery by typing !startLottery"
+        )
     else:
-        await message.reply(f"lottery is running! {timeLeft} minutes left! \n"
-                            f"You can vote up to {maxVote} fruit", reply_markup=get_keyboard())
+        await message.reply(
+            f"lottery is running! {timeLeft} minutes left! \n"
+            f"You can vote up to {maxVote} fruit",
+            reply_markup=get_keyboard(),
+        )
 
 
 @dp.callback_query_handler(
@@ -186,8 +237,7 @@ async def callback_vote_action(
 
         elif vote_count < maxVotes and sameFruitVote == 0:
             await bot.edit_message_text(
-                f"{user_id} voted {reaction} \n"
-                f"{timeLeft} minutes left ",
+                f"{user_id} voted {reaction} \n" f"{timeLeft} minutes left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),
@@ -196,8 +246,7 @@ async def callback_vote_action(
 
         else:
             await bot.edit_message_text(
-                f"User {user_id} already voted 3 fruit! \n"
-                f"{timeLeft} minutes left ",
+                f"User {user_id} already voted 3 fruit! \n" f"{timeLeft} minutes left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),

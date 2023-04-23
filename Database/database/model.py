@@ -12,6 +12,7 @@ import logging
 class Base(DeclarativeBase):
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
     pass
 
 
@@ -35,6 +36,7 @@ class User(Base):
         self.createdAt = datetime.now()
         self.updatedAt = self.createdAt
         self.enabled = False
+
 
 class Lottery(Base):
     __tablename__ = "Lottery"

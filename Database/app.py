@@ -24,9 +24,67 @@ session = Session()
 
 
 # REST Application Programming Interface
-@app.route("/api/users")
-def get_api_users():
-    return jsonify([u.as_dict() for u in session.query(User)])
+@app.route("/api/users", methods=["GET", "POST"])
+def api_users():
+    if request.method == "POST":
+        # curl -X POST "http://localhost:5000/api/users" -d '{"id": 1,"alias": "some","firstName": "some","lastName": "some"}' -H 'Content-Type: application/json'
+        try:
+            data = request.get_json()
+        except Exception as e:
+            logging.error(f"Error parsing request data: {e}")
+            return jsonify({"status": "error", "result": "couldnt parse request"})
+
+        if "id" not in data.keys():
+            return jsonify({"status": "error", "result": "incorrect payload"})
+
+        q = session.query(User).filter(User.idUser == data["id"])
+
+        if q.count() > 0:
+            return jsonify({"status": "ok", "result": q.one().as_dict()})
+
+        id = data["id"]
+        alias = data["alias"]
+        firstName = data["firstName"]
+        lastName = data["lastName"]
+        user = User(id, alias, firstName, lastName)
+        session.add(user)
+        session.commit()
+        return jsonify({"status": "ok", "result": user.as_dict()})
+
+    else:
+        return jsonify([u.as_dict() for u in session.query(User)])
+
+
+@app.route("/add_user")
+def add_user():
+    if request.method == "POST":
+        user = session.query(User).filter(User.idUser == request.form["id"]).one()
+
+        if user:
+            return render_template("message.html", message="User already exists")
+
+        id = request.form["id"]
+        alias = request.form["alias"]
+        firstName = request.form["firstName"]
+        lastName = request.form["lastName"]
+        user = User(id, alias, firstName, lastName)
+        session.add(user)
+        session.commit()
+
+        return render_template("message.html", message="User added to database")
+    else:
+        size = len(session.query(User).all()) + 1
+        return render_template("add_user.html", lastId=size)
+
+
+@app.route("/api/users_vote")
+def get_api_users_vote():
+    return jsonify([v.as_dict() for v in session.query(Bet)])
+
+
+@app.route("/api/lottery")
+def api_lottery_list():
+    return jsonify([l.as_dict() for l in session.query(Lottery)])
 
 
 # User Interface in Browser
@@ -38,11 +96,6 @@ def get_users():
     return render_template("message.html", message=f"{output}")
 
 
-@app.route("/api/users_vote")
-def get_api_users_vote():
-    return jsonify([u.as_dict() for u in session.query(Bet)])
-
-
 @app.route("/users_vote")
 def get_users_vote():
     output = ""
@@ -51,33 +104,12 @@ def get_users_vote():
     return render_template("message.html", message=f"{output}")
 
 
-@app.route("/api/lottery")
-def api_lottery_list():
-    return jsonify([u.as_dict() for u in session.query(Lottery)])
-
-
 @app.route("/lottery")
 def lottery_list():
     output = ""
     for lottery in session.query(Lottery):
         output += f"\t{lottery.idLottery}\t{lottery.createdAt}\t{lottery.running}\n"
     return render_template("message.html", message=f"{output}")
-
-
-@app.route("/add_user", methods=["GET", "POST"])
-def add_user():
-    if request.method == "POST":
-        id = request.form["id"]
-        alias = request.form["alias"]
-        firstName = request.form["firstName"]
-        lastName = request.form["lastName"]
-        user = User(id, alias, firstName, lastName)
-        session.add(user)
-        session.commit()
-        return render_template("message.html", message="User added to database")
-    else:
-        size = len(session.query(User).all()) + 1
-        return render_template("add_user.html", lastId=size)
 
 
 if __name__ == "__main__":

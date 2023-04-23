@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from model import User
 
-engine = create_engine('sqlite:///user.db', echo=False)
+engine = create_engine("sqlite:///user.db", echo=False)
 
 # create a Session
 Session = sessionmaker(bind=engine)
@@ -22,5 +22,3 @@ if "@notgeld" not in aliases:
     session.add(user)
     # commit the record the database
     session.commit()
-
-

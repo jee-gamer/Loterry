@@ -33,12 +33,7 @@ class Lottery(object):
         self._votes = {}
         self._win_hit = -1
 
-        self._emoji_dict = {
-            '🍓': 'strawberry',
-            '🍎': 'apple',
-            '🍐': 'pear',
-            '🍌': 'banana'
-        }
+        self._emoji_dict = {"🍓": "strawberry", "🍎": "apple", "🍐": "pear", "🍌": "banana"}
 
     def store_vote(self, action, user):
         if action in self._hits.keys():
@@ -96,7 +91,7 @@ class Lottery(object):
         if timeLeft < 0:
             result = self.finish()
             logging.debug(f"finished lottery {result}")
-        timeLeft = (timeLeft/60)
+        timeLeft = timeLeft / 60
         return timeLeft
 
     def reset(self):
@@ -138,7 +133,7 @@ if __name__ == "__main__":
     result = lottery.get_user_vote("jee")
     print(result)
     result = lottery.get_scores()
-    assert result == {'strawberry': 1, 'apple': 0, 'pear': 1, 'banana': 1}
+    assert result == {"strawberry": 1, "apple": 0, "pear": 1, "banana": 1}
     logging.info("testing vote-win scenario")
     seed(44)
     print(lottery.finish())
