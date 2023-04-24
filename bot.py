@@ -54,6 +54,21 @@ async def time_left():
     return timeLeft
 
 
+async def winning_fruit():
+    DATABASE_URL2 = DATABASE_URL + "/api/lottery/winning_fruit"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(DATABASE_URL2) as response:
+            if response.status != 200:
+                logging.error(f"Got {response.status} from the database")
+                msg = "Something wrong in the backend. Please try later"
+                logging.info(msg)
+                return
+            data = await response.json()
+            print(data)
+
+    return data
+
+
 def get_keyboard():
     keyboard = types.InlineKeyboardMarkup()
 
@@ -114,9 +129,8 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
 
-    timeLeft = lottery.time_left()
     maxVote = lottery.get_max_vote()
-
+    await winning_fruit()
     timeLeft = await time_left()
 
     if timeLeft == 0:

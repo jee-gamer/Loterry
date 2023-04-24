@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String, Boolean, DateTime
@@ -7,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import mapped_column
 import logging
+from random import randrange, choice
 
 
 class Base(DeclarativeBase):
@@ -44,12 +46,15 @@ class Lottery(Base):
     idLottery = mapped_column(Integer, primary_key=True)
     createdAt = mapped_column(DateTime)
     running = mapped_column(Boolean)
+    winningFruit = mapped_column(Integer)
 
-    # ----------------------------------------------------------------------
+
     def __init__(self, idLottery):
         """"""
         self.idLottery = idLottery
         self.createdAt = datetime.now()
+        fruitList = ["Strawberry", "apple", "banana", "pear"]
+        self.winningFruit = random.choice(fruitList)
         self.running = False
 
 

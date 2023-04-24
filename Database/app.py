@@ -86,6 +86,11 @@ def api_lottery_list():
     return jsonify([l.as_dict() for l in session.query(Lottery)])
 
 
+@app.route("/api/lottery/winning_fruit")
+def api_lottery_winning_fruit():
+    return jsonify([l.winningFruit for l in session.query(Lottery)])
+
+
 # User Interface in Browser
 @app.route("/users")
 def get_users():
