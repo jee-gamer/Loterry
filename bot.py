@@ -34,7 +34,7 @@ vote_cb = CallbackData("vote", "action")  # vote:<action>
 givenTime = 10  # minutes
 lottery = Lottery(time_delta=givenTime)
 
-
+'''
 def time_left():
     DATABASE_URL2 = DATABASE_URL + "/api/lottery"
     async with aiohttp.ClientSession() as session:
@@ -57,7 +57,7 @@ def time_left():
         logging.error(f"Received {data} from the database")
         msg = "Something wrong in the backend. Please try later"
         return "reply"
-
+'''
 def get_keyboard():
     keyboard = types.InlineKeyboardMarkup()
 
@@ -120,6 +120,27 @@ async def cmd_start(message: types.Message):
 
     timeLeft = lottery.time_left()
     maxVote = lottery.get_max_vote()
+
+    DATABASE_URL2 = DATABASE_URL + "/api/lottery"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(DATABASE_URL2) as response:
+            if response.status != 200:
+                logging.error(f"Got {response.status} from the database")
+                msg = "Something wrong in the backend. Please try later"
+                logging.info(msg)
+                return
+            data = await response.json()
+            timeLeftUnix = data[0]["createdAt"]
+            now_datetime = datetime.strptime(timeLeftUnix, '%a, %d %b %Y %H:%M:%S %Z')
+            timeLeft = int(datetime.now().timestamp()) - int(now_datetime.timestamp())
+            timeLeft = (timeLeft / 60)
+            print(timeLeft)
+
+    logging.info(data)
+    if not data:
+        logging.error(f"Received {data} from the database")
+        msg = "Something wrong in the backend. Please try later"
+        return "reply"
 
     if timeLeft == 0:
         lottery.start()

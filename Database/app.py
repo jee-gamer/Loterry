@@ -114,24 +114,24 @@ def lottery_list():
 if __name__ == "__main__":
     logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
     # create a Session
-    """
-    lottery = Lottery(4245577817787)
-    session.add(lottery)
-    session.commit()
 
-    # Create objects
-    user = User(11, "@NotJaykayy", "Jiramate", "Kedmake")
-    session.add(user)
-    session.commit()
-    user = User(12, "@Someone", "Some", "Some")
-    session.add(user)
-    userVote = Bet(1, 9, 1, 1)
-    session.add(userVote)
-    userVote = Bet(2, 11, 1, 1)
-    session.add(userVote)
-    # commit the record the database
-    session.commit()
-    """
+    # lottery = Lottery(4787)
+    # session.add(lottery)
+    # session.commit()
+    #
+    # # Create objects
+    # user = User(11, "@NotJaykayy", "Jiramate", "Kedmake")
+    # session.add(user)
+    # session.commit()
+    # user = User(12, "@Someone", "Some", "Some")
+    # session.add(user)
+    # userVote = Bet(1, 9, 1, 1)
+    # session.add(userVote)
+    # userVote = Bet(2, 11, 1, 1)
+    # session.add(userVote)
+    # # commit the record the database
+    # session.commit()
+
     run_simple(
         "localhost", 5000, app, use_reloader=False, use_debugger=True, use_evalex=True
     )
