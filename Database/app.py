@@ -81,9 +81,32 @@ def get_api_users_vote():
     return jsonify([v.as_dict() for v in session.query(Bet)])
 
 
-@app.route("/api/lottery")
+@app.route("/api/lottery", methods=["GET", "POST"])
 def api_lottery_list():
-    return jsonify([l.as_dict() for l in session.query(Lottery)])
+    if request.method == "POST":
+        try:
+            data = request.get_json()
+        except Exception as e:
+            logging.error(f"Error parsing request data: {e}")
+            return jsonify({"status": "error", "result": "couldn't parse request"})
+
+        if "idLottery" not in data.keys():
+            print('incorrect')
+            return jsonify({"status": "error", "result": "incorrect payload"})
+
+        q = session.query(Lottery).filter(Lottery.idLottery == data["idLottery"])
+        if q.count() == 1:
+            print('incorrect2')
+            return jsonify({"status": "ok", "result": q.one().as_dict()})
+
+        idLottery = data["idLottery"]
+        lottery = Lottery(idLottery)
+        session.add(lottery)
+        session.commit()
+        return jsonify({"status": "ok", "result": lottery.as_dict()})
+
+    else:
+        return jsonify([l.as_dict() for l in session.query(Lottery)])
 
 
 @app.route("/api/lottery/winning_fruit")

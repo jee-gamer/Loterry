@@ -45,9 +45,11 @@ async def time_left():
                 logging.info(msg)
                 return
             data = await response.json()
-            timeLeftUnix = data[0]["createdAt"]
+            if not data:
+                return 0
+            timeLeftUnix = data[0]["createdAt"]  # 0 represent idLottery I think // so it's not complete
             now_datetime = datetime.strptime(timeLeftUnix, '%a, %d %b %Y %H:%M:%S %Z')
-            timeLeft = int(datetime.now().timestamp()) - int(now_datetime.timestamp())
+            timeLeft = int(now_datetime.timestamp() + (givenTime*60)) - int(datetime.now().timestamp())
             timeLeft = (timeLeft/60)
             print(timeLeft)
 
@@ -67,6 +69,27 @@ async def winning_fruit():
             print(data)
 
     return data
+
+
+async def start_lottery():
+    DATABASE_URL2 = DATABASE_URL + "/api/lottery"
+    data = None
+    lottery_data = {
+        "idLottery": 1,  # temporary
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(DATABASE_URL2, json=lottery_data) as response:
+            if response.status != 200:
+                logging.error(f"Got {response.status} from the database")
+                msg = "Something wrong in the backend. Please try later"
+                # return await message.reply(msg)
+            data = await response.json()
+
+    logging.info(data)
+    if not data or ("status" in data.keys() and data["status"] == "error"):
+        logging.error(f"Received {data} from the database")
+        msg = "Something wrong in the backend. Please try later"
+        # return await message.reply(msg)
 
 
 def get_keyboard():
@@ -129,15 +152,14 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
 
-    maxVote = lottery.get_max_vote()
-    await winning_fruit()
+    await winning_fruit()  # just testing
     timeLeft = await time_left()
 
     if timeLeft == 0:
-        lottery.start()
+        await start_lottery()
         await message.reply(
             f"Lottery started! {givenTime} minutes left! \n"
-            f"You can vote up to {maxVote} fruit",
+            f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
     elif timeLeft < 0:
@@ -166,7 +188,7 @@ async def cmd_start(message: types.Message):
     else:
         await message.reply(
             f"Lottery is running! {timeLeft} minutes left! \n"
-            f"You can vote up to {maxVote} fruit",
+            f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
 
@@ -175,12 +197,11 @@ async def cmd_start(message: types.Message):
     commands=["Lottery", "lottery"]
 )  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
-    timeLeft = lottery.time_left()
-    maxVote = lottery.get_max_vote()
+    timeLeft = await time_left()
     if timeLeft > 0:
         await message.reply(
             f"lottery is running. {timeLeft} minutes left! \n"
-            f"You can vote up to {maxVote} fruit",
+            f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
     elif timeLeft == 0:
@@ -200,8 +221,7 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["result"])
 async def cmd_start(message: types.Message):
-    timeLeft = lottery.time_left()
-    maxVote = lottery.get_max_vote()
+    timeLeft = await time_left()
     if timeLeft < 0:
         winners = lottery.get_winner()
         winners_str = ", ".join(winners)
@@ -217,7 +237,7 @@ async def cmd_start(message: types.Message):
     else:
         await message.reply(
             f"lottery is running! {timeLeft} minutes left! \n"
-            f"You can vote up to {maxVote} fruit",
+            f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
 
@@ -233,13 +253,10 @@ async def callback_vote_action(
     )  # callback_data contains all info from callback data
     await query.answer()  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data["action"]
-    timeLeft = lottery.time_left()
+    timeLeft = await time_left()
 
     user_id = query.from_user.username
     voteCount = 0
-    userVote = lottery.get_user_vote(user_id)
-    voteCount = len(userVote)
-    sameFruitVote = userVote.get(callback_data_action, 0)
 
     if timeLeft <= 0:
         await bot.edit_message_text(

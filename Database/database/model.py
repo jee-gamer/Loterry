@@ -54,8 +54,9 @@ class Lottery(Base):
         self.idLottery = idLottery
         self.createdAt = datetime.now()
         fruitList = ["Strawberry", "apple", "banana", "pear"]
+        self.fruitList = fruitList
         self.winningFruit = random.choice(fruitList)
-        self.running = False
+        self.running = True
 
 
 class Bet(Base):
