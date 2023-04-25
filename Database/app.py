@@ -91,12 +91,10 @@ def api_lottery_list():
             return jsonify({"status": "error", "result": "couldn't parse request"})
 
         if "idLottery" not in data.keys():
-            print('incorrect')
             return jsonify({"status": "error", "result": "incorrect payload"})
 
         q = session.query(Lottery).filter(Lottery.idLottery == data["idLottery"])
         if q.count() == 1:
-            print('incorrect2')
             return jsonify({"status": "ok", "result": q.one().as_dict()})
 
         idLottery = data["idLottery"]
@@ -111,7 +109,18 @@ def api_lottery_list():
 
 @app.route("/api/lottery/winning_fruit")
 def api_lottery_winning_fruit():
-    return jsonify([l.winningFruit for l in session.query(Lottery)])
+    return jsonify([l.winningFruit for l in session.query(Lottery)])  # temporary
+
+
+@app.route("/api/lottery/winner")  # not tested yet
+def api_lottery_winners():
+    winningFruit = [l.winningFruit for l in session.query(Lottery)]  # temporary
+    winner = []
+    for b in session.query(Bet):
+        if b.userBet == winningFruit:
+            user = b.idUser
+            winner.append(user)
+    return jsonify(winner)
 
 
 # User Interface in Browser
@@ -170,6 +179,8 @@ if __name__ == "__main__":
 # time left
 # vote from specific user on specific lottery
 # winning fruit
+# fix lottery id
+# major changes in bot to relate to database
 
 # URI
 # http://localhost:5000
