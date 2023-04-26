@@ -36,9 +36,8 @@ lottery = Lottery(time_delta=givenTime)
 
 
 async def time_left():
-    DATABASE_URL2 = DATABASE_URL + "/api/lottery"
     async with aiohttp.ClientSession() as session:
-        async with session.get(DATABASE_URL2) as response:
+        async with session.get(f"{DATABASE_URL}/api/lottery") as response:
             if response.status != 200:
                 logging.error(f"Got {response.status} from the database")
                 msg = "Something wrong in the backend. Please try later"
@@ -57,9 +56,8 @@ async def time_left():
 
 
 async def winning_fruit():
-    DATABASE_URL2 = DATABASE_URL + "/api/lottery/winning_fruit"
     async with aiohttp.ClientSession() as session:
-        async with session.get(DATABASE_URL2) as response:
+        async with session.get(f"{DATABASE_URL}/api/lottery/winning_fruit") as response:
             if response.status != 200:
                 logging.error(f"Got {response.status} from the database")
                 msg = "Something wrong in the backend. Please try later"
@@ -72,13 +70,12 @@ async def winning_fruit():
 
 
 async def start_lottery():
-    DATABASE_URL2 = DATABASE_URL + "/api/lottery"
     data = None
     lottery_data = {
         "idLottery": 1,  # temporary
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(DATABASE_URL2, json=lottery_data) as response:
+        async with session.post(f"{DATABASE_URL}/api/lottery", json=lottery_data) as response:
             if response.status != 200:
                 logging.error(f"Got {response.status} from the database")
                 msg = "Something wrong in the backend. Please try later"
@@ -116,7 +113,6 @@ def get_keyboard():
 
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
-    DATABASE_URL2 = DATABASE_URL+"/api/users"
     data = None
     user_data = {
         "id": message.from_user.id,
@@ -125,7 +121,7 @@ async def cmd_start(message: types.Message):
         "lastName": message.from_user.last_name,
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(DATABASE_URL2, json=user_data) as response:
+        async with session.post(f"{DATABASE_URL}/api/users", json=user_data) as response:
             if response.status != 200:
                 logging.error(f"Got {response.status} from the database")
                 msg = "Something wrong in the backend. Please try later"
