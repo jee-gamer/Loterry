@@ -1,0 +1,57 @@
+swagger: "2.0"
+info:
+  title: Data Service API
+  description: returns info about balances
+  license:
+    name: APLv2
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 0.1.0
+basePath: /
+paths:
+    /users:
+      get:
+        operationId: api.get_users
+        description: Returns an information about users open interest
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: id
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: List of Ids
+            schema:
+              type: array
+              items:
+                type: string
+      post:
+        operationId: api.post_users
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: body
+            in: body
+            required: true
+            schema:
+              # Body schema with atomic property examples
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 0
+                sat:
+                  type: integer
+                  example: 1
+                rub:
+                  type: integer
+                  example: 1
+                order:
+                  type: integer
+                  example: 0
+        responses:
+          '201':
+            description: Created

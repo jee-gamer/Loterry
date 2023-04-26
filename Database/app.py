@@ -9,12 +9,18 @@ from Database.database import Base, User, Bet, Lottery
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import connexion
 import logging
+
+application = connexion.FlaskApp(__name__, specification_dir='openapi/')
+application.add_api('swagger.yaml')
+app = application.app
 
 app = Flask(__name__)
 app.config[
     "SQLALCHEMY_DATABASE_URI"
 ] = "sqlite:///user.db"  # root is in big Database file
+
 db = SQLAlchemy(app)
 
 engine = create_engine("sqlite:///user.db", echo=True)
@@ -168,10 +174,10 @@ if __name__ == "__main__":
     # session.add(userVote)
     # # commit the record the database
     # session.commit()
-
-    run_simple(
-        "localhost", 5000, app, use_reloader=False, use_debugger=True, use_evalex=True
-    )
+    application.run(debug=True)
+    #run_simple(
+    #    "localhost", 5000, app, use_reloader=False, use_debugger=True, use_evalex=True
+    #
 
 # need to get
 # lottery start time
