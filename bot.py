@@ -81,6 +81,29 @@ async def start_lottery():
         async with session.post(DATABASE_URL2, json=lottery_data) as response:
             if response.status != 200:
                 logging.error(f"Got {response.status} from the database")
+                print("Something wrong in the backend. Please try later")
+                # return await message.reply(msg)
+            data = await response.json()
+
+    logging.info(data)
+    if not data or ("status" in data.keys() and data["status"] == "error"):
+        logging.error(f"Received {data} from the database")
+        msg = "Something wrong in the backend. Please try later"
+        # return await message.reply(msg)
+
+
+async def store_bet(bet, idUser):
+    DATABASE_URL2 = DATABASE_URL + "/api/users_vote"
+    data = None
+    bet_data = {
+        "idLottery": 1,  # temporary
+        "userBet": bet,
+        "idUser": idUser
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(DATABASE_URL2, json=bet_data) as response:
+            if response.status != 200:
+                logging.error(f"Got {response.status} from the database")
                 msg = "Something wrong in the backend. Please try later"
                 # return await message.reply(msg)
             data = await response.json()
@@ -169,7 +192,7 @@ async def cmd_start(message: types.Message):
 
         if winners:
             lottery.reset()
-            lottery.start()
+            await start_lottery()
             await message.reply(
                 f"The last lottery winners are {winners_str} \n"
                 f"Lottery started! {givenTime} minutes left!",
@@ -178,7 +201,7 @@ async def cmd_start(message: types.Message):
 
         else:
             lottery.reset()
-            lottery.start()
+            await start_lottery()
             await message.reply(
                 f"No one had won the last lottery!\n"
                 f"Lottery started! {givenTime} minutes left!",
@@ -255,7 +278,8 @@ async def callback_vote_action(
     callback_data_action = callback_data["action"]
     timeLeft = await time_left()
 
-    user_id = query.from_user.username
+    userName = query.from_user.username
+    userId = query.from_user.id
     voteCount = 0
 
     if timeLeft <= 0:
@@ -274,16 +298,16 @@ async def callback_vote_action(
         weirdEmoji = True
 
     if not weirdEmoji:
-        userVote = lottery.get_user_vote(user_id)
+        userVote = lottery.get_user_vote(userName)
         vote_count = len(userVote)
         sameFruitVote = userVote.get(reaction, 0)
 
         maxVotes = lottery.get_max_vote()
 
         if sameFruitVote == 1:
-            print(user_id)
+            print(userName)
             await bot.edit_message_text(
-                f"User {user_id} have already voted this fruit! \n"
+                f"User {userName} have already voted this fruit! \n"
                 f"{timeLeft} minutes left ",
                 query.message.chat.id,
                 query.message.message_id,
@@ -292,16 +316,16 @@ async def callback_vote_action(
 
         elif vote_count < maxVotes and sameFruitVote == 0:
             await bot.edit_message_text(
-                f"{user_id} voted {reaction} \n" f"{timeLeft} minutes left ",
+                f"{userName} voted {reaction} \n" f"{timeLeft} minutes left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),
             )
-            lottery.store_vote(reaction, user_id)
+            await store_bet(reaction, userId)
 
         else:
             await bot.edit_message_text(
-                f"User {user_id} already voted 3 fruit! \n" f"{timeLeft} minutes left ",
+                f"User {userName} already voted 3 fruit! \n" f"{timeLeft} minutes left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),

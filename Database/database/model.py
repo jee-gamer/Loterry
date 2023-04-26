@@ -64,7 +64,7 @@ class Bet(Base):
     idBet = mapped_column(Integer, primary_key=True)
     idUser = mapped_column(Integer, ForeignKey("User.idUser"))
     idLottery = mapped_column(Integer, ForeignKey("Lottery.idLottery"))
-    userBet = mapped_column(Integer)
+    userBet = mapped_column(String)
     createdAt = mapped_column(DateTime)
 
     lottery = relationship("Lottery", foreign_keys="Bet.idLottery")

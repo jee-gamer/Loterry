@@ -76,9 +76,48 @@ def add_user():
         return render_template("add_user.html", lastId=size)
 
 
-@app.route("/api/users_vote")
-def get_api_users_vote():
-    return jsonify([v.as_dict() for v in session.query(Bet)])
+@app.route("/api/users_vote", methods=["GET", "POST"])
+def api_users_vote():
+    if request.method == "POST":
+        try:
+            data = request.get_json()
+        except Exception as e:
+            logging.error(f"Error parsing request data: {e}")
+            return jsonify({"status": "error", "result": "couldn't parse request"})
+
+        if "idUser" not in data.keys():
+            return jsonify({"status": "error", "result": "incorrect payload"})
+
+        idBetList = []
+        for b in session.query(Bet):
+            idBetList.append(b.idBet)
+
+        if len(idBetList) == 0:
+            idBet = 1
+        else:
+            maxIdBet = max(idBetList)
+            idBet = maxIdBet + 1
+
+        idLottery = data["idLottery"]
+        userBet = data["userBet"]
+        idUser = data["idUser"]
+
+        # q = session.query(Bet).filter(Bet.idBet == idBet)
+        # if q.count() == 1:
+        #     return jsonify({"status": "ok", "result": q.one().as_dict()})
+
+        q = session.query(Bet).filter(Bet.idUser == idUser, Bet.idLottery == idLottery, Bet.userBet == userBet)
+        if q.count() == 1:
+            return jsonify({"status": "same vote", "result": q.one().as_dict()})
+
+        print(idBet, idUser, idLottery, userBet)
+        bet = Bet(idBet, idUser, idLottery, userBet)
+        session.add(bet)
+        session.commit()
+        return jsonify({"status": "ok", "result": bet.as_dict()})
+
+    else:
+        return jsonify([b.as_dict() for b in session.query(Bet)])
 
 
 @app.route("/api/lottery", methods=["GET", "POST"])
