@@ -1,5 +1,8 @@
+import requests
+
 from Database.database import session, Base, User, Bet, Lottery
 from flask import request, jsonify
+from requests import Response
 import json
 from hashlib import sha1
 import logging
@@ -12,10 +15,12 @@ logging.basicConfig(format='%(asctime)s %(message)s',
 
 
 def get_users(id) -> dict:
+    if id > 11:
+        return jsonify({'error': 'User doesnt exit'}), 400
     return jsonify([u.alias for u in session.query(User)])
 
 
 def post_users() -> dict:
-    if request.method == 'POST' and request.is_json:
-        return {'error': 'wrong value submitted'}
-    return {'error': 'wrong request'}
+    data = request.get_json()
+    print(data)
+    return {'message': 'data received'}

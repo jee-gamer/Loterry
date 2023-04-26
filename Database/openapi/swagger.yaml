@@ -1,11 +1,11 @@
 swagger: "2.0"
 info:
   title: Data Service API
-  description: returns info about balances
+  description: Lottery bot Data Service which stores Users info, Lotteries and Bets.
   license:
     name: APLv2
     url: https://www.apache.org/licenses/LICENSE-2.0.html
-  version: 0.1.0
+  version: 0.0.1
 basePath: /api
 paths:
     /users:
@@ -26,7 +26,14 @@ paths:
               type: array
               items:
                 type: string
-
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "User is not found in the database"
       post:
         operationId: api.post_users
         description: Registers new user
@@ -43,15 +50,6 @@ paths:
               type: object
               properties:
                 id:
-                  type: integer
-                  example: 0
-                sat:
-                  type: integer
-                  example: 1
-                rub:
-                  type: integer
-                  example: 1
-                order:
                   type: integer
                   example: 0
         responses:
