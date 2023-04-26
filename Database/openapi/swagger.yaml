@@ -6,12 +6,12 @@ info:
     name: APLv2
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 0.1.0
-basePath: /
+basePath: /api
 paths:
     /users:
       get:
         operationId: api.get_users
-        description: Returns an information about users open interest
+        description: Returns an information about users registered in the service
         produces:
           - application/json
         parameters:
@@ -21,13 +21,15 @@ paths:
             required: true
         responses:
           '200':
-            description: List of Ids
+            description: List of user data objects
             schema:
               type: array
               items:
                 type: string
+
       post:
         operationId: api.post_users
+        description: Registers new user
         consumes:
           - application/json
         produces:

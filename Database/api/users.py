@@ -1,4 +1,4 @@
-from Database.database import Base, User, Bet, Lottery
+from Database.database import session, Base, User, Bet, Lottery
 from flask import request, jsonify
 import json
 from hashlib import sha1
@@ -11,8 +11,8 @@ logging.basicConfig(format='%(asctime)s %(message)s',
                     level=logging.INFO)
 
 
-def get_users(tx) -> dict:
-    return {'error': "undefined algorithm error"}
+def get_users(id) -> dict:
+    return jsonify([u.alias for u in session.query(User)])
 
 
 def post_users() -> dict:
