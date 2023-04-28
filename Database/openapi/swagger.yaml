@@ -10,7 +10,7 @@ basePath: /api
 paths:
     /users:
       get:
-        operationId: api.get_users
+        operationId: api.get_user
         description: Returns an information about users registered in the service
         produces:
           - application/json
@@ -35,7 +35,7 @@ paths:
                   type: string
                   example: "User is not found in the database"
       post:
-        operationId: api.post_users
+        operationId: api.post_user
         description: Registers new user
         consumes:
           - application/json
@@ -48,10 +48,84 @@ paths:
             schema:
               # Body schema with atomic property examples
               type: object
+              required:
+                - id
+                - alias
+                - firstName
+                - lastName
               properties:
                 id:
                   type: integer
                   example: 0
+                alias:
+                  type: string
+                  example: "ur dad"
+                firstName:
+                  type: string
+                  example: "haha"
+                lastName:
+                  type: string
+                  example: "haha"
+
+        responses:
+          '201':
+            description: Created
+
+    /users_vote:
+      get:
+        operationId: api.get_user_vote
+        description: Returns an information about user vote registered in the service
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: id
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: List of user data objects
+            schema:
+              type: array
+              items:
+                type: string
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "User is not found in the database"
+      post:
+        operationId: api.post_user_vote
+        description: Registers new bet
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: body
+            in: body
+            required: true
+            schema:
+              # Body schema with atomic property examples
+              type: object
+              required:
+                - idUser
+                - idLottery
+                - userBet
+              properties:
+                idUser:
+                  type: integer
+                  example: 0
+                idLottery:
+                  type: integer
+                  example: 99
+                userBet:
+                  type: string
+                  example: "banana"
+
         responses:
           '201':
             description: Created
