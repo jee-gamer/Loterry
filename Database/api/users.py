@@ -74,6 +74,10 @@ def get_lottery(id):
 
 
 def start_lottery():
+    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+    if lottery:
+        return {'message': 'There is already an active lottery'}
+
     maxId = session.query(func.max(Lottery.idLottery)).scalar()
     if not maxId:
         maxId = 0
@@ -81,11 +85,11 @@ def start_lottery():
     lottery = Lottery(idLottery)
     session.add(lottery)
     session.commit()
-    return {'message': 'data received'}
+    return {'message': 'lottery started'}
 
 
-def get_time_left(idLottery):
-    lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
+def get_time_left():
+    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
     if not lottery:
         return {'message': 'Lottery not found'}
 
@@ -106,3 +110,8 @@ def get_winning_fruit(idLottery):
     return jsonify(winningFruit)
 
 
+def reset_everything():  # guess this thing only reset the internet
+    session.query(User).delete()
+    session.query(Lottery).delete()
+    session.query(Bet).delete()
+    return {'message': 'GONEEEEEEEE'}

@@ -17,12 +17,14 @@ from aiogram.utils.exceptions import MessageNotModified
 from os import environ
 from datetime import datetime
 from lottery import Lottery
+from flask import request, jsonify
+import requests
 
 logging.basicConfig(level=logging.INFO)
 
 API_TOKEN = environ.get("BotApi")
 # DATABASE_URL = environ.get("DATABASE_URL")
-DATABASE_URL = "http://localhost:5000"
+DATABASE_URL = "http://localhost:5000/api"
 
 bot = Bot(token=API_TOKEN)
 
@@ -35,61 +37,42 @@ givenTime = 10  # minutes
 lottery = Lottery(time_delta=givenTime)
 
 
-async def time_left():
-    DATABASE_URL2 = DATABASE_URL + "/api/lottery"
+async def time_left(idLottery):
     async with aiohttp.ClientSession() as session:
-        async with session.get(DATABASE_URL2) as response:
-            if response.status != 200:
-                logging.error(f"Got {response.status} from the database")
-                msg = "Something wrong in the backend. Please try later"
-                logging.info(msg)
-                return
-            data = await response.json()
-            if not data:
-                return 0
-            timeLeftUnix = data[0]["createdAt"]  # 0 represent idLottery I think // so it's not complete
-            now_datetime = datetime.strptime(timeLeftUnix, '%a, %d %b %Y %H:%M:%S %Z')
-            timeLeft = int(now_datetime.timestamp() + (givenTime*60)) - int(datetime.now().timestamp())
-            timeLeft = (timeLeft/60)
-            print(timeLeft)
-
-    return timeLeft
-
-
-async def winning_fruit():
-    DATABASE_URL2 = DATABASE_URL + "/api/lottery/winning_fruit"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(DATABASE_URL2) as response:
-            if response.status != 200:
-                logging.error(f"Got {response.status} from the database")
-                msg = "Something wrong in the backend. Please try later"
-                logging.info(msg)
-                return
-            data = await response.json()
+        async with session.get(f"{DATABASE_URL}/lottery/timeLeft?idLottery={idLottery}") as response:
+            data = await response.json()  # Parse the response JSON
             print(data)
+            return data
 
-    return data
+            # if response.status == 200:
+            #     data = await response.json()  # Parse the response JSON
+            #     print(data)
+            #     return data
+            # else:
+            #     return 'Error: ' + str(response.status)
+
+
+async def winning_fruit(idLottery):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{DATABASE_URL}/lottery/winningFruit?idLottery={idLottery}") as response:
+            data = await response.json()  # Parse the response JSON
+            print(data)
+            return data
 
 
 async def start_lottery():
-    DATABASE_URL2 = DATABASE_URL + "/api/lottery"
     data = None
-    lottery_data = {
-        "idLottery": 1,  # temporary
-    }
     async with aiohttp.ClientSession() as session:
-        async with session.post(DATABASE_URL2, json=lottery_data) as response:
-            if response.status != 200:
-                logging.error(f"Got {response.status} from the database")
-                msg = "Something wrong in the backend. Please try later"
-                # return await message.reply(msg)
+        async with session.post(f"{DATABASE_URL}/lottery") as response:
             data = await response.json()
+            print(data)
 
-    logging.info(data)
-    if not data or ("status" in data.keys() and data["status"] == "error"):
-        logging.error(f"Received {data} from the database")
-        msg = "Something wrong in the backend. Please try later"
-        # return await message.reply(msg)
+
+''' HOW TO POST WITH DATA >>>
+
+        async with session.post(f"{DATABASE_URL}/lottery", json=lottery_data) as response:
+
+'''
 
 
 def get_keyboard():
@@ -107,36 +90,25 @@ def get_keyboard():
     return keyboard
 
 
-"""
-        lotteryStart = 0 :  the lottery have not started
-        lotteryStart = 1 :  the lottery is ongoing
-        lotteryStart = 2 :  the lottery ended and we have to result
-"""
-
-
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
-    DATABASE_URL2 = DATABASE_URL+"/api/users"
     data = None
+
+    if message.from_user.username is None:
+        username = "No Username"
+    else:
+        username = message.from_user.username
+
     user_data = {
         "id": message.from_user.id,
-        "alias": message.from_user.username,
+        "alias": username,
         "firstName": message.from_user.first_name,
         "lastName": message.from_user.last_name,
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(DATABASE_URL2, json=user_data) as response:
-            if response.status != 200:
-                logging.error(f"Got {response.status} from the database")
-                msg = "Something wrong in the backend. Please try later"
-                return await message.reply(msg)
+        async with session.post(f"{DATABASE_URL}/users", json=user_data) as response:
             data = await response.json()
-
-    logging.info(data)
-    if not data or ("status" in data.keys() and data["status"] == "error"):
-        logging.error(f"Received {data} from the database")
-        msg = "Something wrong in the backend. Please try later"
-        return await message.reply(msg)
+            print(data)
 
     await message.reply(
         "Welcome here. This is a Lottery bot where people play against each other"
@@ -152,7 +124,6 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
 
-    await winning_fruit()  # just testing
     timeLeft = await time_left()
 
     if timeLeft == 0:

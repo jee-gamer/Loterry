@@ -220,3 +220,15 @@ paths:
                 message:
                   type: string
                   example: "Lottery is not found in the database"
+
+    /resetEverything:
+      delete:
+        operationId: api.reset_everything
+        description: Returns database to it's empty state
+        produces:
+          - application/json
+        responses:
+          '200':
+            description: it's gone
+          '400':
+            description: Generic error
