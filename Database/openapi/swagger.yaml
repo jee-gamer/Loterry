@@ -129,3 +129,40 @@ paths:
         responses:
           '201':
             description: Created
+
+    /lottery:
+      get:
+        operationId: api.get_lottery
+        description: Returns an information about a lottery registered in the service
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: id
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: A lottery data objects
+            schema:
+              type: array
+              items:
+                type: string
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Lottery is not found in the database"
+      post:
+        operationId: api.start_lottery
+        description: Registers a new lottery
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        responses:
+          '201':
+            description: Created

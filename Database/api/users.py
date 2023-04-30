@@ -59,3 +59,21 @@ def post_user_vote() -> dict:
     session.add(bet)
     session.commit()
     return {'message': 'data received'}
+
+
+def get_lottery(id):
+    lottery = session.query(Lottery).filter(Lottery.idLottery == id).all()
+    if not lottery:
+        return {'message': 'Lottery not found'}
+    return jsonify([v.as_dict() for v in session.query(Lottery).filter(Lottery.idLottery == id).all()])
+
+
+def start_lottery():
+    maxId = session.query(func.max(Lottery.idLottery)).scalar()
+    if not maxId:
+        maxId = 0
+    idLottery = maxId + 1
+    lottery = Lottery(idLottery)
+    session.add(lottery)
+    session.commit()
+    return {'message': 'data received'}
