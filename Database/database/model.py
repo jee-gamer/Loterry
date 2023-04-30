@@ -45,8 +45,9 @@ class Lottery(Base):
 
     idLottery = mapped_column(Integer, primary_key=True)
     createdAt = mapped_column(DateTime)
-    running = mapped_column(Boolean)
+    givenTime = mapped_column(Integer)
     winningFruit = mapped_column(Integer)
+    running = mapped_column(Boolean)
 
 
     def __init__(self, idLottery):
@@ -56,6 +57,7 @@ class Lottery(Base):
         fruitList = ["Strawberry", "apple", "banana", "pear"]
         self.fruitList = fruitList
         self.winningFruit = random.choice(fruitList)
+        self.givenTime = 30
         self.running = True
 
 

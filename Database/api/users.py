@@ -6,7 +6,7 @@ from requests import Response
 import json
 from hashlib import sha1
 import logging
-import datetime
+from datetime import datetime
 from sqlalchemy import func
 
 #  ahah broken database path
@@ -43,13 +43,18 @@ def get_user_vote(id):
     return jsonify([v.as_dict() for v in session.query(Bet).filter(User.idUser == id).all()])
 
 
-def post_user_vote() -> dict:
+def post_user_vote() -> dict:  # need to check if lottery exist or working!
     data = request.get_json()
     print(data)
 
     sameBet = session.query(Bet).filter(Bet.idUser == data["idUser"], Bet.idLottery == data["idLottery"], Bet.userBet == data["userBet"]).all()
     if sameBet:
         return {'message': 'This bet is a Duplicate'}
+
+    lottery = session.query(Lottery).filter(Lottery.idLottery == data["idLottery"]).first()
+    if not lottery:
+        return {'message': 'Lottery not found'}
+
     maxId = session.query(func.max(Bet.idBet)).scalar()
     if not maxId:
         maxId = 0
@@ -62,10 +67,10 @@ def post_user_vote() -> dict:
 
 
 def get_lottery(id):
-    lottery = session.query(Lottery).filter(Lottery.idLottery == id).all()
+    lottery = session.query(Lottery).filter(Lottery.idLottery == id).first()
     if not lottery:
         return {'message': 'Lottery not found'}
-    return jsonify([v.as_dict() for v in session.query(Lottery).filter(Lottery.idLottery == id).all()])
+    return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()])
 
 
 def start_lottery():
@@ -77,3 +82,27 @@ def start_lottery():
     session.add(lottery)
     session.commit()
     return {'message': 'data received'}
+
+
+def get_time_left(idLottery):
+    lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
+    if not lottery:
+        return {'message': 'Lottery not found'}
+
+    timeLeftUnix = lottery.createdAt
+    givenTime = lottery.givenTime
+    timeLeft = int(timeLeftUnix.timestamp() + (givenTime * 60)) - int(datetime.now().timestamp())
+    timeLeft = (timeLeft / 60)
+
+    return jsonify(timeLeft)
+
+
+def get_winning_fruit(idLottery):
+    lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
+    if not lottery:
+        return {'message': 'Lottery not found'}
+
+    winningFruit = lottery.winningFruit
+    return jsonify(winningFruit)
+
+

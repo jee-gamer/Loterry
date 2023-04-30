@@ -166,3 +166,57 @@ paths:
         responses:
           '201':
             description: Created
+
+    /lottery/timeLeft:
+      get:
+        operationId: api.get_time_left
+        description: Returns an information about a lottery registered in the service
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: idLottery
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: Time left on a lottery
+            schema:
+              type: array
+              items:
+                type: string
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Lottery is not found in the database"
+
+    /lottery/winningFruit:
+      get:
+        operationId: api.get_winning_fruit
+        description: Returns the winning fruit of a lottery
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: idLottery
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: winning fruit of a lottery
+            schema:
+              type: array
+              items:
+                type: string
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Lottery is not found in the database"
