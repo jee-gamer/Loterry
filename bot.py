@@ -38,10 +38,11 @@ lottery = Lottery(time_delta=givenTime)
 
 
 async def time_left(idLottery):
+    print(f"what is timeleft?")
     async with aiohttp.ClientSession() as session:
         async with session.get(f"{DATABASE_URL}/lottery/timeLeft?idLottery={idLottery}") as response:
             data = await response.json()  # Parse the response JSON
-            print(data)
+            print(f"timeLeft is {data}")
             return data
 
             # if response.status == 200:
@@ -64,6 +65,31 @@ async def start_lottery():
     data = None
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{DATABASE_URL}/lottery") as response:
+            data = await response.json()
+            print(data)
+
+
+async def get_winners(idLottery):
+    data = None
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{DATABASE_URL}/lottery/winners?idLottery={idLottery}") as response:
+            data = await response.json()
+            print(data)
+
+
+async def get_id_lottery():
+    data = None
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{DATABASE_URL}/lottery/running") as response:
+            data = await response.json()
+            print(data)
+            return data
+
+
+async def stop_lottery():
+    data = None
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{DATABASE_URL}/lottery/stop") as response:
             data = await response.json()
             print(data)
 
@@ -124,93 +150,63 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
 
-    timeLeft = await time_left()
-
-    if timeLeft == 0:
+    idLottery = await get_id_lottery()
+    if idLottery is not int:
         await start_lottery()
         await message.reply(
             f"Lottery started! {givenTime} minutes left! \n"
             f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
-    elif timeLeft < 0:
-        winners = lottery.get_winner()
-        print(winners)
-        winners_str = ", ".join(winners)
-
-        if winners:
-            lottery.reset()
-            lottery.start()
+    else:
+        timeLeft = await time_left(idLottery)
+        if timeLeft < 0:
+            await stop_lottery()
+            await start_lottery()
             await message.reply(
-                f"The last lottery winners are {winners_str} \n"
-                f"Lottery started! {givenTime} minutes left!",
+                f"Lottery started! {givenTime} minutes left! \n"
+                f"You can vote a fruit!",
                 reply_markup=get_keyboard(),
             )
 
         else:
-            lottery.reset()
-            lottery.start()
             await message.reply(
-                f"No one had won the last lottery!\n"
-                f"Lottery started! {givenTime} minutes left!",
+                f"Lottery is running! {timeLeft} minutes left! \n"
+                f"You can vote a fruit!",
                 reply_markup=get_keyboard(),
             )
-
-    else:
-        await message.reply(
-            f"Lottery is running! {timeLeft} minutes left! \n"
-            f"You can vote a fruit!",
-            reply_markup=get_keyboard(),
-        )
 
 
 @dp.message_handler(
-    commands=["Lottery", "lottery"]
+    commands=["Lottery", "lottery", "result"]
 )  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
-    timeLeft = await time_left()
-    if timeLeft > 0:
-        await message.reply(
-            f"lottery is running. {timeLeft} minutes left! \n"
-            f"You can vote a fruit!",
-            reply_markup=get_keyboard(),
-        )
-    elif timeLeft == 0:
+    idLottery = await get_id_lottery()
+    if idLottery is not int:
         await message.reply(
             "lottery isn't running! Start Lottery by typing !startLottery"
         )
     else:
-        winners = lottery.get_winner()
-        winners_str = ", ".join(winners)
-        if winners:
+        timeLeft = await time_left(idLottery)
+        if timeLeft < 0:
+            winners = await get_winners(idLottery)
+            if not winners:
+                await message.reply(
+                    f"No one have won the lottery!"
+                )
+            else:
+                await message.reply(
+                    f"Lottery have ended!\n"
+                    f"Winners are {winners}"
+                )
+            await stop_lottery()
+
+        else:
             await message.reply(
-                f"lottery is expired! User {winners_str} had won the Lottery!"
+                f"lottery is running. {timeLeft} minutes left! \n"
+                f"You can vote a fruit!",
+                reply_markup=get_keyboard(),
             )
-        else:
-            await message.reply("lottery is expired! No one had won the Lottery!")
-
-
-@dp.message_handler(commands=["result"])
-async def cmd_start(message: types.Message):
-    timeLeft = await time_left()
-    if timeLeft < 0:
-        winners = lottery.get_winner()
-        winners_str = ", ".join(winners)
-        print(f" winner is {winners}")
-        if winners:
-            await message.reply(f"User {winners_str} had won the Lottery!")
-        else:
-            await message.reply("No one had won the Lottery!")
-    elif timeLeft == 0:
-        await message.reply(
-            "lottery isn't running! Start Lottery by typing !startLottery"
-        )
-    else:
-        await message.reply(
-            f"lottery is running! {timeLeft} minutes left! \n"
-            f"You can vote a fruit!",
-            reply_markup=get_keyboard(),
-        )
 
 
 @dp.callback_query_handler(
@@ -224,16 +220,29 @@ async def callback_vote_action(
     )  # callback_data contains all info from callback data
     await query.answer()  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data["action"]
-    timeLeft = await time_left()
 
-    user_id = query.from_user.username
-    voteCount = 0
-
-    if timeLeft <= 0:
+    idLottery = await get_id_lottery()
+    if idLottery is not int:
         await bot.edit_message_text(
-            "The time is up!", query.message.chat.id, query.message.message_id
+            "No lottery is running", query.message.chat.id, query.message.message_id
         )
         return
+    else:
+        timeLeft = await time_left(idLottery)
+        if timeLeft <= 0:
+            winners = await get_winners(idLottery)
+            if not winners:
+                await bot.edit_message_text(
+                    f"No one have won the lottery!", query.message.chat.id, query.message.message_id
+                )
+            else:
+                await bot.edit_message_text(
+                    f"Lottery have ended!\n"
+                    f"Winners are {winners}" , query.message.chat.id, query.message.message_id
+                )
+            await stop_lottery()
+
+    user_id = query.from_user.username
 
     emojiDict = lottery.get_emoji_dict()
     weirdEmoji = False

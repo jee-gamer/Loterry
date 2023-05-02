@@ -180,11 +180,7 @@ paths:
             required: true
         responses:
           '200':
-            description: Time left on a lottery
-            schema:
-              type: array
-              items:
-                type: string
+            description: returned Time left on a lottery
           '400':
             description: Generic error
             schema:
@@ -220,6 +216,66 @@ paths:
                 message:
                   type: string
                   example: "Lottery is not found in the database"
+
+
+    /lottery/running:
+      get:
+        operationId: api.get_running_lottery
+        description: Returns an id of a running lottery
+        produces:
+          - application/json
+        responses:
+          '200':
+            description: returned id lottery
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "No lottery is running"
+
+
+    /lottery/winners:
+      get:
+        operationId: api.get_winners
+        description: Returns the winners of a lottery
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: idLottery
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: winner of a lottery
+            schema:
+              type: array
+              items:
+                type: string
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Lottery is not found in the database"
+
+    /lottery/stop:
+      post:
+        operationId: api.stop_lottery
+        description: Stop a running lottery
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        responses:
+          '201':
+            description: Created
+
 
     /resetEverything:
       delete:

@@ -55,6 +55,10 @@ def post_user_vote() -> dict:  # need to check if lottery exist or working!
     if not lottery:
         return {'message': 'Lottery not found'}
 
+    # user = session.query(User).filter(User.idUser == data["idUser"]).first()
+    # if not user:
+    #     post_user()
+
     maxId = session.query(func.max(Bet.idBet)).scalar()
     if not maxId:
         maxId = 0
@@ -108,6 +112,48 @@ def get_winning_fruit(idLottery):
 
     winningFruit = lottery.winningFruit
     return jsonify(winningFruit)
+
+
+def get_winners(idLottery):
+    lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
+    if not lottery:
+        return {'message': 'Lottery not found'}
+
+    winningFruit = lottery.winningFruit
+    winner = []
+    winningBet = session.query(Bet).filter(Bet.idLottery == idLottery, Bet.userBet == winningFruit).all()
+    if not winningBet:
+        print("no winner")
+        return {'message': 'No winner'}
+    winner = []
+
+    for bet in winningBet:
+        if bet.user is None:
+            name = f"UserId_{bet.idUser}"
+        else:
+            name = bet.user.alias  # this requires that the user of this bet have registered
+        print(name)
+        winner.append(name)
+
+    return jsonify(winner)
+
+
+def get_running_lottery():
+    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+    if not lottery:
+        return {'message': 'No lottery is running'}
+
+    lotteryId = lottery.idLottery
+    return jsonify(lotteryId)
+
+
+def stop_lottery():
+    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+    if not lottery:
+        return {'message': 'No lottery is running'}
+    lottery.running = 0
+    session.commit()
+    return {'message': 'Stopped a running lottery'}
 
 
 def reset_everything():  # guess this thing only reset the internet
