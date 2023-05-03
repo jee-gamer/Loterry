@@ -94,6 +94,20 @@ async def stop_lottery():
             print(data)
 
 
+async def post_bet(idUser, idLottery, userBet):
+    data = None
+    vote = {
+        "idUser": idUser,
+        "idLottery":  idLottery,
+        "userBet": userBet
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{DATABASE_URL}/users_vote", json=vote) as response:
+            data = await response.json()
+            print(data)
+    return data
+
 ''' HOW TO POST WITH DATA >>>
 
         async with session.post(f"{DATABASE_URL}/lottery", json=lottery_data) as response:
@@ -151,7 +165,7 @@ async def cmd_start(message: types.Message):
 async def cmd_start(message: types.Message):
 
     idLottery = await get_id_lottery()
-    if idLottery is not int:
+    if not isinstance(idLottery, int):
         await start_lottery()
         await message.reply(
             f"Lottery started! {givenTime} minutes left! \n"
@@ -182,7 +196,8 @@ async def cmd_start(message: types.Message):
 )  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
     idLottery = await get_id_lottery()
-    if idLottery is not int:
+    print(idLottery)
+    if not isinstance(idLottery, int):
         await message.reply(
             "lottery isn't running! Start Lottery by typing !startLottery"
         )
@@ -192,6 +207,7 @@ async def cmd_start(message: types.Message):
             winners = await get_winners(idLottery)
             if not winners:
                 await message.reply(
+                    f"Time is up and"
                     f"No one have won the lottery!"
                 )
             else:
@@ -222,7 +238,7 @@ async def callback_vote_action(
     callback_data_action = callback_data["action"]
 
     idLottery = await get_id_lottery()
-    if idLottery is not int:
+    if not isinstance(idLottery, int):
         await bot.edit_message_text(
             "No lottery is running", query.message.chat.id, query.message.message_id
         )
@@ -242,9 +258,10 @@ async def callback_vote_action(
                 )
             await stop_lottery()
 
-    user_id = query.from_user.username
+    user_name = query.from_user.username
+    user_id = query.from_user.id
 
-    emojiDict = lottery.get_emoji_dict()
+    emojiDict = {"🍓": "strawberry", "🍎": "apple", "🍐": "pear", "🍌": "banana"}  # might need better solution but not now
     weirdEmoji = False
     reaction = None
     if callback_data_action in emojiDict.values():
@@ -254,34 +271,28 @@ async def callback_vote_action(
         weirdEmoji = True
 
     if not weirdEmoji:
-        userVote = lottery.get_user_vote(user_id)
-        vote_count = len(userVote)
-        sameFruitVote = userVote.get(reaction, 0)
+        bet = await post_bet(user_id, idLottery, reaction)
 
-        maxVotes = lottery.get_max_vote()
-
-        if sameFruitVote == 1:
-            print(user_id)
+        if bet == {'message': 'Already voted on this lottery'}:
             await bot.edit_message_text(
-                f"User {user_id} have already voted this fruit! \n"
+                f"User {user_name} have already voted on this lottery! \n"
                 f"{timeLeft} minutes left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),
             )
 
-        elif vote_count < maxVotes and sameFruitVote == 0:
+        elif bet == {'message': 'Lottery not found'}:
             await bot.edit_message_text(
-                f"{user_id} voted {reaction} \n" f"{timeLeft} minutes left ",
+                f"Lottery not found!",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),
             )
-            lottery.store_vote(reaction, user_id)
 
         else:
             await bot.edit_message_text(
-                f"User {user_id} already voted 3 fruit! \n" f"{timeLeft} minutes left ",
+                f"{user_name} voted {reaction} \n" f"{timeLeft} minutes left ",
                 query.message.chat.id,
                 query.message.message_id,
                 reply_markup=get_keyboard(),

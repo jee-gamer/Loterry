@@ -47,9 +47,9 @@ def post_user_vote() -> dict:  # need to check if lottery exist or working!
     data = request.get_json()
     print(data)
 
-    sameBet = session.query(Bet).filter(Bet.idUser == data["idUser"], Bet.idLottery == data["idLottery"], Bet.userBet == data["userBet"]).all()
+    sameBet = session.query(Bet).filter(Bet.idUser == data["idUser"], Bet.idLottery == data["idLottery"]).all()
     if sameBet:
-        return {'message': 'This bet is a Duplicate'}
+        return {'message': 'Already voted on this lottery'}
 
     lottery = session.query(Lottery).filter(Lottery.idLottery == data["idLottery"]).first()
     if not lottery:
