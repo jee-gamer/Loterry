@@ -20,6 +20,9 @@ from lottery import Lottery
 from flask import request, jsonify
 import requests
 
+from lottery_timer import LotteryTimer
+LotteryTimer = LotteryTimer()
+
 logging.basicConfig(level=logging.INFO)
 
 API_TOKEN = environ.get("BotApi")
@@ -36,6 +39,10 @@ vote_cb = CallbackData("vote", "action")  # vote:<action>
 givenTime = 10  # minutes
 lottery = Lottery(time_delta=givenTime)
 
+
+# async def timer():
+#     obj = LotteryTimer()
+#     result = await obj.async_func()
 
 async def time_left(idLottery):
     print(f"what is timeleft?")
@@ -307,4 +314,5 @@ async def message_not_modified_handler(update, error):
 
 
 if __name__ == "__main__":
+    asyncio.run(LotteryTimer.run())
     executor.start_polling(dp, skip_updates=True)

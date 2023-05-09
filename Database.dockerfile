@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 RUN mkdir -p "/app"
 COPY Database/database/model.py /app
-# uhh use query or model??
+# query is just a test script
 
 
 WORKDIR /app
