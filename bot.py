@@ -20,8 +20,9 @@ from lottery import Lottery
 from flask import request, jsonify
 import requests
 
+
 from lottery_timer import LotteryTimer
-LotteryTimer = LotteryTimer()
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,11 +39,6 @@ vote_cb = CallbackData("vote", "action")  # vote:<action>
 
 givenTime = 10  # minutes
 lottery = Lottery(time_delta=givenTime)
-
-
-# async def timer():
-#     obj = LotteryTimer()
-#     result = await obj.async_func()
 
 async def time_left(idLottery):
     print(f"what is timeleft?")
@@ -312,7 +308,13 @@ async def callback_vote_action(
 async def message_not_modified_handler(update, error):
     return True  # errors_handler must return True if error was handled correctly
 
+async def main():
+    timer = LotteryTimer()
+    timer_task = asyncio.create_task(timer.run())
+    bot_task = asyncio.create_task(executor.start_polling(dp, skip_updates=True))
+    await asyncio.gather(timer_task, bot_task)
+
 
 if __name__ == "__main__":
-    asyncio.run(LotteryTimer.run())
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
+

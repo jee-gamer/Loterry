@@ -71,6 +71,28 @@ paths:
           '201':
             description: Created
 
+    /all_users:
+      get:
+        operationId: api.get_users
+        description: Returns an information about all users registered in the service
+        produces:
+          - application/json
+        responses:
+          '200':
+            description: List of user data objects
+            schema:
+              type: array
+              items:
+                type: string
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "User is not found in the database"
+
     /users_vote:
       get:
         operationId: api.get_user_vote
