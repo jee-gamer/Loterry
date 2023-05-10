@@ -57,7 +57,7 @@ class Lottery(Base):
         fruitList = ["strawberry", "apple", "banana", "pear"]
         self.fruitList = fruitList
         self.winningFruit = random.choice(fruitList)
-        self.givenTime = 30
+        self.givenTime = 1
         self.running = True
 
 

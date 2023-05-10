@@ -125,14 +125,14 @@ def get_winning_fruit(idLottery):
 def get_winners(idLottery):
     lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
     if not lottery:
-        return {'message': 'Lottery not found'}
+        return False  # {'message': 'Lottery not found'}
 
     winningFruit = lottery.winningFruit
     winner = []
     winningBet = session.query(Bet).filter(Bet.idLottery == idLottery, Bet.userBet == winningFruit).all()
     if not winningBet:
         print("no winner")
-        return {'message': 'No winner'}
+        return False  # {'message': 'No winner'}
     winner = []
 
     for bet in winningBet:

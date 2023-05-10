@@ -22,7 +22,7 @@ import requests
 
 
 from lottery_timer import LotteryTimer
-
+timer = LotteryTimer()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,8 +37,9 @@ dp.middleware.setup(LoggingMiddleware())
 
 vote_cb = CallbackData("vote", "action")  # vote:<action>
 
-givenTime = 10  # minutes
+givenTime = 1  # minutes
 lottery = Lottery(time_delta=givenTime)
+
 
 async def time_left(idLottery):
     print(f"what is timeleft?")
@@ -69,6 +70,7 @@ async def start_lottery():
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{DATABASE_URL}/lottery") as response:
             data = await response.json()
+            asyncio.create_task(timer.run())
             print(data)
 
 
@@ -78,6 +80,9 @@ async def get_winners(idLottery):
         async with session.get(f"{DATABASE_URL}/lottery/winners?idLottery={idLottery}") as response:
             data = await response.json()
             print(data)
+            if not data:
+                return False
+            return data
 
 
 async def get_id_lottery():
@@ -202,7 +207,7 @@ async def cmd_start(message: types.Message):
     print(idLottery)
     if not isinstance(idLottery, int):
         await message.reply(
-            "lottery isn't running! Start Lottery by typing !startLottery"
+            "lottery isn't running! Start Lottery by typing /startLottery"
         )
     else:
         timeLeft = await time_left(idLottery)
@@ -210,8 +215,7 @@ async def cmd_start(message: types.Message):
             winners = await get_winners(idLottery)
             if not winners:
                 await message.reply(
-                    f"Time is up and"
-                    f"No one have won the lottery!"
+                    f"Time is up and No one have won the lottery!"
                 )
             else:
                 await message.reply(
@@ -260,7 +264,7 @@ async def callback_vote_action(
                     f"Winners are {winners}" , query.message.chat.id, query.message.message_id
                 )
             await stop_lottery()
-
+            return
     user_name = query.from_user.username
     user_id = query.from_user.id
 
@@ -308,13 +312,14 @@ async def callback_vote_action(
 async def message_not_modified_handler(update, error):
     return True  # errors_handler must return True if error was handled correctly
 
-async def main():
-    timer = LotteryTimer()
-    timer_task = asyncio.create_task(timer.run())
-    bot_task = asyncio.create_task(executor.start_polling(dp, skip_updates=True))
-    await asyncio.gather(timer_task, bot_task)
+# async def main():
+#     timer = LotteryTimer()
+#     timer_task = asyncio.create_task(timer.run())
+#     bot_task = asyncio.create_task(executor.start_polling(dp, skip_updates=True))
+#     await asyncio.gather(timer_task, bot_task)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    executor.start_polling(dp, skip_updates=True)
+    # asyncio.run(main())
 

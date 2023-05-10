@@ -24,6 +24,16 @@ class LotteryTimer:
         for now subscribers will be the user that have voted
         '''
 
+    async def get_winners(self, idLottery):
+        data = None
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{DATABASE_URL}/lottery/winners?idLottery={idLottery}") as response:
+                data = await response.json()
+                print(data)
+                if not data:
+                    return False
+                return data
+
     async def get_id_lottery(self) -> int:
         data = None
         async with aiohttp.ClientSession() as session:
@@ -74,11 +84,18 @@ class LotteryTimer:
             if timeLeft < 0:
                 print("Lottery have ended!!")
                 await self.get_unique_user(idLottery)
-
-                for idUser in self.subscribers:
-                    print("Sent messages!")
-                    await bot.send_message(chat_id=idUser, text='The lottery is over! Check the results.')
-
+                winners = await LotteryTimer.get_winners(self, idLottery)
+                if not winners:
+                    for idUser in self.subscribers:
+                        print("Sent messages!")
+                        await bot.send_message(chat_id=idUser, text=f"Time is up and No one have won the lottery!")
+                    return
+                else:
+                    for idUser in self.subscribers:
+                        print("Sent messages!")
+                        await bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
+                                                                    f"Winners are {winners}")
+                    return
 
             #     for subscriber in subscribers:
             #         subscriber.notify(lottery_id)
