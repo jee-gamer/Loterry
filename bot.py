@@ -16,13 +16,11 @@ from aiogram.utils.exceptions import MessageNotModified
 
 from os import environ
 from datetime import datetime
-from lottery import Lottery
 from flask import request, jsonify
 import requests
 
-
+from Database.database.model import Lottery
 from lottery_timer import LotteryTimer
-timer = LotteryTimer()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -31,6 +29,7 @@ API_TOKEN = environ.get("BotApi")
 DATABASE_URL = "http://localhost:5000/api"
 
 bot = Bot(token=API_TOKEN)
+timer = LotteryTimer(bot)
 
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
@@ -38,7 +37,6 @@ dp.middleware.setup(LoggingMiddleware())
 vote_cb = CallbackData("vote", "action")  # vote:<action>
 
 givenTime = 1  # minutes
-lottery = Lottery(time_delta=givenTime)
 
 
 async def time_left(idLottery):
@@ -66,12 +64,12 @@ async def winning_fruit(idLottery):
 
 
 async def start_lottery():
-    data = None
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{DATABASE_URL}/lottery") as response:
             data = await response.json()
-            asyncio.create_task(timer.run())
-            print(data)
+            if "message" in data:
+                return None
+            return data
 
 
 async def get_winners(idLottery):
@@ -174,9 +172,9 @@ async def cmd_start(message: types.Message):
 
     idLottery = await get_id_lottery()
     if not isinstance(idLottery, int):
-        await start_lottery()
+        dlottery = await start_lottery()
         await message.reply(
-            f"Lottery started! {givenTime} minutes left! \n"
+            f"Lottery started! {dlottery['givenTime']} minutes left! \n"
             f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
@@ -184,13 +182,16 @@ async def cmd_start(message: types.Message):
         timeLeft = await time_left(idLottery)
         if timeLeft < 0:
             await stop_lottery()
-            await start_lottery()
-            await message.reply(
-                f"Lottery started! {givenTime} minutes left! \n"
-                f"You can vote a fruit!",
-                reply_markup=get_keyboard(),
-            )
-
+            dlottery = await start_lottery()
+            if dlottery:
+                print(dlottery)
+                return await message.reply(
+                    f"Lottery started! {dlottery['givenTime']} minutes left! \n"
+                    f"You can vote a fruit!",
+                    reply_markup=get_keyboard(),
+                )
+            else:
+                return await message.reply(f"Error")
         else:
             await message.reply(
                 f"Lottery is running! {timeLeft} minutes left! \n"
@@ -312,14 +313,15 @@ async def callback_vote_action(
 async def message_not_modified_handler(update, error):
     return True  # errors_handler must return True if error was handled correctly
 
-# async def main():
-#     timer = LotteryTimer()
-#     timer_task = asyncio.create_task(timer.run())
-#     bot_task = asyncio.create_task(executor.start_polling(dp, skip_updates=True))
-#     await asyncio.gather(timer_task, bot_task)
-
 
 if __name__ == "__main__":
+    print("Launching Timeout Worker")
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.wait(
+        [loop.create_task(timer.notify())]
+    ))
+    print("Launching Bot Worker")
     executor.start_polling(dp, skip_updates=True)
+    loop.close()
     # asyncio.run(main())
 

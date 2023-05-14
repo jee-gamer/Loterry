@@ -26,9 +26,7 @@ def get_users() -> dict:
     user_dicts = []
     for user in users:
         user_dicts.append(user.as_dict())
-    if user_dicts:
-        return jsonify(user_dicts)
-    return jsonify(f"user not found")
+    return jsonify(user_dicts)
 
 def post_user() -> dict:
     data = request.get_json()
@@ -81,8 +79,8 @@ def post_user_vote() -> dict:  # need to check if lottery exist or working!
 def get_lottery(id):
     lottery = session.query(Lottery).filter(Lottery.idLottery == id).first()
     if not lottery:
-        return {'message': 'Lottery not found'}
-    return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()])
+        return jsonify({'message': 'Lottery not found'}), 404
+    return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()]), 200
 
 
 def start_lottery():
