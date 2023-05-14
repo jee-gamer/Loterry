@@ -32,14 +32,21 @@ class LotteryTimer:
                     return False
                 return data
 
-    async def get_id_lottery(self) -> int:
+    async def get_id_lottery(self):
         data = None
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{DATABASE_URL}/lottery/running") as response:
                 data = await response.json()
                 if not data:
-                    return 0
+                    return None
                 return data
+
+    async def stop_lottery(self):
+        data = None
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f"{DATABASE_URL}/lottery/stop") as response:
+                data = await response.json()
+                print(data)
 
     async def get_lottery_time_left(self, idLottery):
         data = None
@@ -57,7 +64,6 @@ class LotteryTimer:
                     print(e)
                     return 0, 0
 
-
     async def get_unique_user(self, idLottery):  # put all users into subscribed list for now
         data = None
         async with aiohttp.ClientSession() as session:
@@ -71,7 +77,8 @@ class LotteryTimer:
         print('Launched notification task')
         idLottery = await LotteryTimer.get_id_lottery(self)
         if not idLottery:
-            return {'No lottery running'}
+            print('No lottery running')
+            return
         createdTime, givenTime = await LotteryTimer.get_lottery_time_left(self, idLottery)
         while True:
             await asyncio.sleep(5)
@@ -79,6 +86,7 @@ class LotteryTimer:
             timeLeft = (timeLeft / 60)
             if timeLeft < 0:
                 print("Lottery have ended!!")
+                await self.stop_lottery()
                 await self.get_unique_user(idLottery)
                 winners = await LotteryTimer.get_winners(self, idLottery)
                 if not winners:
@@ -90,7 +98,7 @@ class LotteryTimer:
                     for idUser in self.subscribers:
                         print("Sent messages!")
                         await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
-                                                                    f"Winners are {winners}")
+                                                                          f"Winners are {winners}")
                     return
 
             #     for subscriber in subscribers:

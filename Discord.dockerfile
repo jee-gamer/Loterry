@@ -8,7 +8,7 @@ WORKDIR /app
 ENV BotApi=""
 
 RUN pip install discord
-COPY lottery.py /app
+COPY old_lottery_class.py /app
 
 ENTRYPOINT [ "python" ]
 

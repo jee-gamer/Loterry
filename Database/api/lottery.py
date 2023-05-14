@@ -19,7 +19,7 @@ def get_lottery(id):
 def start_lottery():
     lottery = session.query(Lottery).filter(Lottery.running == 1).first()
     if lottery:
-        return {'message': 'There is already an active lottery'}
+        return jsonify({'message': 'There is already an active lottery'})
 
     maxId = session.query(func.max(Lottery.idLottery)).scalar()
     if not maxId:
@@ -28,7 +28,8 @@ def start_lottery():
     lottery = Lottery(idLottery)
     session.add(lottery)
     session.commit()
-    return {'message': 'lottery started'}
+    return jsonify([session.query(Lottery).filter(Lottery.running == 1).first().as_dict()])
+    # {'message': 'lottery started'}
 
 
 def get_time_left():
@@ -80,7 +81,8 @@ def get_winners(idLottery):
 def get_running_lottery():
     lottery = session.query(Lottery).filter(Lottery.running == 1).first()
     if not lottery:
-        return {'message': 'No lottery is running'}
+        return None
+        #  {'message': 'No lottery is running'}
 
     lotteryId = lottery.idLottery
     return jsonify(lotteryId)

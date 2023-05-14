@@ -10,7 +10,7 @@ WORKDIR /app
 ENV BotApi=""
 
 RUN pip install sqlAlchemy
-#COPY lottery.py /app
+#COPY old_lottery_class.py /app
 
 ENTRYPOINT [ "python" ]
 

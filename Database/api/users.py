@@ -21,12 +21,14 @@ def get_user(id) -> dict:
         return jsonify(user.as_dict())
     return jsonify(f"user not found")
 
+
 def get_users() -> dict:
     users = session.query(User).all()
     user_dicts = []
     for user in users:
         user_dicts.append(user.as_dict())
     return jsonify(user_dicts)
+
 
 def post_user() -> dict:
     data = request.get_json()

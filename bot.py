@@ -63,10 +63,11 @@ async def winning_fruit(idLottery):
             return data
 
 
-async def start_lottery():
+async def start_lottery():  # now returns lottery info if it did start one
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{DATABASE_URL}/lottery") as response:
             data = await response.json()
+            print(data)
             if "message" in data:
                 return None
             return data
@@ -88,7 +89,7 @@ async def get_id_lottery():
     async with aiohttp.ClientSession() as session:
         async with session.get(f"{DATABASE_URL}/lottery/running") as response:
             data = await response.json()
-            print(data)
+            print(f"Lottery id {data} running")
             return data
 
 
@@ -174,7 +175,7 @@ async def cmd_start(message: types.Message):
     if not isinstance(idLottery, int):
         dlottery = await start_lottery()
         await message.reply(
-            f"Lottery started! {dlottery['givenTime']} minutes left! \n"
+            f"Lottery started! {dlottery[0]['givenTime']} minutes left! \n"
             f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
@@ -186,7 +187,7 @@ async def cmd_start(message: types.Message):
             if dlottery:
                 print(dlottery)
                 return await message.reply(
-                    f"Lottery started! {dlottery['givenTime']} minutes left! \n"
+                    f"Lottery started! {dlottery[0]['givenTime']} minutes left! \n"
                     f"You can vote a fruit!",
                     reply_markup=get_keyboard(),
                 )
@@ -205,7 +206,6 @@ async def cmd_start(message: types.Message):
 )  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
     idLottery = await get_id_lottery()
-    print(idLottery)
     if not isinstance(idLottery, int):
         await message.reply(
             "lottery isn't running! Start Lottery by typing /startLottery"

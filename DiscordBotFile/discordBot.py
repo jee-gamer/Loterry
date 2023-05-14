@@ -3,7 +3,7 @@ from typing import Union
 
 import discord
 from os import environ
-from lottery import Lottery
+from old_lottery_class import Lottery
 
 API_TOKEN = environ.get("BotApi")
 
