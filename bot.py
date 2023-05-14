@@ -5,7 +5,8 @@ For more comprehensive example see callback_data_factory.py
 import json
 import logging
 import typing
-
+# now make timer run all the time keeping track of lottery and end lottery when time is up.
+# bruh I tried and now that shit run forever
 import aiohttp
 import asyncio
 

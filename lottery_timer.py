@@ -75,33 +75,32 @@ class LotteryTimer:
 
     async def notify(self):
         print('Launched notification task')
-        idLottery = await LotteryTimer.get_id_lottery(self)
-        if not idLottery:
-            print('No lottery running')
-            return
-        createdTime, givenTime = await LotteryTimer.get_lottery_time_left(self, idLottery)
         while True:
             await asyncio.sleep(5)
-            timeLeft = int(createdTime + (givenTime * 60)) - int(datetime.now().timestamp())
-            timeLeft = (timeLeft / 60)
-            if timeLeft < 0:
-                print("Lottery have ended!!")
-                await self.stop_lottery()
-                await self.get_unique_user(idLottery)
-                winners = await LotteryTimer.get_winners(self, idLottery)
-                if not winners:
-                    for idUser in self.subscribers:
-                        print("Sent messages!")
-                        await self._bot.send_message(chat_id=idUser, text=f"Time is up and No one have won the lottery!")
-                    return
-                else:
-                    for idUser in self.subscribers:
-                        print("Sent messages!")
-                        await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
-                                                                          f"Winners are {winners}")
-                    return
+            idLottery = await LotteryTimer.get_id_lottery(self)
 
-            #     for subscriber in subscribers:
+            while idLottery:
+                createdTime, givenTime = await LotteryTimer.get_lottery_time_left(self, idLottery)
+                timeLeft = int(createdTime + (givenTime * 60)) - int(datetime.now().timestamp())
+                timeLeft = (timeLeft / 60)
+                if timeLeft < 0:
+                    print("Lottery have ended!!")
+                    await self.stop_lottery()
+                    await self.get_unique_user(idLottery)
+                    winners = await LotteryTimer.get_winners(self, idLottery)
+                    if not winners:
+                        for idUser in self.subscribers:
+                            print("Sent messages!")
+                            await self._bot.send_message(chat_id=idUser, text=f"Time is up and No one have won the lottery!")
+                            return
+                    else:
+                        for idUser in self.subscribers:
+                            print("Sent messages!")
+                            await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
+                                                                              f"Winners are {winners}")
+                            return
+
+                        #     for subscriber in subscribers:
             #         subscriber.notify(lottery_id)
             #     del self.active_lotteries[lottery_id]
             #     del self.subscribers[lottery_id]
