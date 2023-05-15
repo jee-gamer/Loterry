@@ -79,7 +79,7 @@ class LotteryTimer:
             await asyncio.sleep(5)
             idLottery = await LotteryTimer.get_id_lottery(self)
 
-            while idLottery:
+            if idLottery:
                 createdTime, givenTime = await LotteryTimer.get_lottery_time_left(self, idLottery)
                 timeLeft = int(createdTime + (givenTime * 60)) - int(datetime.now().timestamp())
                 timeLeft = (timeLeft / 60)
