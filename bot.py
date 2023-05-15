@@ -7,6 +7,11 @@ import logging
 import typing
 # now make timer run all the time keeping track of lottery and end lottery when time is up.
 # bruh I tried and now that shit run forever
+# tried making backend client
+# now you make it work with bot ok?
+
+# fix the GitHub tmr
+
 import aiohttp
 import asyncio
 
@@ -21,13 +26,15 @@ from flask import request, jsonify
 import requests
 
 from Database.database.model import Lottery
+from Database.backendClient import BackendClient
 from lottery_timer import LotteryTimer
 
 logging.basicConfig(level=logging.INFO)
 
 API_TOKEN = environ.get("BotApi")
+client = BackendClient()
+DATABASE_URL = client.get_base_url()
 # DATABASE_URL = environ.get("DATABASE_URL")
-DATABASE_URL = "http://localhost:5000/api"
 
 bot = Bot(token=API_TOKEN)
 timer = LotteryTimer(bot)
@@ -38,89 +45,6 @@ dp.middleware.setup(LoggingMiddleware())
 vote_cb = CallbackData("vote", "action")  # vote:<action>
 
 givenTime = 1  # minutes
-
-
-async def time_left(idLottery):
-    print(f"what is timeleft?")
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{DATABASE_URL}/lottery/timeLeft?idLottery={idLottery}") as response:
-            data = await response.json()  # Parse the response JSON
-            print(f"timeLeft is {data}")
-            return data
-
-            # if response.status == 200:
-            #     data = await response.json()  # Parse the response JSON
-            #     print(data)
-            #     return data
-            # else:
-            #     return 'Error: ' + str(response.status)
-
-
-async def winning_fruit(idLottery):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{DATABASE_URL}/lottery/winningFruit?idLottery={idLottery}") as response:
-            data = await response.json()  # Parse the response JSON
-            print(data)
-            return data
-
-
-async def start_lottery():  # now returns lottery info if it did start one
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f"{DATABASE_URL}/lottery") as response:
-            data = await response.json()
-            print(data)
-            if "message" in data:
-                return None
-            return data
-
-
-async def get_winners(idLottery):
-    data = None
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{DATABASE_URL}/lottery/winners?idLottery={idLottery}") as response:
-            data = await response.json()
-            print(data)
-            if not data:
-                return False
-            return data
-
-
-async def get_id_lottery():
-    data = None
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{DATABASE_URL}/lottery/running") as response:
-            data = await response.json()
-            print(f"Lottery id {data} running")
-            return data
-
-
-async def stop_lottery():
-    data = None
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f"{DATABASE_URL}/lottery/stop") as response:
-            data = await response.json()
-            print(data)
-
-
-async def post_bet(idUser, idLottery, userBet):
-    data = None
-    vote = {
-        "idUser": idUser,
-        "idLottery":  idLottery,
-        "userBet": userBet
-    }
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f"{DATABASE_URL}/users_vote", json=vote) as response:
-            data = await response.json()
-            print(data)
-    return data
-
-''' HOW TO POST WITH DATA >>>
-
-        async with session.post(f"{DATABASE_URL}/lottery", json=lottery_data) as response:
-
-'''
 
 
 def get_keyboard():
@@ -172,19 +96,19 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
 
-    idLottery = await get_id_lottery()
+    idLottery = await client.get_id_lottery()
     if not isinstance(idLottery, int):
-        dlottery = await start_lottery()
+        dlottery = await client.start_lottery()
         await message.reply(
             f"Lottery started! {dlottery[0]['givenTime']} minutes left! \n"
             f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
     else:
-        timeLeft = await time_left(idLottery)
+        timeLeft = await client.time_left(idLottery)
         if timeLeft < 0:
-            await stop_lottery()
-            dlottery = await start_lottery()
+            await client.stop_lottery()
+            dlottery = await client.start_lottery()
             if dlottery:
                 print(dlottery)
                 return await message.reply(
@@ -206,15 +130,15 @@ async def cmd_start(message: types.Message):
     commands=["Lottery", "lottery", "result"]
 )  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
-    idLottery = await get_id_lottery()
+    idLottery = await client.get_id_lottery()
     if not isinstance(idLottery, int):
         await message.reply(
             "lottery isn't running! Start Lottery by typing /startLottery"
         )
     else:
-        timeLeft = await time_left(idLottery)
+        timeLeft = await client.time_left(idLottery)
         if timeLeft < 0:
-            winners = await get_winners(idLottery)
+            winners = await client.get_winners(idLottery)
             if not winners:
                 await message.reply(
                     f"Time is up and No one have won the lottery!"
@@ -224,7 +148,7 @@ async def cmd_start(message: types.Message):
                     f"Lottery have ended!\n"
                     f"Winners are {winners}"
                 )
-            await stop_lottery()
+            await client.stop_lottery()
 
         else:
             await message.reply(
@@ -246,16 +170,16 @@ async def callback_vote_action(
     await query.answer()  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data["action"]
 
-    idLottery = await get_id_lottery()
+    idLottery = await client.get_id_lottery()
     if not isinstance(idLottery, int):
         await bot.edit_message_text(
             "No lottery is running", query.message.chat.id, query.message.message_id
         )
         return
     else:
-        timeLeft = await time_left(idLottery)
+        timeLeft = await client.time_left(idLottery)
         if timeLeft <= 0:
-            winners = await get_winners(idLottery)
+            winners = await client.get_winners(idLottery)
             if not winners:
                 await bot.edit_message_text(
                     f"No one have won the lottery!", query.message.chat.id, query.message.message_id
@@ -265,7 +189,7 @@ async def callback_vote_action(
                     f"Lottery have ended!\n"
                     f"Winners are {winners}" , query.message.chat.id, query.message.message_id
                 )
-            await stop_lottery()
+            await client.stop_lottery()
             return
     user_name = query.from_user.username
     user_id = query.from_user.id
@@ -280,7 +204,7 @@ async def callback_vote_action(
         weirdEmoji = True
 
     if not weirdEmoji:
-        bet = await post_bet(user_id, idLottery, reaction)
+        bet = await client.post_bet(user_id, idLottery, reaction)
 
         if bet == {'message': 'Already voted on this lottery'}:
             await bot.edit_message_text(

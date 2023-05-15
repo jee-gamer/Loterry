@@ -4,8 +4,11 @@ import asyncio
 
 
 class BackendClient:
-    def __init__(self, base_url: str):
+    def __init__(self):
         self.DATABASE_URL = "http://localhost:5000/api"
+
+    def get_base_url(self):
+        return self.DATABASE_URL
 
     async def time_left(self, idLottery):
         print(f"what is timeleft?")
