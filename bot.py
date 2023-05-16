@@ -2,7 +2,6 @@
 This is a simple example of usage of CallbackData factory
 For more comprehensive example see callback_data_factory.py
 """
-import json
 import logging
 import typing
 # now make timer run all the time keeping track of lottery and end lottery when time is up.
@@ -21,12 +20,8 @@ from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
 
 from os import environ
-from datetime import datetime
-from flask import request, jsonify
-import requests
 
-from Database.database.model import Lottery
-from Database.backendClient import BackendClient
+from BackendClient.backendClient import BackendClient
 from lottery_timer import LotteryTimer
 
 logging.basicConfig(level=logging.INFO)

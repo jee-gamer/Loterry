@@ -1,12 +1,9 @@
-import time
 from datetime import datetime
 import aiohttp
-from os import environ
 import asyncio
 
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from Database.backendClient import BackendClient
+from aiogram import Bot
+from BackendClient.backendClient import BackendClient
 client = BackendClient()
 
 DATABASE_URL = "http://localhost:5000/api"
