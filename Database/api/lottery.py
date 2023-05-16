@@ -95,10 +95,3 @@ def stop_lottery():
     lottery.running = 0
     session.commit()
     return {'message': 'Stopped a running lottery'}
-
-
-def reset_everything():  # guess this thing only reset the internet
-    session.query(User).delete()
-    session.query(Lottery).delete()
-    session.query(Bet).delete()
-    return {'message': 'GONEEEEEEEE'}

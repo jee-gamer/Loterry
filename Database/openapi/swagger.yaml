@@ -189,7 +189,7 @@ paths:
           '201':
             description: Created
 
-    /lottery/timeLeft:
+    /lottery/time_left:
       get:
         operationId: api.get_time_left
         description: Returns an information about a lottery registered in the service
@@ -212,7 +212,7 @@ paths:
                   type: string
                   example: "Lottery is not found in the database"
 
-    /lottery/winningFruit:
+    /lottery/winning_fruit:
       get:
         operationId: api.get_winning_fruit
         description: Returns the winning fruit of a lottery
@@ -299,14 +299,3 @@ paths:
             description: Created
 
 
-    /resetEverything:
-      delete:
-        operationId: api.reset_everything
-        description: Returns database to it's empty state
-        produces:
-          - application/json
-        responses:
-          '200':
-            description: it's gone
-          '400':
-            description: Generic error
