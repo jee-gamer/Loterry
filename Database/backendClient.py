@@ -10,75 +10,45 @@ class BackendClient:
     def get_base_url(self):
         return self.DATABASE_URL
 
-    async def time_left(self, idLottery):
-        print(f"what is timeleft?")
+    async def make_request(self, method, endpoint, **kwargs):
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.DATABASE_URL}/lottery/timeLeft?idLottery={idLottery}") as response:
-                data = await response.json()  # Parse the response JSON
-                print(f"timeLeft is {data}")
+            url = f"{self.DATABASE_URL}{endpoint}"
+            async with session.request(method, url, **kwargs) as response:
+                data = await response.json()
                 return data
 
-                # if response.status == 200:
-                #     data = await response.json()  # Parse the response JSON
-                #     print(data)
-                #     return data
-                # else:
-                #     return 'Error: ' + str(response.status)
+    async def time_left(self, idLottery):
+        endpoint = f"/lottery/timeLeft?idLottery={idLottery}"
+        return await self.make_request('GET', endpoint)
 
     async def winning_fruit(self, idLottery):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.DATABASE_URL}/lottery/winningFruit?idLottery={idLottery}") as response:
-                data = await response.json()  # Parse the response JSON
-                print(data)
-                return data
+        endpoint = f"/lottery/winningFruit?idLottery={idLottery}"
+        return await self.make_request('GET', endpoint)
 
-    async def start_lottery(self):  # now returns lottery info if it did start one
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self.DATABASE_URL}/lottery") as response:
-                data = await response.json()
-                print(data)
-                if "message" in data:
-                    return None
-                return data
+    async def start_lottery(self):
+        endpoint = "/lottery"
+        return await self.make_request('POST', endpoint)
 
     async def get_winners(self, idLottery):
-        data = None
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.DATABASE_URL}/lottery/winners?idLottery={idLottery}") as response:
-                data = await response.json()
-                print(f"Winner is {data}")
-                if not data:
-                    return False
-                return data
+        endpoint = f"/lottery/winners?idLottery={idLottery}"
+        return await self.make_request('GET', endpoint)
 
     async def get_id_lottery(self):
-        data = None
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.DATABASE_URL}/lottery/running") as response:
-                data = await response.json()
-                print(f"Lottery id {data} running")
-                return data
+        endpoint = "/lottery/running"
+        return await self.make_request('GET', endpoint)
 
     async def stop_lottery(self):
-        data = None
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self.DATABASE_URL}/lottery/stop") as response:
-                data = await response.json()
-                print(data)
+        endpoint = "/lottery/stop"
+        return await self.make_request('POST', endpoint)
 
     async def post_bet(self, idUser, idLottery, userBet):
-        data = None
-        vote = {
+        endpoint = "/users_vote"
+        data = {
             "idUser": idUser,
-            "idLottery":  idLottery,
+            "idLottery": idLottery,
             "userBet": userBet
         }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self.DATABASE_URL}/users_vote", json=vote) as response:
-                data = await response.json()
-                print(data)
-        return data
+        return await self.make_request('POST', endpoint, json=data)
 
     ''' HOW TO POST WITH DATA >>>
     

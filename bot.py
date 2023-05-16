@@ -241,12 +241,12 @@ async def message_not_modified_handler(update, error):
 
 if __name__ == "__main__":
     print("Launching Timeout Worker")
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.wait(
-        [loop.create_task(timer.notify())]
-    ))
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(asyncio.wait(
+    #     [loop.create_task(timer.notify())]
+    # ))
     print("Launching Bot Worker")
     executor.start_polling(dp, skip_updates=True)
-    loop.close()
+    # loop.close()
     # asyncio.run(main())
 
