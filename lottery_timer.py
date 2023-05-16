@@ -6,7 +6,8 @@ import asyncio
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
-
+from Database.backendClient import BackendClient
+client = BackendClient()
 
 DATABASE_URL = "http://localhost:5000/api"
 
@@ -22,31 +23,14 @@ class LotteryTimer:
         for now subscribers will be the user that have voted
         '''
 
-    async def get_winners(self, idLottery):
+    async def get_unique_user(self, idLottery):  # put all users into subscribed list for now
         data = None
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{DATABASE_URL}/lottery/winners?idLottery={idLottery}") as response:
+            async with session.get(f"{DATABASE_URL}/all_users") as response:
                 data = await response.json()
-                print(data)
-                if not data:
-                    return False
-                return data
-
-    async def get_id_lottery(self):
-        data = None
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{DATABASE_URL}/lottery/running") as response:
-                data = await response.json()
-                if not data:
-                    return None
-                return data
-
-    async def stop_lottery(self):
-        data = None
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"{DATABASE_URL}/lottery/stop") as response:
-                data = await response.json()
-                print(data)
+                for user in data:
+                    self.subscribers.append(user["idUser"])
+                return {'Got idUsers'}
 
     async def get_lottery_time_left(self, idLottery):
         data = None
@@ -64,41 +48,33 @@ class LotteryTimer:
                     print(e)
                     return 0, 0
 
-    async def get_unique_user(self, idLottery):  # put all users into subscribed list for now
-        data = None
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{DATABASE_URL}/all_users") as response:
-                data = await response.json()
-                for user in data:
-                    self.subscribers.append(user["idUser"])
-                return {'Got idUsers'}
-
     async def notify(self):
         print('Launched notification task')
         while True:
             await asyncio.sleep(5)
-            idLottery = await LotteryTimer.get_id_lottery(self)
+            idLottery = await client.get_id_lottery()
 
             if idLottery:
+                print('found lottery, checking')
                 createdTime, givenTime = await LotteryTimer.get_lottery_time_left(self, idLottery)
                 timeLeft = int(createdTime + (givenTime * 60)) - int(datetime.now().timestamp())
                 timeLeft = (timeLeft / 60)
                 if timeLeft < 0:
                     print("Lottery have ended!!")
-                    await self.stop_lottery()
+                    await client.stop_lottery()
                     await self.get_unique_user(idLottery)
-                    winners = await LotteryTimer.get_winners(self, idLottery)
+                    winners = await client.get_winners(idLottery)
                     if not winners:
                         for idUser in self.subscribers:
                             print("Sent messages!")
                             await self._bot.send_message(chat_id=idUser, text=f"Time is up and No one have won the lottery!")
-                            return
+
                     else:
                         for idUser in self.subscribers:
                             print("Sent messages!")
                             await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
                                                                               f"Winners are {winners}")
-                            return
+
 
                         #     for subscriber in subscribers:
             #         subscriber.notify(lottery_id)
@@ -121,8 +97,8 @@ class LotteryTimer:
             #         del self.subscribers[lottery_id]
             # time.sleep(1)
 
-    def add_lottery(self, lottery_id, end_time):
-        self.active_lotteries[lottery_id] = end_time
-
-    def add_subscriber(self, lottery_id, subscriber):
-        self.subscribers.setdefault(lottery_id, []).append(subscriber)
+    # def add_lottery(self, lottery_id, end_time):
+    #     self.active_lotteries[lottery_id] = end_time
+    #
+    # def add_subscriber(self, lottery_id, subscriber):
+    #     self.subscribers.setdefault(lottery_id, []).append(subscriber)

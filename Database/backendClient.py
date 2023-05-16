@@ -46,7 +46,7 @@ class BackendClient:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.DATABASE_URL}/lottery/winners?idLottery={idLottery}") as response:
                 data = await response.json()
-                print(data)
+                print(f"Winner is {data}")
                 if not data:
                     return False
                 return data
