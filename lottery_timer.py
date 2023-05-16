@@ -49,7 +49,7 @@ class LotteryTimer:
                     return 0, 0
 
     async def notify(self):
-        print('Launched notification task')
+        print('Entering notification task')
         while True:
             await asyncio.sleep(5)
             idLottery = await client.get_id_lottery()
@@ -75,7 +75,7 @@ class LotteryTimer:
                             await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
                                                                               f"Winners are {winners}")
 
-
+        print('Exiting notification task')
                         #     for subscriber in subscribers:
             #         subscriber.notify(lottery_id)
             #     del self.active_lotteries[lottery_id]
