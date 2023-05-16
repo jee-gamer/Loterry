@@ -204,24 +204,21 @@ async def on_reaction_add(reaction, user):
             maxVotes = lottery.get_max_vote()
 
             if sameFruitVote == 1:
-                response = (
-                    f"You can vote up to {maxVote} fruit"
+                response = f"You can vote up to {maxVote} fruit" \
                     f"{user.name}, you already voted this fruit!"
-                )
+
                 await message.edit(content=response)
 
             elif vote_count < maxVotes and sameFruitVote == 0:
-                response = (
-                    f"You can vote up to {maxVote} fruit" f"{user} voted {reaction}"
-                )
+                response = f"You can vote up to {maxVote} fruit" f"{user} voted {reaction}"
+
                 await message.edit(content=response)
                 lottery.store_vote(reaction, username)
 
             else:
-                response = (
-                    f"You can vote up to {maxVote} fruit"
+                response = f"You can vote up to {maxVote} fruit" \
                     f"{user.name}, you already voted 3 fruit!"
-                )
+
                 await message.edit(content=response)
     else:
         logging.warning("This function doesn't work in private messages!")

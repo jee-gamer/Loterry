@@ -75,30 +75,3 @@ class LotteryTimer:
                             await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
                                                                               f"Winners are {winners}")
 
-        print('Exiting notification task')
-                        #     for subscriber in subscribers:
-            #         subscriber.notify(lottery_id)
-            #     del self.active_lotteries[lottery_id]
-            #     del self.subscribers[lottery_id]
-            #
-            #
-            #
-            #
-            #
-            #
-            #
-            # for lottery_id, end_time in list(self.active_lotteries.items()):
-            #     if now > end_time:
-            #         # lottery has ended, notify subscribers and remove from active lotteries
-            #         subscribers = self.subscribers.get(lottery_id, [])
-            #         for subscriber in subscribers:
-            #             subscriber.notify(lottery_id)
-            #         del self.active_lotteries[lottery_id]
-            #         del self.subscribers[lottery_id]
-            # time.sleep(1)
-
-    # def add_lottery(self, lottery_id, end_time):
-    #     self.active_lotteries[lottery_id] = end_time
-    #
-    # def add_subscriber(self, lottery_id, subscriber):
-    #     self.subscribers.setdefault(lottery_id, []).append(subscriber)
