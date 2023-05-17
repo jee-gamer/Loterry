@@ -23,7 +23,7 @@ class LotteryTimer:
     async def get_unique_user(self, idLottery):  # put all users into subscribed list for now
         data = None
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{DATABASE_URL}/all_users") as response:
+            async with session.get(f"{DATABASE_URL}/users/allUsers") as response:
                 data = await response.json()
                 for user in data:
                     self.subscribers.append(user["idUser"])

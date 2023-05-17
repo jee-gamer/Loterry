@@ -71,7 +71,7 @@ paths:
           '201':
             description: Created
 
-    /all_users:
+    /users/allUsers:
       get:
         operationId: api.get_users
         description: Returns an information about all users registered in the service
@@ -93,7 +93,7 @@ paths:
                   type: string
                   example: "User is not found in the database"
 
-    /users_vote:
+    /users/vote:
       get:
         operationId: api.get_user_vote
         description: Returns an information about user vote registered in the service
@@ -189,7 +189,7 @@ paths:
           '201':
             description: Created
 
-    /lottery/time_left:
+    /lottery/timeLeft:
       get:
         operationId: api.get_time_left
         description: Returns an information about a lottery registered in the service
@@ -212,7 +212,7 @@ paths:
                   type: string
                   example: "Lottery is not found in the database"
 
-    /lottery/winning_fruit:
+    /lottery/winningFruit:
       get:
         operationId: api.get_winning_fruit
         description: Returns the winning fruit of a lottery

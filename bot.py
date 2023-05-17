@@ -4,12 +4,8 @@ For more comprehensive example see callback_data_factory.py
 """
 import logging
 import typing
-# now make timer run all the time keeping track of lottery and end lottery when time is up.
-# bruh I tried and now that shit run forever
-# tried making backend client
-# now you make it work with bot ok?
 
-# fix the GitHub tmr
+# now make actual subscriber
 
 import aiohttp
 import asyncio

@@ -18,11 +18,11 @@ class BackendClient:
                 return data
 
     async def time_left(self, idLottery):
-        endpoint = f"/lottery/time_left?idLottery={idLottery}"
+        endpoint = f"/lottery/timeLeft?idLottery={idLottery}"
         return await self.make_request('GET', endpoint)
 
     async def winning_fruit(self, idLottery):
-        endpoint = f"/lottery/winning_fruit?idLottery={idLottery}"
+        endpoint = f"/lottery/winningFruit?idLottery={idLottery}"
         return await self.make_request('GET', endpoint)
 
     async def start_lottery(self):
@@ -42,7 +42,7 @@ class BackendClient:
         return await self.make_request('POST', endpoint)
 
     async def post_bet(self, idUser, idLottery, userBet):
-        endpoint = "/users_vote"
+        endpoint = "/users/vote"
         data = {
             "idUser": idUser,
             "idLottery": idLottery,
