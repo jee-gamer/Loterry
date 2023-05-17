@@ -20,13 +20,15 @@ class LotteryTimer:
         for now subscribers will be the user that have voted
         '''
 
-    async def get_unique_user(self, idLottery):  # put all users into subscribed list for now
+    async def get_unique_user(self, idLottery):
         data = None
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{DATABASE_URL}/users/allUsers") as response:
+            async with session.get(f"{DATABASE_URL}/users/allVote") as response:
                 data = await response.json()
-                for user in data:
-                    self.subscribers.append(user["idUser"])
+                print(data)
+                for bet in data:
+                    if bet["idLottery"] == idLottery:
+                        self.subscribers.append(bet["idUser"])
                 return {'Got idUsers'}
 
     async def get_lottery_time_left(self, idLottery):
@@ -53,7 +55,7 @@ class LotteryTimer:
 
             if idLottery:
                 print('found lottery, checking')
-                createdTime, givenTime = await LotteryTimer.get_lottery_time_left(self, idLottery)
+                createdTime, givenTime = await self.get_lottery_time_left(idLottery)
                 timeLeft = int(createdTime + (givenTime * 60)) - int(datetime.now().timestamp())
                 timeLeft = (timeLeft / 60)
                 if timeLeft < 0:

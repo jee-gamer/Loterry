@@ -51,6 +51,13 @@ def get_user_vote(id):
     return jsonify([v.as_dict() for v in session.query(Bet).filter(User.idUser == id).all()])
 
 
+def get_users_vote():
+    bet = session.query(Bet).all()
+    if not bet:
+        return {'message': 'User vote not found'}
+    return jsonify([v.as_dict() for v in bet])
+
+
 def post_user_vote() -> dict:  # need to check if lottery exist or working!
     data = request.get_json()
     print(data)
