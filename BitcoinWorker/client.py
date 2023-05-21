@@ -73,8 +73,7 @@ class BlockstreamClient:
 
             if all_block:
                 self._recent_blocks = all_block
-
-
+                
 
 if __name__ == "__main__":
     client = BlockstreamClient()
