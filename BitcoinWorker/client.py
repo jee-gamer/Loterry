@@ -15,9 +15,10 @@ class BlockstreamClient:
             #
             response = get(f"{self._base_path}{endpoint}")
             if response.status_code == 200:
-                data = response.text
-                print(data)
-                return data
+                if response.json():
+                    return response.json()
+                else:
+                    response.text
             else:
                 print(f"Can't request Blockstream: {response.status_code}")
         except Exception as e:
