@@ -3,6 +3,8 @@ from flask import request, jsonify
 import logging
 from datetime import datetime
 from sqlalchemy import func
+from BitcoinWorker.client import BlockstreamClient
+bcClient = BlockstreamClient()
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -16,7 +18,7 @@ def get_lottery(id):
     return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()]), 200
 
 
-def start_lottery():
+async def start_lottery():
     lottery = session.query(Lottery).filter(Lottery.running == 1).first()
     if lottery:
         return jsonify({'message': 'There is already an active lottery'})
@@ -25,7 +27,11 @@ def start_lottery():
     if not maxId:
         maxId = 0
     idLottery = maxId + 1
-    lottery = Lottery(idLottery)
+
+    height = await bcClient.get_last_height()
+    if not height:
+        height = None
+    lottery = Lottery(idLottery, height)
     session.add(lottery)
     session.commit()
     return jsonify([session.query(Lottery).filter(Lottery.running == 1).first().as_dict()])

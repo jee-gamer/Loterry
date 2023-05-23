@@ -58,6 +58,7 @@ def get_keyboard():
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
     data = None
+    currentHash = await bcClient.get_current_hash()
     if message.from_user.username is None:
         username = "No Username"
     else:
@@ -88,7 +89,6 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
 
-    lastHeight = await bcClient.get_last_height()
     idLottery = await client.get_id_lottery()
     if not isinstance(idLottery, int):
         dlottery = await client.start_lottery()

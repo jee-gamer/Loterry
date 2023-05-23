@@ -4,9 +4,7 @@ import asyncio
 
 from aiogram import Bot
 from BackendClient.backendClient import BackendClient
-from BitcoinWorker.client import BlockstreamClient
 client = BackendClient()
-bcClient = BlockstreamClient()
 
 DATABASE_URL = "http://localhost:5000/api"
 
