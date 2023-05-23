@@ -88,35 +88,20 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=["startLottery", "startlottery"])
 async def cmd_start(message: types.Message):
 
-    lastHeight = await bcClient.get_last_height()
-    idLottery = await client.get_id_lottery()
+    idLottery = await client.get_id_lottery()  # always return int if lottery is running
     if not isinstance(idLottery, int):
-        dlottery = await client.start_lottery()
+        await client.start_lottery()
         await message.reply(
-            f"Lottery started! {dlottery[0]['givenTime']} minutes left! \n"
+            f"Lottery started!\n"
             f"You can vote a fruit!",
             reply_markup=get_keyboard(),
         )
     else:
-        timeLeft = await client.time_left(idLottery)
-        if timeLeft < 0:
-            await client.stop_lottery()
-            dlottery = await client.start_lottery()
-            if dlottery:
-                print(dlottery)
-                return await message.reply(
-                    f"Lottery started! {dlottery[0]['givenTime']} minutes left! \n"
-                    f"You can vote a fruit!",
-                    reply_markup=get_keyboard(),
-                )
-            else:
-                return await message.reply(f"Error")
-        else:
-            await message.reply(
-                f"Lottery is running! {timeLeft} minutes left! \n"
-                f"You can vote a fruit!",
-                reply_markup=get_keyboard(),
-            )
+        await message.reply(
+            f"Lottery is running!\n"
+            f"You can vote a fruit!",
+            reply_markup=get_keyboard(),
+        )
 
 
 @dp.message_handler(

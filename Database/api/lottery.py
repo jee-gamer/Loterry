@@ -30,7 +30,7 @@ async def start_lottery():
 
     height = await bcClient.get_last_height()
     if not height:
-        height = None
+        return jsonify({'message': 'Cant get block height'})
     lottery = Lottery(idLottery, height)
     session.add(lottery)
     session.commit()
