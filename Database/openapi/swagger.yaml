@@ -296,8 +296,8 @@ paths:
                 - winningChoice
               properties:
                 winningChoice:
-                  type: integer
-                  example: 0
+                  type: string
+                  example: odd
         responses:
           '201':
             description: post the winning choice
