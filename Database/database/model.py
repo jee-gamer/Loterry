@@ -53,9 +53,7 @@ class Lottery(Base):
         """"""
         self.idLottery = idLottery
         self.createdAt = datetime.now()
-        fruitList = ["strawberry", "apple", "banana", "pear"]
-        self.fruitList = fruitList
-        self.winningFruit = random.choice(fruitList)
+        self.winningFruit = None
         self.startedHeight = startedHeight
         self.running = True
 

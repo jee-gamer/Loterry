@@ -38,6 +38,17 @@ async def start_lottery():
     # {'message': 'lottery started'}
 
 
+async def post_winning_choice():
+    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+    data = request.get_json()
+    if lottery:
+        lottery.winningFruit = data["winningChoice"]
+        session.commit()
+        return jsonify([session.query(Lottery).filter(Lottery.running == 1).first().as_dict()])
+    return {'message': 'Lottery not found'}
+    # {'message': 'lottery started'}
+
+
 def get_time_left():
     lottery = session.query(Lottery).filter(Lottery.running == 1).first()
     if not lottery:
@@ -59,6 +70,7 @@ def get_height():
     height = lottery.startedHeight
 
     return jsonify(height)
+
 
 def get_winning_fruit(idLottery):
     lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()

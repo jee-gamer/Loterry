@@ -40,9 +40,9 @@ class BlockstreamClient:
         endpoint = "/blocks/tip"
         return await self.make_request(endpoint)
 
-    async def get_last_height(self):
+    async def get_last_height(self) -> int:
         endpoint = "/blocks/tip/height"
-        return await self.make_request(endpoint)
+        return int(await self.make_request(endpoint))
 
     async def sync_tip(self):
         while True:

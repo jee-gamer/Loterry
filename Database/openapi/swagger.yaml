@@ -240,11 +240,6 @@ paths:
         description: Returns an information about a lottery's height registered in the service
         produces:
           - application/json
-        parameters:
-          - in: query
-            name: idLottery
-            type: integer
-            required: true
         responses:
           '200':
             description: returned a lottery starting block height
@@ -283,7 +278,29 @@ paths:
                 message:
                   type: string
                   example: "Lottery is not found in the database"
-
+      post:
+        operationId: api.post_winning_choice
+        description: post a winning choice to a lottery database
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: body
+            in: body
+            required: true
+            schema:
+              # Body schema with atomic property examples
+              type: object
+              required:
+                - winningChoice
+              properties:
+                winningChoice:
+                  type: integer
+                  example: 0
+        responses:
+          '201':
+            description: post the winning choice
 
     /lottery/running:
       get:

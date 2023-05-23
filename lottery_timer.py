@@ -57,21 +57,34 @@ class LotteryTimer:
 
             if idLottery:
                 print('found lottery, checking')
-                height = await client.get_height(idLottery)
+                height = await client.get_height()
                 lastHeight = await bcClient.get_last_height()
                 if lastHeight > height:
-                    print("Lottery have ended!!")
-                    await client.stop_lottery()
-                    await self.get_unique_user(idLottery)
-                    winners = await client.get_winners(idLottery)
-                    if not winners:
-                        for idUser in self.subscribers:
-                            print("Sent messages!")
-                            await self._bot.send_message(chat_id=idUser, text=f"Time is up and No one have won the lottery!")
+                    print("stop allowing votes")
+                    # stop people from voting
 
-                    else:
-                        for idUser in self.subscribers:
-                            print("Sent messages!")
-                            await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
-                                                                              f"Winners are {winners}")
+                    if lastHeight > height+1:
+                        currentHash = await bcClient.get_current_hash()
+                        decimalId = int(currentHash, 16)
+                        if decimalId % 2 == 0:
+                            print('even')
+                            await client.post_winning_choice('even')
+                        else:
+                            print('odd')
+                            await client.post_winning_choice('odd')
+
+                        await client.post_winning_choice("")
+                        await client.stop_lottery()
+                        await self.get_unique_user(idLottery)
+                        winners = await client.get_winners(idLottery)
+                        if not winners:
+                            for idUser in self.subscribers:
+                                print("Sent messages!")
+                                await self._bot.send_message(chat_id=idUser, text=f"Time is up and No one have won the lottery!")
+
+                        else:
+                            for idUser in self.subscribers:
+                                print("Sent messages!")
+                                await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
+                                                                                  f"Winners are {winners}")
 

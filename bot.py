@@ -3,6 +3,7 @@ This is a simple example of usage of CallbackData factory
 For more comprehensive example see callback_data_factory.py
 """
 import logging
+import time
 import typing
 
 # now make actual subscriber
@@ -38,6 +39,17 @@ dp.middleware.setup(LoggingMiddleware())
 vote_cb = CallbackData("vote", "action")  # vote:<action>
 
 givenTime = 1  # minutes
+
+
+async def post_winning():
+    currentHash = await bcClient.get_current_hash()
+    decimalId = int(currentHash, 16)
+    if decimalId % 2 == 0:
+        print('even')
+        await client.post_winning_choice('even')
+    else:
+        print('odd')
+        await client.post_winning_choice('odd')
 
 
 def get_keyboard():
@@ -87,15 +99,17 @@ async def cmd_start(message: types.Message):
     idLottery = await client.get_id_lottery()  # always return int if lottery is running
     if not isinstance(idLottery, int):
         await client.start_lottery()
+        height = await client.get_height()
         await message.reply(
-            f"Lottery started!\n"
-            f"You can vote a fruit!",
+            f"Lottery started! {height} started height\n"
+            f"You can vote odd or even!",
             reply_markup=get_keyboard(),
         )
     else:
+        height = await client.get_height()
         await message.reply(
-            f"Lottery is running!\n"
-            f"You can vote a fruit!",
+            f"Lottery is running! {height} started height\n"
+            f"You can vote odd or even!",
             reply_markup=get_keyboard(),
         )
 
@@ -111,9 +125,10 @@ async def cmd_start(message: types.Message):
             "lottery isn't running! Start Lottery by typing /startLottery"
         )
     else:
-        height = await client.get_height(idLottery)
+        height = await client.get_height()
         lastHeight = await bcClient.get_last_height()
-        if lastHeight > height:
+        if lastHeight > height+1:
+            await post_winning()
             await client.stop_lottery()
             winners = await client.get_winners(idLottery)
             if not winners:
@@ -130,7 +145,7 @@ async def cmd_start(message: types.Message):
         else:
             await message.reply(
                 f"lottery is running. {height} started height \n"
-                f"You can vote a fruit!",
+                f"You can vote odd or even!",
                 reply_markup=get_keyboard(),
             )
 
@@ -148,7 +163,7 @@ async def callback_vote_action(
     callback_data_action = callback_data["action"]
 
     idLottery = await client.get_id_lottery()
-    height = await client.get_height(idLottery)
+    height = await client.get_height()
 
     if not isinstance(idLottery, int):
         await bot.edit_message_text(
@@ -157,7 +172,8 @@ async def callback_vote_action(
         return
     else:
         lastHeight = await bcClient.get_last_height()
-        if lastHeight > height:
+        if lastHeight > height + 1:
+            await post_winning()
             await client.stop_lottery()
             winners = await client.get_winners(idLottery)
             if not winners:
@@ -167,7 +183,7 @@ async def callback_vote_action(
             else:
                 await bot.edit_message_text(
                     f"Lottery have ended!\n"
-                    f"Winners are {winners}" , query.message.chat.id, query.message.message_id
+                    f"Winners are {winners}", query.message.chat.id, query.message.message_id
                 )
             await client.stop_lottery()
             return
