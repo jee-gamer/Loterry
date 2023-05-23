@@ -44,14 +44,10 @@ def get_keyboard():
     keyboard = types.InlineKeyboardMarkup()
 
     keyboard.row(
-        types.InlineKeyboardButton("🍓", callback_data=vote_cb.new(action="strawberry")),
-        types.InlineKeyboardButton("🍎", callback_data=vote_cb.new(action="apple")),
+        types.InlineKeyboardButton("odd", callback_data=vote_cb.new(action="odd")),
+        types.InlineKeyboardButton("even", callback_data=vote_cb.new(action="even")),
     )
 
-    keyboard.row(
-        types.InlineKeyboardButton("🍐", callback_data=vote_cb.new(action="pear")),
-        types.InlineKeyboardButton("🍌", callback_data=vote_cb.new(action="banana")),
-    )
     return keyboard
 
 
@@ -109,13 +105,16 @@ async def cmd_start(message: types.Message):
 )  # lottery = 2 is when we got the result
 async def cmd_start(message: types.Message):
     idLottery = await client.get_id_lottery()
+
     if not isinstance(idLottery, int):
         await message.reply(
             "lottery isn't running! Start Lottery by typing /startLottery"
         )
     else:
-        timeLeft = await client.time_left(idLottery)
-        if timeLeft < 0:
+        height = await client.get_height(idLottery)
+        lastHeight = await bcClient.get_last_height()
+        if lastHeight > height:
+            await client.stop_lottery()
             winners = await client.get_winners(idLottery)
             if not winners:
                 await message.reply(
@@ -130,14 +129,14 @@ async def cmd_start(message: types.Message):
 
         else:
             await message.reply(
-                f"lottery is running. {timeLeft} minutes left! \n"
+                f"lottery is running. {height} started height \n"
                 f"You can vote a fruit!",
                 reply_markup=get_keyboard(),
             )
 
 
 @dp.callback_query_handler(
-    vote_cb.filter(action=["strawberry", "apple", "pear", "banana"])
+    vote_cb.filter(action=["odd", "even"])
 )
 async def callback_vote_action(
     query: types.CallbackQuery, callback_data: typing.Dict[str, str]
@@ -149,14 +148,17 @@ async def callback_vote_action(
     callback_data_action = callback_data["action"]
 
     idLottery = await client.get_id_lottery()
+    height = await client.get_height(idLottery)
+
     if not isinstance(idLottery, int):
         await bot.edit_message_text(
             "No lottery is running", query.message.chat.id, query.message.message_id
         )
         return
     else:
-        timeLeft = await client.time_left(idLottery)
-        if timeLeft <= 0:
+        lastHeight = await bcClient.get_last_height()
+        if lastHeight > height:
+            await client.stop_lottery()
             winners = await client.get_winners(idLottery)
             if not winners:
                 await bot.edit_message_text(
@@ -169,45 +171,37 @@ async def callback_vote_action(
                 )
             await client.stop_lottery()
             return
+
     user_name = query.from_user.username
     user_id = query.from_user.id
 
-    emojiDict = {"🍓": "strawberry", "🍎": "apple", "🍐": "pear", "🍌": "banana"}  # might need better solution but not now
-    weirdEmoji = False
-    reaction = None
-    if callback_data_action in emojiDict.values():
-        reaction = callback_data_action
+    reaction = callback_data_action
+    bet = await client.post_bet(user_id, idLottery, reaction)
 
-    if reaction is None:
-        weirdEmoji = True
+    if bet == {'message': 'Already voted on this lottery'}:
+        await bot.edit_message_text(
+            f"User {user_name} have already voted on this lottery! \n"
+            f"{height} height started",
+            query.message.chat.id,
+            query.message.message_id,
+            reply_markup=get_keyboard(),
+        )
 
-    if not weirdEmoji:
-        bet = await client.post_bet(user_id, idLottery, reaction)
+    elif bet == {'message': 'Lottery not found'}:
+        await bot.edit_message_text(
+            f"Lottery not found!",
+            query.message.chat.id,
+            query.message.message_id,
+            reply_markup=get_keyboard(),
+        )
 
-        if bet == {'message': 'Already voted on this lottery'}:
-            await bot.edit_message_text(
-                f"User {user_name} have already voted on this lottery! \n"
-                f"{timeLeft} minutes left ",
-                query.message.chat.id,
-                query.message.message_id,
-                reply_markup=get_keyboard(),
-            )
-
-        elif bet == {'message': 'Lottery not found'}:
-            await bot.edit_message_text(
-                f"Lottery not found!",
-                query.message.chat.id,
-                query.message.message_id,
-                reply_markup=get_keyboard(),
-            )
-
-        else:
-            await bot.edit_message_text(
-                f"{user_name} voted {reaction} \n" f"{timeLeft} minutes left ",
-                query.message.chat.id,
-                query.message.message_id,
-                reply_markup=get_keyboard(),
-            )
+    else:
+        await bot.edit_message_text(
+            f"{user_name} voted {reaction} \n" f"{height} height started ",
+            query.message.chat.id,
+            query.message.message_id,
+            reply_markup=get_keyboard(),
+        )
 
 
 @dp.errors_handler(

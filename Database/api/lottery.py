@@ -51,6 +51,15 @@ def get_time_left():
     return jsonify(timeLeft)
 
 
+def get_height():
+    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+    if not lottery:
+        return {'message': 'Lottery not found'}
+
+    height = lottery.startedHeight
+
+    return jsonify(height)
+
 def get_winning_fruit(idLottery):
     lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
     if not lottery:

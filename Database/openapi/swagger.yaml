@@ -234,6 +234,29 @@ paths:
                   type: string
                   example: "Lottery is not found in the database"
 
+    /lottery/height:
+      get:
+        operationId: api.get_height
+        description: Returns an information about a lottery's height registered in the service
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: idLottery
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: returned a lottery starting block height
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Lottery is not found in the database"
+
     /lottery/winningFruit:
       get:
         operationId: api.get_winning_fruit

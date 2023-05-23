@@ -57,10 +57,9 @@ class LotteryTimer:
 
             if idLottery:
                 print('found lottery, checking')
-                createdTime, givenTime = await self.get_lottery_time_left(idLottery)
-                timeLeft = int(createdTime + (givenTime * 60)) - int(datetime.now().timestamp())
-                timeLeft = (timeLeft / 60)
-                if timeLeft < 0:
+                height = await client.get_height(idLottery)
+                lastHeight = await bcClient.get_last_height()
+                if lastHeight > height:
                     print("Lottery have ended!!")
                     await client.stop_lottery()
                     await self.get_unique_user(idLottery)
