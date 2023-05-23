@@ -19,11 +19,13 @@ from os import environ
 
 from BackendClient.backendClient import BackendClient
 from lottery_timer import LotteryTimer
+from BitcoinWorker.client import BlockstreamClient
 
 logging.basicConfig(level=logging.INFO)
 
 API_TOKEN = environ.get("BotApi")
 client = BackendClient()
+bcClient = BlockstreamClient()
 DATABASE_URL = client.get_base_url()
 # DATABASE_URL = environ.get("DATABASE_URL")
 
@@ -56,7 +58,7 @@ def get_keyboard():
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
     data = None
-
+    currentHash = await bcClient.get_current_hash()
     if message.from_user.username is None:
         username = "No Username"
     else:

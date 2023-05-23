@@ -10,10 +10,10 @@ class BlockstreamClient:
     def __init__(self):
         pass
 
-    async def get_current_hash(self):
+    async def make_request(self, endpoint):
         try:
             #
-            response = get(f"{self._base_path}/blocks/tip/hash")
+            response = get(f"{self._base_path}{endpoint}")
             if response.status_code == 200:
                 data = response.text
                 print(data)
@@ -24,47 +24,25 @@ class BlockstreamClient:
             print(f"Can't make a request {e}")
         return None
 
+    async def get_current_hash(self):
+        endpoint = "/blocks/tip/hash"
+        return await self.make_request(endpoint)
+
     async def get_block(self, hash):
-        try:
-            #
-            response = get(f"{self._base_path}/block/{hash}")
-            if response.status_code == 200:
-                data = response.json()
-                print(data)
-                return data
-            else:
-                print(f"Can't request Blockstream: {response.status_code}")
-        except Exception as e:
-            print(f"Can't make a request {e}")
-        return None
+        endpoint = f"/block/{hash}"
+        return await self.make_request(endpoint)
 
     async def get_block_status(self, hash):
-        try:
-            #
-            response = get(f"{self._base_path}/block/{hash}/status")
-            if response.status_code == 200:
-                data = response.json()
-                print(data)
-                return data
-            else:
-                print(f"Can't request Blockstream: {response.status_code}")
-        except Exception as e:
-            print(f"Can't make a request {e}")
-        return None
+        endpoint = f"/block/{hash}/status"
+        return await self.make_request(endpoint)
 
     async def get_all_block(self):
-        try:
-            #
-            response = get(f"{self._base_path}/blocks/tip")
-            if response.status_code == 200:
-                data = response.json()
-                print(data)
-                return data
-            else:
-                print(f"Can't request Blockstream: {response.status_code}")
-        except Exception as e:
-            print(f"Can't make a request {e}")
-        return None
+        endpoint = "/blocks/tip"
+        return await self.make_request(endpoint)
+
+    async def get_last_height(self):
+        endpoint = "/blocks/tip/height"
+        return await self.make_request(endpoint)
 
     async def sync_tip(self):
         while True:
@@ -79,3 +57,4 @@ if __name__ == "__main__":
     client = BlockstreamClient()
     currentHash = asyncio.run(client.get_current_hash())
     asyncio.run(client.get_block_status(currentHash))
+
