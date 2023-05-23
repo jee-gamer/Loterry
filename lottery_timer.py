@@ -73,7 +73,6 @@ class LotteryTimer:
                             print('odd')
                             await client.post_winning_choice('odd')
 
-                        await client.post_winning_choice("")
                         await client.stop_lottery()
                         await self.get_unique_user(idLottery)
                         winners = await client.get_winners(idLottery)
