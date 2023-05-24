@@ -61,7 +61,7 @@ class LotteryTimer:
                 lastHeight = await bcClient.get_last_height()
                 if lastHeight > height:
                     print("stop allowing votes")
-                    # stop people from voting
+                    # stop people from voting, real function in the bot itself
 
                     if lastHeight > height+1:
                         currentHash = await bcClient.get_current_hash()

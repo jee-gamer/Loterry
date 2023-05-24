@@ -18,7 +18,7 @@ class BlockstreamClient:
                 if response.json():
                     return response.json()
                 else:
-                    response.text
+                    return response.text
             else:
                 print(f"Can't request Blockstream: {response.status_code}")
         except Exception as e:

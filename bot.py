@@ -172,7 +172,7 @@ async def callback_vote_action(
         return
     else:
         lastHeight = await bcClient.get_last_height()
-        if lastHeight > height + 1:
+        if lastHeight > height + 1:  # if 3rd block come then calculate winner and send results
             await post_winning()
             await client.stop_lottery()
             winners = await client.get_winners(idLottery)
@@ -187,7 +187,11 @@ async def callback_vote_action(
                 )
             await client.stop_lottery()
             return
-
+        elif lastHeight > height:  # if the there's a new block, stop users from voting
+            await bot.edit_message_text(
+                f"Time for voting is up! wait for results", query.message.chat.id, query.message.message_id
+            )
+            return
     user_name = query.from_user.username
     user_id = query.from_user.id
 

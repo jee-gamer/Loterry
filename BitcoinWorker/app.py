@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s %(message)s',
                     level=logging.INFO)
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET", "POST"])  # home page
 def index():
     logging.warning(f"request was {request.method}")
     if request.method == "POST":
