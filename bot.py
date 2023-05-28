@@ -159,7 +159,8 @@ async def callback_vote_action(
     logging.info(
         "Got this callback data: %r", callback_data
     )  # callback_data contains all info from callback data
-    await query.answer()  # don't forget to answer callback query as soon as possible
+    await query.answer(text="Bet is accepted")  # don't forget to answer callback query as soon as possible
+
     callback_data_action = callback_data["action"]
 
     idLottery = await client.get_id_lottery()

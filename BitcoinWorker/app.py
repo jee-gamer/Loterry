@@ -1,60 +1,71 @@
 import asyncio
-from client import BlockstreamClient
-from flask import Flask, jsonify, request
-import json
-import logging
+from contextlib import suppress
 
-app = Flask(__name__)
+from client import BlockstreamClient
+import logging
+from aiohttp import web
+
+
 bitcoin_client = BlockstreamClient()
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
 
+app = web.Application()
+routes = web.RouteTableDef()
 
-@app.route("/", methods=["GET", "POST"])  # home page
-def index():
-    logging.warning(f"request was {request.method}")
-    if request.method == "POST":
-        try:
-            d = json.loads(request.data)
-            logging.warning(f"data {d}")
-        except Exception as e:
-            logging.error(f"{e}")
-            return jsonify({"error": "ill formatted json"}), 200
-    return jsonify({"jees": "says hello"}), 200
+@routes.get("/")
+async def index(request):
+    tip, hash = await bitcoin_client.get_tip()
+    return web.json_response({"status": "ok", "tip": tip, "hash": hash})
 
 
-@app.route("/tip")
-def get_current_hash():
-    hash = asyncio.run(bitcoin_client.get_current_hash())
+@routes.get("/tip")
+async def get_current_hash(request):
+    hash = await bitcoin_client.get_current_hash()
     if not hash:
-        return jsonify({'message': 'error with request'}), 404
-    return jsonify({"tip": hash})
+        return web.json_response({'message': 'error with request'})
+    return web.json_response({"tip": hash})
 
 
-@app.route("/block/<hash>")
-def get_block(hash):
-    data = asyncio.run(bitcoin_client.get_block(hash))
+@routes.get("/block")
+async def get_block(request):
+    if "hash" in request.query.keys():
+        data = await bitcoin_client.get_block(request.query["hash"])
+        return web.json_response(data)
+    else:
+        return web.json_response({'message': 'error with request'})
+
+
+@routes.get("/block/status/<hash>")
+async def get_block_status(request, hash):
+    data = await bitcoin_client.get_block_status(hash)
     if not data:
-        return jsonify({'message': 'error with request'}), 404
-    return jsonify(data)
-
-
-@app.route("/block/<hash>")
-def get_block_status(hash):
-    data = bitcoin_client.get_block_status(hash)
-    if not data:
-        return jsonify({'message': 'error with request'}), 404
-    return data
-
-@app.route("/lastblocks")
-def get_all_block():
-    data = bitcoin_client.get_all_block()
-    if not data:
-        return jsonify({'message': 'error with request'}), 404
+        return web.json_response({'message': 'error with request'})
     return data
 
 
+@routes.get("/lastblocks")
+async def get_all_block(request):
+    data = await bitcoin_client.get_all_block()
+    if not data:
+        return web.json_response({'message': 'error with request'})
+
+    return data
+
+
+async def background_tasks(app):
+
+    app['btc_worker'] = asyncio.create_task(bitcoin_client.sync_tip())
+
+    yield
+
+    app['btc_worker'].cancel()
+    with suppress(asyncio.CancelledError):
+        await app['btc_worker']  # Ensure any exceptions etc. are raised.
+
+app.router.add_routes(routes)
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.cleanup_ctx.append(background_tasks)
+    web.run_app(app, port=5000)
