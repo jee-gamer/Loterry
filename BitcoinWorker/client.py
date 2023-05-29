@@ -1,6 +1,8 @@
 import asyncio
+import json
+
 from requests import get
-import redis as redis
+import redis.asyncio as redis
 
 
 class BlockstreamClient:
@@ -60,22 +62,17 @@ class BlockstreamClient:
         return int(await self.make_request(endpoint))
 
     async def sync_tip(self):
-        """
         if not await self._redis.ping():
             raise ConnectionError("No connection with redis")
         else:
             print("Redis pinged. Started syncing")
-        """
-        p = self._redis.pubsub()
-        print("Connecting to Redis channel")
-        channel = p.subscribe('blocks')
         while True:
             try:
                 tip = await self.get_all_block()
-                if tip: # and self._tip != tip[0]["height"]
+                if tip and self._tip != tip[0]["height"]:
                     self._tip = tip[0]["height"]
                     self._tip_hash = tip[0]["id"]
-                    channel.publish("blocks", tip)
+                    await self._redis.publish("blocks", json.dumps(tip))
 
                 all_block = await self.get_all_block()
 
