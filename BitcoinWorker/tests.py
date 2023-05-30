@@ -23,13 +23,13 @@ async def listen_redis():
 class TestStuff(unittest.IsolatedAsyncioTestCase):
 
     async def test_my_func(self):
-        timeout = 60
+        timeout = 6000
         task = asyncio.create_task(listen_redis())  # Start the task asynchronously
 
-        messages = ['message 1', 'message 2', 'message 3']
-        for message in messages:
-            await asyncio.sleep(5)
-            await redis_client.publish('blocks', message)
+        # messages = ['message 1', 'message 2', 'message 3']
+        # for message in messages:
+        #     await asyncio.sleep(5)
+        #     await redis_client.publish('blocks', message)
 
         try:
             await asyncio.wait_for(task, timeout=timeout)  # Wait for the task to complete or timeout

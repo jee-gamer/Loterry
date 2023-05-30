@@ -83,7 +83,7 @@ class BlockstreamClient:
             except Exception as e:
                 print(e)
                 pass
-            await asyncio.sleep(10)
+            await asyncio.sleep(600)
 
 
 if __name__ == "__main__":
