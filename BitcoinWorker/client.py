@@ -69,7 +69,7 @@ class BlockstreamClient:
         while True:
             try:
                 tip = await self.get_all_block()
-                if tip and self._tip != tip[0]["height"]:
+                if tip and self._tip != tip[0]["height"]:  # if tip exist and the current height isn't equal
                     self._tip = tip[0]["height"]
                     self._tip_hash = tip[0]["id"]
                     await self._redis.publish("blocks", json.dumps(tip))
@@ -83,10 +83,9 @@ class BlockstreamClient:
             except Exception as e:
                 print(e)
                 pass
-            await asyncio.sleep(600)
+            await asyncio.sleep(10)
 
 
-"""
 if __name__ == "__main__":
     client = BlockstreamClient()
     currentHash = asyncio.run(client.get_current_hash())
@@ -95,4 +94,3 @@ if __name__ == "__main__":
         asyncio.run(client.sync_tip())
     except KeyboardInterrupt:
         print("Sync interrupted. Exiting")
-"""
