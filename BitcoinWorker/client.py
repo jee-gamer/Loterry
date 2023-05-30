@@ -19,7 +19,6 @@ class BlockstreamClient:
         else:
             self._redis = redis.Redis(host="localhost", port=6379, db=0)
 
-
     async def make_request(self, endpoint):
         try:
             #
@@ -53,7 +52,7 @@ class BlockstreamClient:
         endpoint = f"/block/{hash}/status"
         return await self.make_request(endpoint)
 
-    async def get_all_block(self):
+    async def get_all_blocks(self):
         endpoint = "/blocks/tip"
         return await self.make_request(endpoint)
 
@@ -68,17 +67,18 @@ class BlockstreamClient:
             print("Redis pinged. Started syncing")
         while True:
             try:
-                tip = await self.get_all_block()
-                if tip and self._tip != tip[0]["height"]:
-                    self._tip = tip[0]["height"]
-                    self._tip_hash = tip[0]["id"]
-                    await self._redis.publish("blocks", json.dumps(tip))
-
-                all_block = await self.get_all_block()
-
-                if all_block:
-                    self._recent_blocks = all_block
-
+                blocks = await self.get_all_blocks()
+                for b in blocks:
+                    if self._tip == 0:
+                        self._tip = b["height"]
+                        self._tip_hash = b["id"]
+                        await self._redis.publish("blocks", json.dumps(b))
+                        break
+                    elif self._tip != 0 and b["height"] > self._tip:
+                        print(f"Catch up {b['height']}/{b['id']}")
+                        await self._redis.publish("blocks", json.dumps(b))
+                    else:
+                        continue
                 print(f"Synced {self._tip}/{self._tip_hash}")
             except Exception as e:
                 print(e)

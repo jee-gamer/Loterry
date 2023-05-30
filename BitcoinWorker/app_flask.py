@@ -46,8 +46,8 @@ def get_block_status(hash):
     return data
 
 @app.route("/lastblocks")
-def get_all_block():
-    data = asyncio.run(bitcoin_client.get_all_block())
+def get_all_blocks():
+    data = asyncio.run(bitcoin_client.get_all_blocks())
     if not data:
         return jsonify({'message': 'error with request'}), 404
 

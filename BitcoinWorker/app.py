@@ -47,8 +47,8 @@ async def get_block_status(request, hash):
 
 
 @routes.get("/lastblocks")
-async def get_all_block(request):
-    data = await bitcoin_client.get_all_block()
+async def get_all_blocks(request):
+    data = await bitcoin_client.get_all_blocks()
     if not data:
         return web.json_response({'message': 'error with request'})
 
