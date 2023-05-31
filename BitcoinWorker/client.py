@@ -68,14 +68,17 @@ class BlockstreamClient:
         while True:
             try:
                 blocks = await self.get_all_blocks()
-                for b in blocks:
+                for b in reversed(blocks):
                     if self._tip == 0:
                         self._tip = b["height"]
                         self._tip_hash = b["id"]
+                        print(f"Sent to redis {self._tip}/{self._tip_hash}")
                         await self._redis.publish("blocks", json.dumps(b))
-                        break
-                    elif self._tip != 0 and b["height"] > self._tip:
-                        print(f"Catch up {b['height']}/{b['id']}")
+
+                    elif b["height"] > self._tip:
+                        self._tip = b["height"]
+                        self._tip_hash = b["id"]
+                        print(f"Catch up {self._tip}/{self._tip_hash}")
                         await self._redis.publish("blocks", json.dumps(b))
                     else:
                         continue
@@ -86,7 +89,6 @@ class BlockstreamClient:
             await asyncio.sleep(600)
 
 
-"""
 if __name__ == "__main__":
     client = BlockstreamClient()
     currentHash = asyncio.run(client.get_current_hash())
@@ -95,4 +97,3 @@ if __name__ == "__main__":
         asyncio.run(client.sync_tip())
     except KeyboardInterrupt:
         print("Sync interrupted. Exiting")
-"""
