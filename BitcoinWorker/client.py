@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from requests import get
+import aiohttp
 import redis.asyncio as redis
 
 
@@ -19,20 +19,16 @@ class BlockstreamClient:
         else:
             self._redis = redis.Redis(host="localhost", port=6379, db=0)
 
-    async def make_request(self, endpoint):
-        try:
-            #
-            response = get(f"{self._base_path}{endpoint}")
-            if response.status_code == 200:
-                try:
-                    return response.json()
-                except:
-                    return response.text
-            else:
-                print(f"Can't request Blockstream: {response.status_code}")
-        except Exception as e:
-            print(f"Can't make a request {e}")
-        return None
+    async def make_request(self, endpoint, method="GET", **kwargs):
+        async with aiohttp.ClientSession() as session:
+            url = f"{self._base_path}{endpoint}"
+            async with session.request(method, url, **kwargs) as response:
+                if response.status == 200:
+                    try:
+                        data = await response.json()
+                    except Exception as e:
+                        print(f"Can't obtain json {e}")
+                return data
 
     async def get_tip(self):
         return self._tip, self._tip_hash
