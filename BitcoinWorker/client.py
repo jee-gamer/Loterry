@@ -68,18 +68,13 @@ class BlockstreamClient:
         while True:
             try:
                 blocks = await self.get_all_blocks()
-                for b in reversed(blocks):
-                    if self._tip == 0:
+                for b in sorted(blocks, key=lambda b: b["height"]):
+                    if self._tip == 0 or b["height"] > self._tip:
                         self._tip = b["height"]
                         self._tip_hash = b["id"]
                         print(f"Sent to redis {self._tip}/{self._tip_hash}")
                         await self._redis.publish("blocks", json.dumps(b))
-
-                    elif b["height"] > self._tip:
-                        self._tip = b["height"]
-                        self._tip_hash = b["id"]
-                        print(f"Catch up {self._tip}/{self._tip_hash}")
-                        await self._redis.publish("blocks", json.dumps(b))
+                        await asyncio.sleep(0.01)
                     else:
                         continue
                 print(f"Synced {self._tip}/{self._tip_hash}")
