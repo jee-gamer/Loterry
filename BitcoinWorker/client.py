@@ -7,6 +7,8 @@ import redis.asyncio as redis
 from os import environ
 # API_TOKEN = environ.get("BotApi")
 # bot = Bot(token=API_TOKEN)
+
+
 class BlockstreamClient:
     _base_path = "https://blockstream.info/api"
     _recent_blocks = []
@@ -19,8 +21,9 @@ class BlockstreamClient:
             host, port = redis_uri.split(":")
             self._redis = redis.Redis(host=host, port=port, db=0)
         else:
-            self._redis = redis.Redis(host="0.0.0.0", port=6379, db=0)
+            self._redis = redis.Redis(host="redis-container", port=6379, db=0, )
             # localhost == 127.0.0.1
+
     async def make_request(self, endpoint, method="GET", **kwargs):
         async with aiohttp.ClientSession() as session:
             url = f"{self._base_path}{endpoint}"
@@ -35,7 +38,7 @@ class BlockstreamClient:
     async def get_tip(self):
         return self._tip, self._tip_hash
 
-    async def get_networkinfo(self):
+    async def get_network_info(self):
         return self._recent_blocks
 
     async def get_current_hash(self):

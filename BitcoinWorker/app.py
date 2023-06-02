@@ -15,6 +15,7 @@ logging.basicConfig(format='%(asctime)s %(message)s',
 app = web.Application()
 routes = web.RouteTableDef()
 
+
 @routes.get("/")
 async def index(request):
     tip, hash = await bitcoin_client.get_tip()
@@ -56,7 +57,6 @@ async def get_all_blocks(request):
 
 
 async def background_tasks(app):
-
     app['btc_worker'] = asyncio.create_task(bitcoin_client.sync_tip())
 
     yield
@@ -67,5 +67,7 @@ async def background_tasks(app):
 
 app.router.add_routes(routes)
 if __name__ == "__main__":
+
     app.cleanup_ctx.append(background_tasks)
+    print("ran app!!")
     web.run_app(app, port=5000)
