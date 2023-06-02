@@ -5,8 +5,8 @@ import aiohttp
 import redis.asyncio as redis
 
 from os import environ
-# API_TOKEN = environ.get("BotApi")
-# bot = Bot(token=API_TOKEN)
+REDIS_HOST = environ.get("host")
+REDIS_PORT = environ.get("port")
 
 
 class BlockstreamClient:
@@ -21,7 +21,7 @@ class BlockstreamClient:
             host, port = redis_uri.split(":")
             self._redis = redis.Redis(host=host, port=port, db=0)
         else:
-            self._redis = redis.Redis(host="redis-container", port=6379, db=0, )
+            self._redis = redis.Redis(host="0.0.0.0", port=6379, db=0)
             # localhost == 127.0.0.1
 
     async def make_request(self, endpoint, method="GET", **kwargs):
