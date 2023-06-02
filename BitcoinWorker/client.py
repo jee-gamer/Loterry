@@ -4,7 +4,9 @@ import json
 import aiohttp
 import redis.asyncio as redis
 
-
+from os import environ
+# API_TOKEN = environ.get("BotApi")
+# bot = Bot(token=API_TOKEN)
 class BlockstreamClient:
     _base_path = "https://blockstream.info/api"
     _recent_blocks = []
