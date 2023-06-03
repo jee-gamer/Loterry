@@ -65,9 +65,12 @@ async def background_tasks(app):
     with suppress(asyncio.CancelledError):
         await app['btc_worker']  # Ensure any exceptions etc. are raised.
 
+print("trying to add route")
 app.router.add_routes(routes)
-if __name__ == "__main__":
+print("added route")
 
+if __name__ == "__main__":
+    print('trying to run background')
     app.cleanup_ctx.append(background_tasks)
-    print("ran app!!")
+    print("ran background")
     web.run_app(app, port=5000)
