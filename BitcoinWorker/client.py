@@ -4,10 +4,6 @@ import json
 import aiohttp
 import redis.asyncio as redis
 
-from os import environ
-REDIS_HOST = environ.get("host")
-REDIS_PORT = environ.get("port")
-
 
 class BlockstreamClient:
     _base_path = "https://blockstream.info/api"
@@ -16,13 +12,10 @@ class BlockstreamClient:
     _tip_hash = ""
     _redis = None
 
-    def __init__(self, redis_uri=None):
-        if redis_uri and ":" in redis_uri:
-            host, port = redis_uri.split(":")
-            self._redis = redis.Redis(host=host, port=port, db=0)
-        else:
-            self._redis = redis.Redis(host="0.0.0.0", port=6379, db=0)
-            # localhost == 127.0.0.1
+    def __init__(self, redis_uri="localhost:6379"):
+        host, port = redis_uri.split(":")
+        print(f"Redis URI: {redis_uri}")
+        self._redis = redis.Redis(host=host, port=port, db=0)
 
     async def make_request(self, endpoint, method="GET", **kwargs):
         async with aiohttp.ClientSession() as session:

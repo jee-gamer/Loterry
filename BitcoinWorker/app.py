@@ -4,9 +4,12 @@ from contextlib import suppress
 from client import BlockstreamClient
 import logging
 from aiohttp import web
+from os import environ
 
+REDIS_HOST = environ.get("host", default="0.0.0.0")
+REDIS_PORT = environ.get("port", default="6379")
 
-bitcoin_client = BlockstreamClient()
+bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}")
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -70,5 +73,4 @@ app.router.add_routes(routes)
 if __name__ == "__main__":
 
     app.cleanup_ctx.append(background_tasks)
-    print("ran background")
     web.run_app(app, port=5000)
