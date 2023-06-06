@@ -19,14 +19,20 @@ from aiogram.utils.exceptions import MessageNotModified
 from os import environ
 
 from BackendClient.backendClient import BackendClient
-from lottery_timer import LotteryTimer
+from lottery_timer import LotteryTimer  # this run the class
 from BitcoinWorker.client import BlockstreamClient
-
+import redis.asyncio as redis
+from BitcoinWorker.app import REDIS_HOST, REDIS_PORT  # this run the class
 logging.basicConfig(level=logging.INFO)
+
 
 API_TOKEN = environ.get("BotApi")
 client = BackendClient()
-bcClient = BlockstreamClient()
+bcClient = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}")  # this run the class init too
+# HEAVY EXPERIMENT
+myRedis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+
+
 DATABASE_URL = client.get_base_url()
 # DATABASE_URL = environ.get("DATABASE_URL")
 
@@ -198,6 +204,11 @@ async def callback_vote_action(
 
     reaction = callback_data_action
     bet = await client.post_bet(user_id, idLottery, reaction)
+
+    if not await redis.ping():
+        raise ConnectionError("No connection with redis")
+    else:
+        print("Redis pinged. Started syncing")
 
     if bet == {'message': 'Already voted on this lottery'}:
         await bot.edit_message_text(

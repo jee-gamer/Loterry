@@ -14,7 +14,7 @@ class BlockstreamClient:
 
     def __init__(self, redis_uri="localhost:6379"):
         host, port = redis_uri.split(":")
-        print(f"Redis URI: {redis_uri}")
+        print(f"Redis URI client: {redis_uri}")
         self._redis = redis.Redis(host=host, port=port, db=0)
 
     async def make_request(self, endpoint, method="GET", **kwargs):
@@ -76,6 +76,9 @@ class BlockstreamClient:
                 print(e)
                 pass
             await asyncio.sleep(600)
+
+    # async def get_redis(self):
+    #     return self._redis
 
 
 if __name__ == "__main__":
