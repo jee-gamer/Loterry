@@ -22,15 +22,16 @@ from BackendClient.backendClient import BackendClient
 from lottery_timer import LotteryTimer  # this run the class
 from BitcoinWorker.client import BlockstreamClient
 import redis.asyncio as redis
-from BitcoinWorker.app import REDIS_HOST, REDIS_PORT  # this run the class
+# from BitcoinWorker.app import REDIS_HOST, REDIS_PORT  # this run the class
+# cut out the complication first, talk later
 logging.basicConfig(level=logging.INFO)
 
 
 API_TOKEN = environ.get("BotApi")
 client = BackendClient()
-bcClient = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}")  # this run the class init too
+bcClient = BlockstreamClient(f"0.0.0.0:6379")  # this run the class init too
 # HEAVY EXPERIMENT
-myRedis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+myRedis = redis.Redis(host="0.0.0.0", port=6379, db=0)
 
 
 DATABASE_URL = client.get_base_url()
@@ -205,7 +206,7 @@ async def callback_vote_action(
     reaction = callback_data_action
     bet = await client.post_bet(user_id, idLottery, reaction)
 
-    if not await redis.ping():
+    if not await myRedis.ping():
         raise ConnectionError("No connection with redis")
     else:
         print("Redis pinged. Started syncing")
