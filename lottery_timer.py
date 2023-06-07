@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 import aiohttp
 import asyncio
@@ -5,10 +6,14 @@ import asyncio
 from aiogram import Bot
 from BackendClient.backendClient import BackendClient
 from BitcoinWorker.client import BlockstreamClient
+import redis.asyncio as redis
+
 client = BackendClient()
 bcClient = BlockstreamClient()
 
 DATABASE_URL = "http://localhost:5000/api"
+myRedis = redis.Redis(host="localhost", port=6379, db=0)
+pubsub = myRedis.pubsub()
 
 
 class LotteryTimer:
@@ -86,4 +91,15 @@ class LotteryTimer:
                                 print("Sent messages!")
                                 await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
                                                                                   f"Winners are {winners}")
+
+    async def listen_vote(self):
+        await pubsub.subscribe('votes')
+        async for message in pubsub.listen():
+            print("There's a message")
+            if message['type'] == 'message':
+                str_data = message['data'].decode()
+                data = json.loads(str_data)
+                print(data)
+                await client.post_bet(data["idUser"], data["idLottery"], data["userBet"])
+                print('Bet registered')
 

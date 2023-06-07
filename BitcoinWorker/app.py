@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import suppress
 
-from .client import BlockstreamClient
+from client import BlockstreamClient
 import logging
 from aiohttp import web
 from os import environ

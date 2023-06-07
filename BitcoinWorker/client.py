@@ -25,13 +25,13 @@ class BlockstreamClient:
                     if response.headers.get('Content-Type') == 'text/plain':
                         try:
                             data = await response.text()
-                            print(data)
+                            print(f"from BcClient {data}")
                         except Exception as e:
                             print(f"Can't obtain json {e}")
                     else:
                         try:
                             data = await response.json()
-                            print(data)
+                            print(f"from BcClient {data}")
                         except Exception as e:
                             print(f"Can't obtain json {e}")
 

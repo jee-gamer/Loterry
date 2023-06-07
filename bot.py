@@ -4,6 +4,7 @@ For more comprehensive example see callback_data_factory.py
 
 RUN DATABASE APP BEFORE RUNNING THIS!!!
 """
+import json
 import logging
 import time
 import typing
@@ -35,7 +36,7 @@ API_TOKEN = environ.get("BotApi")
 client = BackendClient()
 bcClient = BlockstreamClient()  # this run the class init too
 # HEAVY EXPERIMENT
-myRedis = redis.Redis(host="0.0.0.0", port=6379, db=0)
+myRedis = redis.Redis(host="localhost", port=6379, db=0)
 
 
 DATABASE_URL = client.get_base_url()
@@ -170,17 +171,28 @@ async def callback_vote_action(
     logging.info(
         "Got this callback data: %r", callback_data
     )  # callback_data contains all info from callback data
-    await query.answer(text="Bet is accepted")  # don't forget to answer callback query as soon as possible
 
+    await query.answer(text="Bet is accepted")  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data["action"]
 
-    idLottery = await client.get_id_lottery()
-    height = await client.get_height()
-
+    # check redis
     if not await myRedis.ping():
         raise ConnectionError("No connection with redis")
     else:
         print("Redis pinged. Started syncing")
+
+    idLottery = await client.get_id_lottery()
+    height = await client.get_height()
+
+    user_id = query.from_user.id
+
+    bet = {
+        "idUser": user_id,
+        "idLottery": idLottery,
+        "userBet": callback_data_action
+    }
+
+    await myRedis.publish('votes', json.dumps(bet))
 
     if not isinstance(idLottery, int):
         await bot.edit_message_text(
@@ -209,36 +221,34 @@ async def callback_vote_action(
                 f"Time for voting is up! wait for results", query.message.chat.id, query.message.message_id
             )
             return
-    user_name = query.from_user.username
-    user_id = query.from_user.id
 
-    reaction = callback_data_action
-    bet = await client.post_bet(user_id, idLottery, reaction)
-
-    if bet == {'message': 'Already voted on this lottery'}:
-        await bot.edit_message_text(
-            f"User {user_name} have already voted on this lottery! \n"
-            f"{height} height started",
-            query.message.chat.id,
-            query.message.message_id,
-            reply_markup=get_keyboard(),
-        )
-
-    elif bet == {'message': 'Lottery not found'}:
-        await bot.edit_message_text(
-            f"Lottery not found!",
-            query.message.chat.id,
-            query.message.message_id,
-            reply_markup=get_keyboard(),
-        )
-
-    else:
-        await bot.edit_message_text(
-            f"{user_name} voted {reaction} \n" f"{height} height started ",
-            query.message.chat.id,
-            query.message.message_id,
-            reply_markup=get_keyboard(),
-        )
+    #
+    # # bet = await client.post_bet(user_id, idLottery, reaction)
+    #
+    # if bet == {'message': 'Already voted on this lottery'}:
+    #     await bot.edit_message_text(
+    #         f"User {user_name} have already voted on this lottery! \n"
+    #         f"{height} height started",
+    #         query.message.chat.id,
+    #         query.message.message_id,
+    #         reply_markup=get_keyboard(),
+    #     )
+    #
+    # elif bet == {'message': 'Lottery not found'}:
+    #     await bot.edit_message_text(
+    #         f"Lottery not found!",
+    #         query.message.chat.id,
+    #         query.message.message_id,
+    #         reply_markup=get_keyboard(),
+    #     )
+    #
+    # else:
+    #     await bot.edit_message_text(
+    #         f"{user_name} voted {reaction} \n" f"{height} height started ",
+    #         query.message.chat.id,
+    #         query.message.message_id,
+    #         reply_markup=get_keyboard(),
+    #     )
 
 
 @dp.errors_handler(
@@ -250,8 +260,9 @@ async def message_not_modified_handler(update, error):
 
 if __name__ == "__main__":
     print("Launching Timeout Worker")
-    # loop = asyncio.get_event_loop()
-    # asyncio.run_coroutine_threadsafe(timer.notify(), loop)
+    loop = asyncio.get_event_loop()
+    asyncio.run_coroutine_threadsafe(timer.listen_vote(), loop)
+    asyncio.run_coroutine_threadsafe(timer.notify(), loop)
     print("Launching Bot Worker")
     executor.start_polling(dp, skip_updates=True)
     # loop.close()
