@@ -1,6 +1,8 @@
 """
 This is a simple example of usage of CallbackData factory
 For more comprehensive example see callback_data_factory.py
+
+RUN DATABASE APP BEFORE RUNNING THIS!!!
 """
 import logging
 import time
@@ -22,16 +24,18 @@ from BackendClient.backendClient import BackendClient
 from lottery_timer import LotteryTimer  # this run the class
 from BitcoinWorker.client import BlockstreamClient
 import redis.asyncio as redis
+
 # from BitcoinWorker.app import REDIS_HOST, REDIS_PORT  # this run the class
 # cut out the complication first, talk later
+
 logging.basicConfig(level=logging.INFO)
 
 
 API_TOKEN = environ.get("BotApi")
 client = BackendClient()
-bcClient = BlockstreamClient(f"0.0.0.0:6379")  # this run the class init too
+bcClient = BlockstreamClient()  # this run the class init too
 # HEAVY EXPERIMENT
-myRedis = redis.Redis(host="0.0.0.0", port=6379, db=0)
+myRedis = redis.Redis(host="localhost", port=6379, db=0)
 
 
 DATABASE_URL = client.get_base_url()
@@ -246,8 +250,8 @@ async def message_not_modified_handler(update, error):
 
 if __name__ == "__main__":
     print("Launching Timeout Worker")
-    loop = asyncio.get_event_loop()
-    asyncio.run_coroutine_threadsafe(timer.notify(), loop)
+    # loop = asyncio.get_event_loop()
+    # asyncio.run_coroutine_threadsafe(timer.notify(), loop)
     print("Launching Bot Worker")
     executor.start_polling(dp, skip_updates=True)
     # loop.close()

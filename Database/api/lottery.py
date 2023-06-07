@@ -15,7 +15,7 @@ def get_lottery(id):
     lottery = session.query(Lottery).filter(Lottery.idLottery == id).first()
     if not lottery:
         return jsonify({'message': 'Lottery not found'}), 404
-    return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()]), 200
+    return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()])
 
 
 async def start_lottery():

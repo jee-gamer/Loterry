@@ -22,10 +22,21 @@ class BlockstreamClient:
             url = f"{self._base_path}{endpoint}"
             async with session.request(method, url, **kwargs) as response:
                 if response.status == 200:
-                    try:
-                        data = await response.json()
-                    except Exception as e:
-                        print(f"Can't obtain json {e}")
+                    if response.headers.get('Content-Type') == 'text/plain':
+                        try:
+                            data = await response.text()
+                            print(data)
+                        except Exception as e:
+                            print(f"Can't obtain json {e}")
+                    else:
+                        try:
+                            data = await response.json()
+                            print(data)
+                        except Exception as e:
+                            print(f"Can't obtain json {e}")
+
+                            # it's long I'm repeating myself right? but to be able to debug error it's here
+                            # maybe we can change it later once it works for sure.. I'll need your feedback
                 return data
 
     async def get_tip(self):
@@ -76,9 +87,6 @@ class BlockstreamClient:
                 print(e)
                 pass
             await asyncio.sleep(600)
-
-    # async def get_redis(self):
-    #     return self._redis
 
 
 if __name__ == "__main__":
