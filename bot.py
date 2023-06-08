@@ -14,7 +14,7 @@ import typing
 import aiohttp
 import asyncio
 
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, executor, types, filters
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
@@ -48,7 +48,7 @@ timer = LotteryTimer(bot)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
-vote_cb = CallbackData("vote", "action")  # vote:<action>
+vote_cb = CallbackData("vote", "action", "lottery")  # vote:<action>
 
 givenTime = 1  # minutes
 
@@ -64,12 +64,12 @@ async def post_winning():
         await client.post_winning_choice('odd')
 
 
-def get_keyboard():
+def get_keyboard(lottery: int):
     keyboard = types.InlineKeyboardMarkup()
 
     keyboard.row(
-        types.InlineKeyboardButton("odd", callback_data=vote_cb.new(action="odd")),
-        types.InlineKeyboardButton("even", callback_data=vote_cb.new(action="even")),
+        types.InlineKeyboardButton("odd", callback_data=vote_cb.new(action=f"odd", lottery=str(lottery))),
+        types.InlineKeyboardButton("even", callback_data=vote_cb.new(action=f"even", lottery=str(lottery))),
     )
 
     return keyboard
@@ -115,14 +115,14 @@ async def cmd_start(message: types.Message):
         await message.reply(
             f"Lottery started! {height} started height\n"
             f"You can vote odd or even!",
-            reply_markup=get_keyboard(),
+            reply_markup=get_keyboard(lottery=idLottery),
         )
     else:
         height = await client.get_height()
         await message.reply(
             f"Lottery is running! {height} started height\n"
             f"You can vote odd or even!",
-            reply_markup=get_keyboard(),
+            reply_markup=get_keyboard(lottery=idLottery),
         )
 
 
@@ -158,12 +158,12 @@ async def cmd_start(message: types.Message):
             await message.reply(
                 f"lottery is running. {height} started height \n"
                 f"You can vote odd or even!",
-                reply_markup=get_keyboard(),
+                reply_markup=get_keyboard(lottery=idLottery),
             )
 
 
 @dp.callback_query_handler(
-    vote_cb.filter(action=["odd", "even"])
+    vote_cb.filter(action=['odd', 'even'])
 )
 async def callback_vote_action(
     query: types.CallbackQuery, callback_data: typing.Dict[str, str]
@@ -172,17 +172,15 @@ async def callback_vote_action(
         "Got this callback data: %r", callback_data
     )  # callback_data contains all info from callback data
 
-    await query.answer(text="Bet is accepted")  # don't forget to answer callback query as soon as possible
+    await query.answer(text="Submitting bet")  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data["action"]
+    idLottery = callback_data["lottery"]
 
     # check redis
     if not await myRedis.ping():
         raise ConnectionError("No connection with redis")
     else:
         print("Redis pinged. Started syncing")
-
-    idLottery = await client.get_id_lottery()
-    height = await client.get_height()
 
     user_id = query.from_user.id
 
@@ -193,6 +191,10 @@ async def callback_vote_action(
     }
 
     await myRedis.publish('votes', json.dumps(bet))
+    await query.answer(text="Submitted")
+
+
+    height = await client.get_height()
 
     if not isinstance(idLottery, int):
         await bot.edit_message_text(
@@ -267,4 +269,3 @@ if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
     # loop.close()
     # asyncio.run(main())
-
