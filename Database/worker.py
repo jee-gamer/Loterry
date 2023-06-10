@@ -4,6 +4,7 @@ from database import session, Base, User, Bet, Lottery
 from os import environ
 import redis
 import json
+from datetime import timedelta
 
 
 REDIS_HOST = environ.get("host", default="localhost")
@@ -63,6 +64,9 @@ def blocks():
             print(data)
             print('Block processed')
 
+
 @app.task
 def ads(arg):
     print(f"Ad message {arg}")
+
+print('I was testing')
