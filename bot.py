@@ -36,7 +36,7 @@ API_TOKEN = environ.get("BotApi")
 client = BackendClient()
 bcClient = BlockstreamClient()  # this run the class init too
 # HEAVY EXPERIMENT
-myRedis = redis.Redis(host="localhost", port=6379, db=0)
+redis_server = redis.Redis(host="localhost", port=6379, db=0)
 
 
 DATABASE_URL = client.get_base_url()
@@ -177,7 +177,7 @@ async def callback_vote_action(
     idLottery = callback_data["lottery"]
 
     # check redis
-    if not await myRedis.ping():
+    if not await redis_server.ping():
         raise ConnectionError("No connection with redis")
     else:
         print("Redis pinged. Started syncing")
@@ -190,7 +190,7 @@ async def callback_vote_action(
         "userBet": callback_data_action
     }
 
-    await myRedis.publish('votes', json.dumps(bet))
+    await redis_server.publish('bets', json.dumps(bet))
     await query.answer(text="Submitted")
 
 
