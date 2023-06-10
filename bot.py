@@ -174,7 +174,7 @@ async def callback_vote_action(
 
     await query.answer(text="Submitting bet")  # don't forget to answer callback query as soon as possible
     callback_data_action = callback_data["action"]
-    idLottery = callback_data["lottery"]
+    idLottery = callback_data["lottery"]  # what's this?
 
     # check redis
     if not await redis_server.ping():
@@ -192,37 +192,7 @@ async def callback_vote_action(
 
     await redis_server.publish('bets', json.dumps(bet))
     await query.answer(text="Submitted")
-
-
-    height = await client.get_height()
-
-    if not isinstance(idLottery, int):
-        await bot.edit_message_text(
-            "No lottery is running", query.message.chat.id, query.message.message_id
-        )
-        return
-    else:
-        lastHeight = await bcClient.get_last_height()
-        if lastHeight > height + 1:  # if 3rd block come then calculate winner and send results
-            await post_winning()
-            await client.stop_lottery()
-            winners = await client.get_winners(idLottery)
-            if not winners:
-                await bot.edit_message_text(
-                    f"No one have won the lottery!", query.message.chat.id, query.message.message_id
-                )
-            else:
-                await bot.edit_message_text(
-                    f"Lottery have ended!\n"
-                    f"Winners are {winners}", query.message.chat.id, query.message.message_id
-                )
-            await client.stop_lottery()
-            return
-        elif lastHeight > height:  # if the there's a new block, stop users from voting
-            await bot.edit_message_text(
-                f"Time for voting is up! wait for results", query.message.chat.id, query.message.message_id
-            )
-            return
+    print('sent bet')
 
     #
     # # bet = await client.post_bet(user_id, idLottery, reaction)
@@ -262,9 +232,8 @@ async def message_not_modified_handler(update, error):
 
 if __name__ == "__main__":
     print("Launching Timeout Worker")
-    loop = asyncio.get_event_loop()
-    asyncio.run_coroutine_threadsafe(timer.listen_vote(), loop)
-    asyncio.run_coroutine_threadsafe(timer.notify(), loop)
+    # loop = asyncio.get_event_loop()
+    # asyncio.run_coroutine_threadsafe(timer.notify(), loop)
     print("Launching Bot Worker")
     executor.start_polling(dp, skip_updates=True)
     # loop.close()

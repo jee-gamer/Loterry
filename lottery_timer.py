@@ -92,14 +92,5 @@ class LotteryTimer:
                                 await self._bot.send_message(chat_id=idUser, text=f"Lottery have ended!\n"
                                                                                   f"Winners are {winners}")
 
-    async def listen_vote(self):
-        await pubsub.subscribe('votes')
-        async for message in pubsub.listen():
-            print("There's a message")
-            if message['type'] == 'message':
-                str_data = message['data'].decode()
-                data = json.loads(str_data)
-                print(data)
-                await client.post_bet(data["idUser"], data["idLottery"], data["userBet"])
-                print('Bet registered')
+
 
