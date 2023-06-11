@@ -119,7 +119,6 @@ async def callback_bet_action(
         logging.error(f"No ping to Redis {REDIS_HOST}:{REDIS_PORT}")
         return
 
-    print('still working')
     logging.debug("Redis pinged. Sending a message")
 
     await redis_server.publish(

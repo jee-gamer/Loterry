@@ -42,7 +42,6 @@ def bets():
     for message in bets_sub.listen():
         channel = message['channel'].decode('utf-8')
         if message['type'] == 'message' and channel == 'bets':
-            print('got the bet')
             str_data = message['data'].decode()
             data = json.loads(str_data)
             if "idUser" in data.keys():
