@@ -5,6 +5,7 @@ from os import environ
 import redis
 import json
 import logging
+import asyncio
 
 REDIS_HOST = environ.get("host", default="localhost")
 REDIS_PORT = environ.get("port", default=6379)
@@ -32,7 +33,6 @@ def setup_periodic_tasks(sender, **kwargs):
 @app.task
 def bets():
     print("checking & processing bets")
-    logging.info("Executing Task")
     for message in pubsub.listen():
         channel = message['channel'].decode('utf-8')
         if message['type'] == 'message' and channel == 'bets':
@@ -42,7 +42,7 @@ def bets():
             # await client.post_bet(data["idUser"], data["idLottery"],
             #                      data["userBet"])
             print('Bet registered')
-        return
+
     # users = session.query(User).all()
     # for user in users:
     #     print(user.as_dict())
@@ -55,7 +55,6 @@ def bets():
 @app.task
 def blocks():
     print("checking & processing blocks")
-    logging.info("Executing Task")
     for message in pubsub.listen():
         channel = message['channel'].decode('utf-8')
         if message['type'] == 'message' and channel == 'blocks':
@@ -63,10 +62,11 @@ def blocks():
             data = json.loads(str_data)
             print(data)
             print('Block processed')
-        return
 
 
 @app.task
 def ads(arg):
     print(f"Ad message {arg}")
+
+
 
