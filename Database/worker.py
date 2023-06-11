@@ -16,15 +16,16 @@ app = Celery(broker="redis://localhost")
 DATABASE_URL = "http://localhost:5000/api"
 
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
-#pubsub = redis_service.pubsub()
-#pubsub.subscribe('bets')
-#pubsub.subscribe('blocks')
+# pubsub = redis_service.pubsub()
+# pubsub.subscribe('bets')
+# pubsub.subscribe('blocks')
 
 bets_sub = redis_service.pubsub()
 bets_sub.subscribe('bets')
 
 blocks_sub = redis_service.pubsub()
 blocks_sub.subscribe('blocks')
+
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
@@ -42,6 +43,7 @@ def bets():
     for message in bets_sub.listen():
         channel = message['channel'].decode('utf-8')
         if message['type'] == 'message' and channel == 'bets':
+            print('got the bet')
             str_data = message['data'].decode()
             data = json.loads(str_data)
             if "idUser" in data.keys():
