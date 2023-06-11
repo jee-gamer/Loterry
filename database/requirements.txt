@@ -1,0 +1,6 @@
+connexion==2.14.2
+SQLAlchemy==2.0.9
+flask==2.2.3
+flask_sqlalchemy==3.0.3
+celery==5.2.7
+redis==4.5.5

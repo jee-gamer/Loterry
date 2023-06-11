@@ -1,10 +1,12 @@
-from Database.database import session, Base, User, Bet, Lottery
+from database import session
+from database import Base, User, Bet, Lottery
 from flask import request, jsonify
 import logging
 from datetime import datetime
 from sqlalchemy import func
-from BitcoinWorker.client import BlockstreamClient
-bcClient = BlockstreamClient()
+
+#from BitcoinWorker.client import BlockstreamClient
+#bcClient = BlockstreamClient()
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -28,7 +30,8 @@ async def start_lottery():
         maxId = 0
     idLottery = maxId + 1
 
-    height = await bcClient.get_last_height()
+    #height = await bcClient.get_last_height()
+    height = 1
     if not height:
         return jsonify({'message': 'Cant get block height'})
     lottery = Lottery(idLottery, height)

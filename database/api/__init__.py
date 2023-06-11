@@ -1,2 +1,2 @@
-from .users import *
 from .lottery import *
+from .users import *

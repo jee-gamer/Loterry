@@ -1,6 +1,5 @@
 from celery import Celery
 from celery.schedules import crontab
-from database import session, Base, User, Bet, Lottery
 from os import environ
 import redis
 import json

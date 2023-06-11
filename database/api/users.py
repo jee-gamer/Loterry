@@ -1,6 +1,6 @@
 import requests
-
-from Database.database import session, Base, User, Bet, Lottery
+from database import session
+from database import Base, User, Bet, Lottery
 from flask import request, jsonify
 from requests import Response
 import json
