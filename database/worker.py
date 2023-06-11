@@ -6,7 +6,7 @@ import json
 from datetime import timedelta
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
 REDIS_HOST = environ.get("host", default="localhost")
 REDIS_PORT = environ.get("port", default=6379)

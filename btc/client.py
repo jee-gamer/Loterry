@@ -4,6 +4,9 @@ import json
 import aiohttp
 import redis.asyncio as redis
 
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
 class BlockstreamClient:
     _base_path = "https://blockstream.info/api"
@@ -14,7 +17,7 @@ class BlockstreamClient:
 
     def __init__(self, redis_uri="localhost:6379"):
         host, port = redis_uri.split(":")
-        print(f"Redis URI client: {redis_uri}")
+        logging.info(f"Redis URI client: {redis_uri}")
         self._redis = redis.Redis(host=host, port=port, db=0)
 
     async def make_request(self, endpoint, method="GET", **kwargs):
@@ -25,15 +28,15 @@ class BlockstreamClient:
                     if response.headers.get('Content-Type') == 'text/plain':
                         try:
                             data = await response.text()
-                            print(f"from BcClient {data}")
+                            logging.info(f"from BcClient {data}")
                         except Exception as e:
-                            print(f"Can't obtain json {e}")
+                            logging.info(f"Can't obtain json {e}")
                     else:
                         try:
                             data = await response.json()
-                            print(f"from BcClient {data}")
+                            logging.info(f"from BcClient {data}")
                         except Exception as e:
-                            print(f"Can't obtain json {e}")
+                            logging.info(f"Can't obtain json {e}")
 
                             # it's long I'm repeating myself right? but to be able to debug error it's here
                             # maybe we can change it later once it works for sure.. I'll need your feedback
@@ -69,7 +72,7 @@ class BlockstreamClient:
         if not await self._redis.ping():
             raise ConnectionError("No connection with redis")
         else:
-            print("Redis pinged. Started syncing")
+            logging.info("Redis pinged. Started syncing")
         while True:
             try:
                 blocks = await self.get_all_blocks()
@@ -77,14 +80,14 @@ class BlockstreamClient:
                     if self._tip == 0 or b["height"] > self._tip:
                         self._tip = b["height"]
                         self._tip_hash = b["id"]
-                        print(f"Sent to redis {self._tip}/{self._tip_hash}")
+                        logging.info(f"Sent to redis {self._tip}/{self._tip_hash}")
                         await self._redis.publish("blocks", json.dumps(b))
                         await asyncio.sleep(0.01)
                     else:
                         continue
-                print(f"Synced {self._tip}/{self._tip_hash}")
+                logging.info(f"Synced {self._tip}/{self._tip_hash}")
             except Exception as e:
-                print(e)
+                logging.info(e)
                 pass
             await asyncio.sleep(600)
 
@@ -96,4 +99,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(client.sync_tip())
     except KeyboardInterrupt:
-        print("Sync interrupted. Exiting")
+        logging.info("Sync interrupted. Exiting")

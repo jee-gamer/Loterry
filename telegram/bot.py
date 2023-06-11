@@ -15,7 +15,6 @@ from os import environ
 
 from BackendClient.backendClient import BackendClient
 from lottery_timer import LotteryTimer  # this run the class
-from BitcoinWorker.client import BlockstreamClient
 import redis.asyncio as redis
 from uuid import uuid4
 
@@ -111,7 +110,7 @@ async def cmd_lottery(message: types.Message):
 
 
 @dp.callback_query_handler(bet_cb.filter(action=["odd", "even"]))
-async def callback_vote_action(
+async def callback_bet_action(
     query: types.CallbackQuery, callback_data: typing.Dict[str, str]
 ):
     await query.answer(
@@ -128,7 +127,7 @@ async def callback_vote_action(
         "bets",
         json.dumps(
             {
-                "uuid": uuid4().hex,
+                "uuid": uuid4().hex, # common thing in software development
                 "idUser": query.from_user.id,
                 "idLottery": callback_data["lottery"],
                 "userBet": callback_data["action"],

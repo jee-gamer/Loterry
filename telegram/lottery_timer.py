@@ -5,15 +5,15 @@ import asyncio
 
 from aiogram import Bot
 from BackendClient.backendClient import BackendClient
-from BitcoinWorker.client import BlockstreamClient
-import redis.asyncio as redis
+#from BitcoinWorker.client import BlockstreamClient
+#import redis.asyncio as redis
 
 client = BackendClient()
-bcClient = BlockstreamClient()
+#bcClient = BlockstreamClient()
 
 DATABASE_URL = "http://localhost:5000/api"
-myRedis = redis.Redis(host="localhost", port=6379, db=0)
-pubsub = myRedis.pubsub()
+#myRedis = redis.Redis(host="localhost", port=6379, db=0)
+#pubsub = myRedis.pubsub()
 
 
 class LotteryTimer:
@@ -63,13 +63,13 @@ class LotteryTimer:
             if idLottery:
                 print('found lottery, checking')
                 height = await client.get_height()
-                lastHeight = await bcClient.get_last_height()
+                lastHeight = 1 #await bcClient.get_last_height()
                 if lastHeight > height:
                     print("stop allowing votes")
                     # stop people from voting, real function in the bot itself
 
                     if lastHeight > height+1:
-                        currentHash = await bcClient.get_current_hash()
+                        currentHash = "curhash" #await bcClient.get_current_hash()
                         decimalId = int(currentHash, 16)
                         if decimalId % 2 == 0:
                             print('even')

@@ -1,0 +1,48 @@
+version: "3"
+
+services:
+  redis:
+    network_mode: "host"
+    container_name: redis
+    image: redis
+    hostname: redis
+    privileged: true
+    ports:
+      - '6379:6379'
+
+  database:
+    network_mode: "host"
+    build: database
+    container_name: dataservice
+    privileged: true
+    hostname: worker
+    #volumes:
+    #  - ./Database:/app
+    links:
+      - redis
+    depends_on:
+      - redis
+
+  btc_worker:
+    network_mode: "host"
+    build: btc
+    container_name: btc_worker
+    privileged: true
+    hostname: btc_worker
+    links:
+      - redis
+    depends_on:
+      - redis
+
+  telegram_bot:
+    network_mode: "host"
+    build: telegram
+    container_name: telegram_bot
+    privileged: true
+    hostname: telegram_bot
+    environment:
+      - BotApi=
+    links:
+      - redis
+    depends_on:
+      - redis

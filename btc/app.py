@@ -11,9 +11,7 @@ REDIS_PORT = environ.get("port", default="6379")
 
 bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}")
 
-logging.basicConfig(format='%(asctime)s %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
 app = web.Application()
 routes = web.RouteTableDef()
