@@ -31,7 +31,7 @@ client = BackendClient()
 REDIS_HOST = environ.get("host", default="localhost")
 REDIS_PORT = environ.get("port", default=6379)
 redis_server = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
-
+clickSub = redis_server.pubsub()
 
 DATABASE_URL = client.get_base_url()
 # DATABASE_URL = environ.get("DATABASE_URL")
@@ -151,9 +151,20 @@ async def message_not_modified_handler(update, error):
 
 async def notify():
     logging.info("Notification task started")
-    while True:
-        logging.info("Notify beat")
-        await asyncio.sleep(100)
+    await clickSub.subscribe('clickCount')
+    logging.info("Notification YEEEEEEEEAY")
+    for message in clickSub.listen():
+        logging.info("got msg from clickSub")
+        channel = message['channel'].decode('utf-8')
+        if message['type'] == 'message' and channel == 'clickCount':
+            logging.info("got msg from clickSub")
+            str_data = message['data'].decode()
+            data = json.loads(str_data)
+
+            # if "id" in data.keys():
+            #     logging.info(f'Block processed {data["id"]}:{data["height"]}')
+            # else:
+            #     logging.error(f'Invalid block data received {data}')
 
 
 if __name__ == "__main__":

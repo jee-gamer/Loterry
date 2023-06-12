@@ -1,10 +1,14 @@
+import asyncio
+
 from celery import Celery
 from celery.schedules import crontab
 from os import environ
 import redis
 import json
-from datetime import timedelta
 import logging
+import threading
+import time
+from time import sleep
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
@@ -37,17 +41,48 @@ def setup_periodic_tasks(sender, **kwargs):
     )
 
 
+def send_clicks(clickCount=99):
+    logging.info(f'Sent clickCount {clickCount}  to redis ')
+    # redis_service.publish("clickCount", clickCount)
+
+
 @app.task
 def bets():
-    for message in bets_sub.listen():
-        channel = message['channel'].decode('utf-8')
-        if message['type'] == 'message' and channel == 'bets':
+    logging.info(f'running bets')
+    clickCount = 0
+    start_time = time.time()
+
+    while time.time() - start_time <= 10:
+        message = bets_sub.get_message()
+        if message is not None and message['channel'].decode('utf-8') == 'bets' and message['type'] == 'message':
+            clickCount += 1
             str_data = message['data'].decode()
             data = json.loads(str_data)
             if "idUser" in data.keys():
                 logging.info(f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}')
             else:
                 logging.error(f'Invalid message data received {data}')
+        sleep(1)
+
+    logging.info(f'ENDED FOR GOOD')
+    logging.info(f'Sent clickCount {clickCount}  to redis ')
+    redis_service.publish("clickCount", clickCount)
+
+    # for message in bets_sub.listen():
+    #     channel = message['channel'].decode('utf-8')
+    #     if time.time() - start_time >= 10:
+    #         break
+    #     if message['type'] == 'message' and channel == 'bets':
+    #         clickCount += 1
+    #         str_data = message['data'].decode()
+    #         data = json.loads(str_data)
+    #         if "idUser" in data.keys():
+    #             logging.info(f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}')
+    #         else:
+    #             logging.error(f'Invalid message data received {data}')
+    # logging.info(f'ENDED FOR GOOD')
+
+
 
     # users = session.query(User).all()
     # for user in users:
