@@ -17,9 +17,8 @@ services:
     privileged: true
     hostname: worker
     #volumes:
-    #  - ./Database:/app
-    links:
-      - redis
+    #  - ./database:/app
+
     depends_on:
       - redis
 
@@ -29,8 +28,7 @@ services:
     container_name: btc_worker
     privileged: true
     hostname: btc_worker
-    links:
-      - redis
+
     depends_on:
       - redis
 
@@ -41,8 +39,7 @@ services:
     privileged: true
     hostname: telegram_bot
     environment:
-      - BotApi=
-    links:
-      - redis
+      - BotApi=6220421747:AAGx3P1h7MYPMTWbNMNURCK9luCVIMAUP1M
+
     depends_on:
       - redis

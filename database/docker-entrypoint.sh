@@ -1,4 +1,6 @@
 #!/bin/sh
+*.sh text eol=lf
+
 set -e
 if [ "$1" = 'dataservice' ]; then
     echo "Launching workers"
