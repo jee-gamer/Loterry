@@ -33,13 +33,13 @@ services:
       - redis
 
   telegram_bot:
+    env_file:
+      - .env
     network_mode: "host"
     build: telegram
     container_name: telegram_bot
     privileged: true
     hostname: telegram_bot
-    environment:
-      - BotApi=6220421747:AAGx3P1h7MYPMTWbNMNURCK9luCVIMAUP1M
 
     depends_on:
       - redis
