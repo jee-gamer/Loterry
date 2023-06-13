@@ -150,16 +150,16 @@ async def message_not_modified_handler(update, error):
 
 
 async def notify():
-    await clickSub.subscribe('clickCount')
+    await clickSub.subscribe('notify')
     logging.info("Notification task started")
     for message in clickSub.listen():
-        logging.info("got msg from clickSub")
         channel = message['channel'].decode('utf-8')
-        if message['type'] == 'message' and channel == 'clickCount':
+        if message['type'] == 'message' and channel == 'notify':
             logging.info("got msg from clickSub")
             str_data = message['data'].decode()
             data = json.loads(str_data)
 
+            await bot.send_message(data["idUser"], "Bet is accepted")
             # if "id" in data.keys():
             #     logging.info(f'Block processed {data["id"]}:{data["height"]}')
             # else:

@@ -52,19 +52,25 @@ def bets():
     total_clicks = {}
 
     for message in bets_sub.listen():
-         channel = message['channel'].decode('utf-8')
-         if message['type'] == 'message' and channel == 'bets':
-             str_data = message['data'].decode()
-             data = json.loads(str_data)
-             if "idUser" in data.keys():
-                 logging.info(f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}')
-                 if data["idUser"] in total_clicks.keys():
-                    total_clicks["idUser"] += 1
-                 else:
-                    total_clicks["idUser"] = 1
-             else:
-                 logging.error(f'Invalid message data received {data}')
+        channel = message['channel'].decode('utf-8')
+        if message['type'] == 'message' and channel == 'bets':
+            str_data = message['data'].decode()
+            data = json.loads(str_data)
+            if "idUser" in data.keys():
+                logging.info(f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}')
+                redis_service.publish("notify", json.dumps(data))
+            else:
+                logging.error(f'Invalid message data received {data}')
+                break
 
+
+    for user in total_clicks.keys():
+        logging.info(total_clicks[user])
+        data = {
+            "userId": user,
+            "userClicks": total_clicks[user]
+        }
+        redis_service.publish("clickCount", json.dumps(data))
 
     # users = session.query(User).all()
     # for user in users:
