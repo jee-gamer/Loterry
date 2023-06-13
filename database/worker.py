@@ -49,39 +49,21 @@ def send_clicks(clickCount=99):
 @app.task
 def bets():
     logging.info(f'running bets')
-    clickCount = 0
-    start_time = time.time()
+    total_clicks = {}
 
-    while time.time() - start_time <= 10:
-        message = bets_sub.get_message()
-        if message is not None and message['channel'].decode('utf-8') == 'bets' and message['type'] == 'message':
-            clickCount += 1
-            str_data = message['data'].decode()
-            data = json.loads(str_data)
-            if "idUser" in data.keys():
-                logging.info(f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}')
-            else:
-                logging.error(f'Invalid message data received {data}')
-        sleep(1)
-
-    logging.info(f'ENDED FOR GOOD')
-    logging.info(f'Sent clickCount {clickCount}  to redis ')
-    redis_service.publish("clickCount", clickCount)
-
-    # for message in bets_sub.listen():
-    #     channel = message['channel'].decode('utf-8')
-    #     if time.time() - start_time >= 10:
-    #         break
-    #     if message['type'] == 'message' and channel == 'bets':
-    #         clickCount += 1
-    #         str_data = message['data'].decode()
-    #         data = json.loads(str_data)
-    #         if "idUser" in data.keys():
-    #             logging.info(f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}')
-    #         else:
-    #             logging.error(f'Invalid message data received {data}')
-    # logging.info(f'ENDED FOR GOOD')
-
+    for message in bets_sub.listen():
+         channel = message['channel'].decode('utf-8')
+         if message['type'] == 'message' and channel == 'bets':
+             str_data = message['data'].decode()
+             data = json.loads(str_data)
+             if "idUser" in data.keys():
+                 logging.info(f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}')
+                 if data["idUser"] in total_clicks.keys():
+                    total_clicks["idUser"] += 1
+                 else:
+                    total_clicks["idUser"] = 1
+             else:
+                 logging.error(f'Invalid message data received {data}')
 
 
     # users = session.query(User).all()

@@ -150,9 +150,8 @@ async def message_not_modified_handler(update, error):
 
 
 async def notify():
-    logging.info("Notification task started")
     await clickSub.subscribe('clickCount')
-    logging.info("Notification YEEEEEEEEAY")
+    logging.info("Notification task started")
     for message in clickSub.listen():
         logging.info("got msg from clickSub")
         channel = message['channel'].decode('utf-8')
