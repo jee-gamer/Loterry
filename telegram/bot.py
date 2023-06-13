@@ -30,8 +30,9 @@ client = BackendClient()
 
 REDIS_HOST = environ.get("host", default="localhost")
 REDIS_PORT = environ.get("port", default=6379)
-redis_server = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
-clickSub = redis_server.pubsub()
+redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+notification_sub = redis_service.pubsub()
+
 
 DATABASE_URL = client.get_base_url()
 # DATABASE_URL = environ.get("DATABASE_URL")
@@ -115,13 +116,13 @@ async def callback_bet_action(
         text="Submitting bet"
     )  # don't forget to answer callback query as soon as possible
     # check redis
-    if not await redis_server.ping():
+    if not await redis_service.ping():
         logging.error(f"No ping to Redis {REDIS_HOST}:{REDIS_PORT}")
         return
 
     logging.debug("Redis pinged. Sending a message")
 
-    await redis_server.publish(
+    await redis_service.publish(
         "bets",
         json.dumps(
             {
@@ -150,20 +151,22 @@ async def message_not_modified_handler(update, error):
 
 
 async def notify():
-    await clickSub.subscribe('notify')
-    logging.info("Notification task started")
-    for message in clickSub.listen():
+    await notification_sub.subscribe("notify")
+    logging.info(f"Notification task started. Redis connections status: {await notification_sub.ping()}")
+    while True:
+        message = await notification_sub.get_message()
+        logging.info(message)
         channel = message['channel'].decode('utf-8')
         if message['type'] == 'message' and channel == 'notify':
-            logging.info("got msg from clickSub")
+            logging.info("Received message")
             str_data = message['data'].decode()
+            logging.info("Decoded")
             data = json.loads(str_data)
-
-            await bot.send_message(data["idUser"], "Bet is accepted")
-            # if "id" in data.keys():
-            #     logging.info(f'Block processed {data["id"]}:{data["height"]}')
-            # else:
-            #     logging.error(f'Invalid block data received {data}')
+            logging.info(f"got notification message: {data}")
+            for user, msg in data:
+                await bot.send_message(user, msg)
+        await asyncio.sleep(0.1)
+    logging.info("Notification task finished")
 
 
 if __name__ == "__main__":
