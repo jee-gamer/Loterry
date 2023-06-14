@@ -1,10 +1,9 @@
 import json
 import logging
-import time
 import typing
 import aiohttp
 import asyncio
-from contextlib import suppress
+
 
 from aiogram import Bot, Dispatcher, executor, types, filters
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
@@ -26,7 +25,6 @@ logging.basicConfig(level=logging.INFO)
 
 API_TOKEN = environ.get("BotApi")
 client = BackendClient()
-# HEAVY EXPERIMENT
 
 REDIS_HOST = environ.get("host", default="localhost")
 REDIS_PORT = environ.get("port", default=6379)
@@ -150,23 +148,21 @@ async def message_not_modified_handler(update, error):
     return True  # errors_handler must return True if error was handled correctly
 
 
-async def notify():
-    await notification_sub.subscribe("notify")
-    logging.info(f"Notification task started. Redis connections status: {await notification_sub.ping()}")
+async def get_msg():
     while True:
-        message = await notification_sub.get_message()
-        logging.info(message)
-        channel = message['channel'].decode('utf-8')
-        if message['type'] == 'message' and channel == 'notify':
-            logging.info("Received message")
-            str_data = message['data'].decode()
-            logging.info("Decoded")
-            data = json.loads(str_data)
-            logging.info(f"got notification message: {data}")
-            for user, msg in data:
-                await bot.send_message(user, msg)
-        await asyncio.sleep(0.1)
-    logging.info("Notification task finished")
+        message = await notification_sub.get_message(ignore_subscribe_messages=True)
+        if message is not None:
+            logging.info(f"(Reader) Message Received: {message}")
+            # str_data = message['data'].decode()
+            # data = json.loads(str_data)
+
+
+async def notify():
+    async with notification_sub as pubsub:
+        await pubsub.subscribe("notify")
+        future = asyncio.create_task(get_msg())
+        await redis_service.publish("notify", "Notification task started!")
+        await future
 
 
 if __name__ == "__main__":
