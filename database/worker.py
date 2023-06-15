@@ -6,9 +6,8 @@ from os import environ
 import redis
 import json
 import logging
-import threading
-import time
-from time import sleep
+# from database.database import session
+# from database.database import Base, User, Bet, Lottery
 
 logging.basicConfig(
     format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p", level=logging.INFO
@@ -65,20 +64,23 @@ def bets():
                 )
 
                 # DB Logic
-                # users = session.query(User).all()
-                # for user in users:
-                #     logging.info(user.as_dict())
+                # bet = session.query(Bet).filter(Bet.idUser == data["idUser"], Bet.idLottery == data["idLottery"], Bet.userBet == data["userBet"]).first()
+                # if not bet:
+                #     thisMessage = json.dumps(
+                #         {data["idUser"]: f'Your bet for {data["idLottery"]} accepted'}
+                #     )
                 #
-                # lotteries = session.query(Lottery).filter(Lottery.running == 1)
-                # for lottery in lotteries:
-                #     logging.info(lottery.as_dict())
+                #     thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"])
+                #     session.add(thisBet)
+                #     session.commit()
+                # else:  # there's a duplicate bet
+                #     thisMessage = json.dumps(
+                #         {data["idUser"]: f'You have already voted for lottery {data["idLottery"]}!'}
+                #     )
 
+                thisMessage = json.dumps("temporary")
                 redis_service.publish(
-                    "notify",
-                    json.dumps(
-                        # NotifyMessage(UsedId, Message) -- ideally
-                        {data["idUser"]: f'Your bet for {data["idLottery"]} accepted'}
-                    ),
+                    "notify", thisMessage
                 )
             else:
                 logging.error(f"Invalid message data received {data}")
