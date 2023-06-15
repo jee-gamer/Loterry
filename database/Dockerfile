@@ -1,5 +1,6 @@
 FROM python:3.11-slim-buster
 
+RUN mkdir "/db"
 WORKDIR /database
 
 COPY requirements.txt ./

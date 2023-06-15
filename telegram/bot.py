@@ -89,7 +89,8 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
-    idLottery = await client.get_id_lottery()  # always return int if lottery is running
+    #idLottery = await client.get_id_lottery()  # always return int if lottery is running
+    idLottery = 1
     if not isinstance(idLottery, int):
         await client.start_lottery()
         height = await client.get_height()
@@ -128,6 +129,7 @@ async def callback_bet_action(
                 "idUser": query.from_user.id,
                 "idLottery": callback_data["lottery"],
                 "userBet": callback_data["action"],
+                "betSize": 1000,
             }
         ),
     )
@@ -148,19 +150,29 @@ async def message_not_modified_handler(update, error):
     return True  # errors_handler must return True if error was handled correctly
 
 
-async def get_msg():
+async def listen():
     while True:
         message = await notification_sub.get_message(ignore_subscribe_messages=True)
-        if message is not None:
-            logging.info(f"(Reader) Message Received: {message}")
-            # str_data = message['data'].decode()
-            # data = json.loads(str_data)
+        if message and "data" in message:
+            logging.info(f"received: {message}")
+            str_data = message["data"].decode()
+            try:
+                data = json.loads(str_data)
+                logging.info(f"decoded JSON: {data}")
+                for user in data.keys():
+                    user_id = int(user)
+                    logging.info(f"sending a message to {user_id}")
+                    await bot.send_message(user_id, data[user])
+            except Exception as e:
+                logging.error(f"exception during sending message to user: {e}")
+                continue
+        await asyncio.sleep(0.1)
 
 
 async def notify():
     async with notification_sub as pubsub:
         await pubsub.subscribe("notify")
-        future = asyncio.create_task(get_msg())
+        future = asyncio.create_task(listen())
         await redis_service.publish("notify", "Notification task started!")
         await future
 

@@ -26,7 +26,8 @@ class User(Base):
     firstName = mapped_column(String)
     lastName = mapped_column(String)
     createdAt = mapped_column(DateTime)  # timestamp
-    updatedAt = mapped_column(DateTime)  # timestamp
+    updatedAt = mapped_column(DateTime)
+    #balance = mapped_column(Integer)
     enabled = mapped_column(Boolean)
 
     def __init__(self, idUser, alias, firstName, lastName):
@@ -46,34 +47,34 @@ class Lottery(Base):
     idLottery = mapped_column(Integer, primary_key=True)
     createdAt = mapped_column(DateTime)
     startedHeight = mapped_column(Integer)
-    winningFruit = mapped_column(Integer)
-    running = mapped_column(Boolean)
+    winningHash = mapped_column(Integer)
 
     def __init__(self, idLottery, startedHeight):
         """"""
         self.idLottery = idLottery
-        self.createdAt = datetime.now()
-        self.winningFruit = None
+        self.winningHash = None
         self.startedHeight = startedHeight
-        self.running = True
+        self.createdAt = datetime.now()
 
 
 class Bet(Base):
     __tablename__ = "Bet"
-    idBet = mapped_column(Integer, primary_key=True)
+    idBet = mapped_column(String(length=36), primary_key=True)
     idUser = mapped_column(Integer, ForeignKey("User.idUser"))
     idLottery = mapped_column(Integer, ForeignKey("Lottery.idLottery"))
-    userBet = mapped_column(String)
+    userBet = mapped_column(Integer)
+    betSize = mapped_column(Integer)
     createdAt = mapped_column(DateTime)
 
     lottery = relationship("Lottery", foreign_keys="Bet.idLottery")
     user = relationship("User", foreign_keys="Bet.idUser")
 
-    def __init__(self, idBet, idUser, idLottery, userBet):
+    def __init__(self, idBet, idUser, idLottery, userBet, betSize):
         self.idBet = idBet
         self.idUser = idUser
         self.idLottery = idLottery
         self.userBet = userBet
+        self.betSize = betSize
         self.createdAt = datetime.now()
 
 

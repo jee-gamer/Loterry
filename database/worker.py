@@ -6,8 +6,8 @@ from os import environ
 import redis
 import json
 import logging
-# from database.database import session
-# from database.database import Base, User, Bet, Lottery
+from database import session
+from database import Base, User, Bet, Lottery
 
 logging.basicConfig(
     format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p", level=logging.INFO
@@ -59,29 +59,34 @@ def bets():
             str_data = message["data"].decode()
             data = json.loads(str_data)
             if "idUser" in data.keys():
+                try:
+                    data["idUser"] = int(data["idUser"])
+                    data["idLottery"] = int(data["idLottery"])
+                    bet = data["userBet"]
+                    if bet == "odd":
+                        data["userBet"] = 1
+                    elif bet == "even":
+                        data["userBet"] = 2
+                    else:
+                        logging.error(f'unknown bet type {data["userBet"]}')
+                    data["betSize"] = int(data["betSize"])
+                except Exception as e:
+                    logging.error(f"couldnt convert Bet data {e}")
+
                 logging.info(
-                    f'Message from user {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}'
+                    f'message {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}'
                 )
 
-                # DB Logic
-                # bet = session.query(Bet).filter(Bet.idUser == data["idUser"], Bet.idLottery == data["idLottery"], Bet.userBet == data["userBet"]).first()
-                # if not bet:
-                #     thisMessage = json.dumps(
-                #         {data["idUser"]: f'Your bet for {data["idLottery"]} accepted'}
-                #     )
-                #
-                #     thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"])
-                #     session.add(thisBet)
-                #     session.commit()
-                # else:  # there's a duplicate bet
-                #     thisMessage = json.dumps(
-                #         {data["idUser"]: f'You have already voted for lottery {data["idLottery"]}!'}
-                #     )
+                # 1 BTC per 1 click. 10 clicks = 10 BTC
+                thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"], data["betSize"])
+                session.add(thisBet)
+                session.commit()
 
-                thisMessage = json.dumps("temporary")
+                thisMessage = json.dumps({data["idUser"]: "Submitted"})
                 redis_service.publish(
                     "notify", thisMessage
                 )
+
             else:
                 logging.error(f"Invalid message data received {data}")
 

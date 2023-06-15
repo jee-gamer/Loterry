@@ -16,9 +16,8 @@ services:
     container_name: dataservice
     privileged: true
     hostname: worker
-    #volumes:
-    #  - ./database:/app
-
+    volumes:
+      - ./cache/db:/db
     depends_on:
       - redis
 
