@@ -21,9 +21,6 @@ def get_lottery(id):
 
 
 async def start_lottery():
-    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
-    if lottery:
-        return jsonify({'message': 'There is already an active lottery'})
 
     maxId = session.query(func.max(Lottery.idLottery)).scalar()
     if not maxId:
@@ -66,7 +63,7 @@ def get_time_left():
 
 
 def get_height():
-    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+    lottery = session.query(Lottery).order_by(desc(Lottery.id)).first()
     if not lottery:
         return {'message': 'Lottery not found'}
 
@@ -109,7 +106,7 @@ def get_winners(idLottery):
 
 
 def get_running_lottery():
-    lottery = session.query(Lottery).order_by(desc(Lottery.id)).first()
+    lottery = session.query(Lottery).order_by(desc(Lottery.idLottery)).first()
     if not lottery:
         return None
         #  {'message': 'No lottery is running'}

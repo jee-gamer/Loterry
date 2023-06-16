@@ -89,8 +89,7 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
-    #idLottery = await client.get_id_lottery()  # always return int if lottery is running
-    idLottery = 1
+    idLottery = await client.get_id_lottery()  # always return int if lottery is running
     if not isinstance(idLottery, int):
         await client.start_lottery()
         height = await client.get_height()
