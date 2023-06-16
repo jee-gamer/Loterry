@@ -3,7 +3,7 @@ from database import Base, User, Bet, Lottery
 from flask import request, jsonify
 import logging
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, desc
 
 #from BitcoinWorker.client import BlockstreamClient
 #bcClient = BlockstreamClient()
@@ -109,7 +109,7 @@ def get_winners(idLottery):
 
 
 def get_running_lottery():
-    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+    lottery = session.query(Lottery).order_by(desc(Lottery.id)).first()
     if not lottery:
         return None
         #  {'message': 'No lottery is running'}
