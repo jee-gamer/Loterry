@@ -35,8 +35,9 @@ async def start_lottery():
         maxId = 0
     idLottery = maxId + 1
 
-    # height = await bcClient.get_last_height()
-    height = 1
+    endpoint = f"/tip"
+    height = await make_request('GET', endpoint)
+
     if not height:
         return jsonify({'message': 'Cant get block height'})
     lottery = Lottery(idLottery, height)
@@ -116,10 +117,10 @@ def get_winners(idLottery):
 async def get_running_lottery():
 
     endpoint = f"/tip"
-    tip_value = await make_request('GET', endpoint)
+    height = await make_request('GET', endpoint)
 
-    lottery = session.query(Lottery).filter(Lottery.startedHeight == tip_value).first()
-    lottery2 = session.query(Lottery).filter(Lottery.startedHeight + 1 == tip_value).first()
+    lottery = session.query(Lottery).filter(Lottery.startedHeight == height).first()
+    lottery2 = session.query(Lottery).filter(Lottery.startedHeight + 1 == height).first()
     if not lottery and not lottery2:
         return None
         #  {'message': 'No lottery is running'}
