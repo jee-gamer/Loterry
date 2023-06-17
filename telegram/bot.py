@@ -5,14 +5,14 @@ import aiohttp
 import asyncio
 
 
-from aiogram import Bot, Dispatcher, executor, types, filters
+from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
 
 from os import environ
 
-from BackendClient.backendClient import BackendClient
+from backendClient import BackendClient
 from lottery_timer import LotteryTimer  # this run the class
 import redis.asyncio as redis
 from uuid import uuid4
@@ -83,7 +83,7 @@ async def cmd_start(message: types.Message):
         "\n"
         "type /Lottery to start/see ongoing Lottery"
         "\n"
-        "type /result to see the Lottery results"
+        "type /result to see the Lottery results (not active)"
     )
 
 
@@ -92,6 +92,7 @@ async def cmd_lottery(message: types.Message):
     idLottery = await client.get_id_lottery()  # always return int if lottery is running
     if not isinstance(idLottery, int):
         await client.start_lottery()
+        idLottery = await client.get_id_lottery()
         height = await client.get_height()
         await message.reply(
             f"Lottery started! {height} started height\n" f"You can vote odd or even!",
@@ -134,7 +135,7 @@ async def callback_bet_action(
     )
 
     logging.info(
-        f'Sent user {query.from_user.id} bet {callback_data["lottery"]} in Lottery {callback_data["lottery"]}'
+        f'Sent user {query.from_user.id} bet {callback_data["action"]} in Lottery {callback_data["lottery"]}'
     )
 
     return await query.answer(

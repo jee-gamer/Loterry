@@ -1,10 +1,9 @@
-import json
 from datetime import datetime
 import aiohttp
 import asyncio
 
 from aiogram import Bot
-from BackendClient.backendClient import BackendClient
+from backendClient import BackendClient
 #from BitcoinWorker.client import BlockstreamClient
 #import redis.asyncio as redis
 
