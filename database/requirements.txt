@@ -5,3 +5,4 @@ flask_sqlalchemy==3.0.3
 celery==5.2.7
 redis[asyncio]==4.5.5
 connexion[swagger-ui]==2.14.2
+aiohttp==3.8.4

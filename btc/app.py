@@ -6,7 +6,7 @@ import logging
 from aiohttp import web
 from os import environ
 
-REDIS_HOST = environ.get("host", default="0.0.0.0")
+REDIS_HOST = environ.get("host", default="localhost")
 REDIS_PORT = environ.get("port", default="6379")
 
 bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}")
@@ -24,11 +24,14 @@ async def index(request):
 
 
 @routes.get("/tip")
-async def get_current_hash(request):
-    hash = await bitcoin_client.get_current_hash()
-    if not hash:
-        return web.json_response({'message': 'error with request'})
-    return web.json_response({"tip": hash})
+async def get_tip(request):
+    tip, _ = await bitcoin_client.get_tip()
+    if not tip:
+        if tip == 0:
+            return web.json_response(tip)
+        else:
+            return web.json_response({'message': 'error with request'})
+    return web.json_response(tip)
 
 
 @routes.get("/block")

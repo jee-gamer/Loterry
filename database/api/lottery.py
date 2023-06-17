@@ -4,14 +4,21 @@ from flask import request, jsonify
 import logging
 from datetime import datetime
 from sqlalchemy import func, desc
-
-
-from ...btc import BlockstreamClient
-bcClient = BlockstreamClient()
+import aiohttp
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
+
+BTC_URL = "http://localhost:5001"
+
+
+async def make_request(method, endpoint, **kwargs):
+    async with aiohttp.ClientSession() as session:
+        url = f"{BTC_URL}{endpoint}"
+        async with session.request(method, url, **kwargs) as response:
+            data = await response.json()
+            return data
 
 
 def get_lottery(id):
@@ -28,7 +35,8 @@ async def start_lottery():
         maxId = 0
     idLottery = maxId + 1
 
-    height = await bcClient.get_last_height()
+    # height = await bcClient.get_last_height()
+    height = 1
     if not height:
         return jsonify({'message': 'Cant get block height'})
     lottery = Lottery(idLottery, height)
@@ -63,12 +71,12 @@ def get_time_left():
 
 
 def get_height():
-    lottery = session.query(Lottery).order_by(desc(Lottery.id)).first()
+    lottery = session.query(Lottery).order_by(desc(Lottery.idLottery)).first()
     if not lottery:
         return {'message': 'Lottery not found'}
 
     height = lottery.startedHeight
-
+    logging.info(f"height{height}")
     return jsonify(height)
 
 
@@ -106,7 +114,10 @@ def get_winners(idLottery):
 
 
 async def get_running_lottery():
-    tip_value, _ = await bcClient.get_tip()
+
+    endpoint = f"/tip"
+    tip_value = await make_request('GET', endpoint)
+
     lottery = session.query(Lottery).filter(Lottery.startedHeight == tip_value).first()
     lottery2 = session.query(Lottery).filter(Lottery.startedHeight + 1 == tip_value).first()
     if not lottery and not lottery2:
