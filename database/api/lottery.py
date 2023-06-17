@@ -5,8 +5,9 @@ import logging
 from datetime import datetime
 from sqlalchemy import func, desc
 
-#from BitcoinWorker.client import BlockstreamClient
-#bcClient = BlockstreamClient()
+
+from ...btc import BlockstreamClient
+bcClient = BlockstreamClient()
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -27,14 +28,13 @@ async def start_lottery():
         maxId = 0
     idLottery = maxId + 1
 
-    #height = await bcClient.get_last_height()
-    height = 1
+    height = await bcClient.get_last_height()
     if not height:
         return jsonify({'message': 'Cant get block height'})
     lottery = Lottery(idLottery, height)
     session.add(lottery)
     session.commit()
-    return jsonify([session.query(Lottery).filter(Lottery.running == 1).first().as_dict()])
+    return jsonify([session.query(Lottery).filter(Lottery.startedHeight == height).first().as_dict()])
     # {'message': 'lottery started'}
 
 
@@ -105,9 +105,11 @@ def get_winners(idLottery):
     return jsonify(winner)
 
 
-def get_running_lottery():
-    lottery = session.query(Lottery).order_by(desc(Lottery.idLottery)).first()
-    if not lottery:
+async def get_running_lottery():
+    tip_value, _ = await bcClient.get_tip()
+    lottery = session.query(Lottery).filter(Lottery.startedHeight == tip_value).first()
+    lottery2 = session.query(Lottery).filter(Lottery.startedHeight + 1 == tip_value).first()
+    if not lottery and not lottery2:
         return None
         #  {'message': 'No lottery is running'}
 
