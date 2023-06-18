@@ -34,6 +34,17 @@ async def get_tip(request):
     return web.json_response(tip)
 
 
+@routes.get("/tip/hash")
+async def get_tip(request):
+    _, hash = await bitcoin_client.get_tip()
+    if not hash:
+        if hash == "":
+            return web.json_response(hash)
+        else:
+            return web.json_response({'message': 'error with request'})
+    return web.json_response(hash)
+
+
 @routes.get("/block")
 async def get_block(request):
     if "hash" in request.query.keys():

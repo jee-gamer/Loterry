@@ -53,6 +53,8 @@ class LotteryTimer:
                     print(e)
                     return 0, 0
 
+
+
     async def notify(self):
         print('Entering notification task')
         while True:
@@ -76,6 +78,7 @@ class LotteryTimer:
                         else:
                             print('odd')
                             await client.post_winning_choice('odd')
+
 
                         await client.stop_lottery()
                         await self.get_unique_user(idLottery)
