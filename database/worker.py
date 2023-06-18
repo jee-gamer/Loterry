@@ -29,7 +29,6 @@ blocks_sub = redis_service.pubsub()
 blocks_sub.subscribe("blocks")
 
 DATABASE_URL = "http://localhost:5000/api"
-BTC_URL = "http://localhost:5001"
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
@@ -48,6 +47,11 @@ def setup_periodic_tasks(sender, **kwargs):
 def send_clicks(clickCount=99):
     logging.info(f"Sent clickCount {clickCount}  to redis ")
     # redis_service.publish("clickCount", clickCount)
+
+
+def make_request_btc(method, endpoint):
+    response = request(method, f"http://localhost:5001{endpoint}")
+    return response.json()
 
 
 @app.task
@@ -113,77 +117,60 @@ def blocks():
                 logging.error(f"Invalid block data received {data}")
 
 
-def make_request(method, url, endpoint, **kwargs):
-    response = request(method, f"{url}{endpoint}", **kwargs)
-    try:
-        return response.json()
-    except Exception as e:
-        logging.error(f"{e}")
-        return response.text()
-
-
-def get_unique_user(self, idLottery):
-    data = None
-    data = make_request('GET', DATABASE_URL, "/users/allVote")
-    if not data:
-        return None
-    for bet in data:
-        if bet["idLottery"] == idLottery:
-            self.subscribers.append(bet["idUser"])
-    return {'Got idUsers'}
-
-
-def post_winning_result(winningChoice):
-    endpoint = f"/lottery/winningFruit"
-    url = "http://localhost:5000/api"
-    data = {
-        "winningChoice": winningChoice,
-    }
-    return make_request('POST', url, endpoint, json=data)
-
-
 @app.task
 def notify_results():
-    idLottery = make_request("GET", DATABASE_URL, "/lottery/running")
-    if idLottery:
+    height = make_request_btc("GET", "/tip")
+    lottery = session.query(Lottery).filter(Lottery.startedHeight == height).first()
+    if lottery:
         print('found lottery, checking')
-        lotteryHeight = make_request("GET", DATABASE_URL, "/lottery/height")
-        lastHeight = make_request("GET", BTC_URL, "/tip")
+        lotteryHeight = lottery.startedHeight
+        lastHeight = make_request_btc("GET", "/tip")
         if lastHeight > lotteryHeight:
             print("stop allowing votes")
             # stop people from voting, real function in the bot itself
 
             if lastHeight > lotteryHeight + 1:
-                currentHash = make_request("GET", BTC_URL, "/tip/hash")
+                currentHash = make_request_btc("GET", "/tip/hash")
                 decimalId = int(currentHash, 16)
                 if decimalId % 2 == 0:
                     print('even')
-                    post_winning_result('even')
+                    lottery.winningFruit = 2
+                    session.commit()
                 else:
                     print('odd')
-                    post_winning_result('odd')
+                    lottery.winningFruit = 1
+                    session.commit()
 
                 # await client.stop_lottery()  no such thing anymore
-
-                data = make_request('GET', DATABASE_URL, "/users/allVote")
+                data = [v.as_dict() for v in session.query(Bet).all()]
                 subscribers = []   # time to get all user that voted on this lottery
                 if not data:
                     logging.info("No user voted on this lottery")
                     return None
                 for bet in data:
-                    if bet["idLottery"] == idLottery:
+                    if bet["idLottery"] == lotteryHeight:
                         subscribers.append(bet["idUser"])
 
-                winners = make_request('GET', DATABASE_URL, f"/lottery/winners?idLottery={idLottery}")
-
+                #  getting winners
+                winningFruit = lottery.winningFruit
+                winningBet = session.query(Bet).filter(Bet.idLottery == lotteryHeight, Bet.userBet == winningFruit).all()
+                winners = []
+                if not winningBet:
+                    logging.info("no winner")
+                    return False
+                for bet in winningBet:
+                    if bet.user is None:  # if user is not registered (remove later)
+                        name = f"UserId_{bet.idUser}"
+                    else:
+                        name = bet.user.alias  # this requires that the user of this bet have registered
+                    print(name)
+                    winners.append(name)
                 if not winners:
                     for idUser in subscribers:
                         thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
                         redis_service.publish(
                             "notify", thisMessage
                         )
-
-
                 else:
                     for idUser in subscribers:
                         thisMessage = json.dumps({idUser: f"Lottery have ended!\n"

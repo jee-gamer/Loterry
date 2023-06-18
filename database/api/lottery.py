@@ -21,11 +21,11 @@ def get_lottery(id: int):
     if id < 794881:
         logging.error(f"attempt to create invalid lottery {id}")
         return jsonify(None)
-    lottery = session.query(Lottery).filter(Lottery.idLottery == id).first()
+    lottery = session.query(Lottery).filter(Lottery.startedHeight == id).first()
     if not lottery:
         return jsonify(None)
         #return jsonify({'message': 'Lottery not found'}), 404
-    return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()])
+    return jsonify([session.query(Lottery).filter(Lottery.startedHeight == id).one().as_dict()])
 
 
 def start_lottery():
@@ -91,7 +91,7 @@ def get_winning_fruit(idLottery):
 
 
 def get_winners(idLottery):
-    lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
+    lottery = session.query(Lottery).filter(Lottery.startedHeight == idLottery).first()
     if not lottery:
         return False  # {'message': 'Lottery not found'}
 

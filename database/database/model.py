@@ -61,7 +61,7 @@ class Bet(Base):
     __tablename__ = "Bet"
     idBet = mapped_column(String(length=36), primary_key=True)
     idUser = mapped_column(Integer, ForeignKey("User.idUser"))
-    idLottery = mapped_column(Integer, ForeignKey("Lottery.idLottery"))
+    idLottery = mapped_column(Integer, ForeignKey("Lottery.startedHeight"))
     userBet = mapped_column(Integer)
     betSize = mapped_column(Integer)
     createdAt = mapped_column(DateTime)
