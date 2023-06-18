@@ -101,12 +101,20 @@ async def cmd_lottery(message: types.Message):
                 await message.reply(f"Couldnt  start lottery! Received {height} as a height")
 
     idLottery = await client.get_lottery(id=height)
+    idLottery2 = await client.get_lottery(id=height-1)
     # In Python we have None type
     if idLottery:
         height = await client.get_height()
         #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
             f"Lottery is running! {height} started height\n https://t.me/StreetBitTestBot"
+            f"You can vote odd or even!",
+            reply_markup=get_keyboard(lottery=idLottery),
+        )
+    elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
+        height = await client.get_height()
+        await message.reply(
+            f"Lottery voting time is up! {height} started height\n https://t.me/StreetBitTestBot"
             f"You can vote odd or even!",
             reply_markup=get_keyboard(lottery=idLottery),
         )
