@@ -302,24 +302,6 @@ paths:
           '201':
             description: post the winning choice
 
-    /lottery/running:
-      get:
-        operationId: api.get_running_lottery
-        description: Returns an id of a running lottery
-        produces:
-          - application/json
-        responses:
-          '200':
-            description: returned id lottery
-          '400':
-            description: Generic error
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  example: "No lottery is running"
-
 
     /lottery/winners:
       get:

@@ -89,21 +89,33 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
-    idLottery = await client.get_id_lottery()  # always return int if lottery is running
-    if not isinstance(idLottery, int):
-        await client.start_lottery()
-        idLottery = await client.get_id_lottery()
+    BTC_URL = "http://localhost:5001"
+    endpoint = "/tip"
+    height = None
+    # TODO: move it into make_request handler
+    async with aiohttp.ClientSession() as session:
+        url = f"{BTC_URL}{endpoint}"
+        async with session.request("GET", url) as response:
+            height = await response.json()
+            if not height:
+                await message.reply(f"Couldnt  start lottery! Received {height} as a height")
+
+    idLottery = await client.get_lottery(id=height)
+    # In Python we have None type
+    if idLottery:
         height = await client.get_height()
+        #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
-            f"Lottery started! {height} started height\n" f"You can vote odd or even!",
+            f"Lottery is running! {height} started height\n https://t.me/StreetBitTestBot"
+            f"You can vote odd or even!",
             reply_markup=get_keyboard(lottery=idLottery),
         )
     else:
-        height = await client.get_height()
+        await client.start_lottery()
+        #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
-            f"Lottery is running! {height} started height\n"
-            f"You can vote odd or even!",
-            reply_markup=get_keyboard(lottery=idLottery),
+            f"Lottery started! {height} started height\n" f"You can vote odd or even! https://t.me/StreetBitTestBot",
+            reply_markup=get_keyboard(lottery=height),
         )
 
 

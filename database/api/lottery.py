@@ -4,31 +4,31 @@ from flask import request, jsonify
 import logging
 from datetime import datetime
 from sqlalchemy import func, desc
-import aiohttp
+from requests import request
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
 
-BTC_URL = "http://localhost:5001"
+
+def make_request(method, endpoint):
+    response = request(method, f"http://localhost:5001{endpoint}")
+    return response.json()
 
 
-async def make_request(method, endpoint, **kwargs):
-    async with aiohttp.ClientSession() as session:
-        url = f"{BTC_URL}{endpoint}"
-        async with session.request(method, url, **kwargs) as response:
-            data = await response.json()
-            return data
-
-
-def get_lottery(id):
+def get_lottery(id: int):
+    # Sanity check
+    if id < 794881:
+        logging.error(f"attempt to create invalid lottery {id}")
+        return jsonify(None)
     lottery = session.query(Lottery).filter(Lottery.idLottery == id).first()
     if not lottery:
-        return jsonify({'message': 'Lottery not found'}), 404
+        return jsonify(None)
+        #return jsonify({'message': 'Lottery not found'}), 404
     return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()])
 
 
-async def start_lottery():
+def start_lottery():
 
     maxId = session.query(func.max(Lottery.idLottery)).scalar()
     if not maxId:
@@ -36,7 +36,7 @@ async def start_lottery():
     idLottery = maxId + 1
 
     endpoint = f"/tip"
-    height = await make_request('GET', endpoint)
+    height = make_request('GET', endpoint)
 
     if not height:
         return jsonify({'message': 'Cant get block height'})
@@ -47,7 +47,7 @@ async def start_lottery():
     # {'message': 'lottery started'}
 
 
-async def post_winning_choice():
+def post_winning_choice():
     lottery = session.query(Lottery).filter(Lottery.running == 1).first()
     data = request.get_json()
     if lottery:
@@ -112,21 +112,6 @@ def get_winners(idLottery):
         winner.append(name)
 
     return jsonify(winner)
-
-
-async def get_running_lottery():
-
-    endpoint = f"/tip"
-    height = await make_request('GET', endpoint)
-
-    lottery = session.query(Lottery).filter(Lottery.startedHeight == height).first()
-    lottery2 = session.query(Lottery).filter(Lottery.startedHeight + 1 == height).first()
-    if not lottery and not lottery2:
-        return None
-        #  {'message': 'No lottery is running'}
-
-    lotteryId = lottery.idLottery
-    return jsonify(lotteryId)
 
 
 def stop_lottery():

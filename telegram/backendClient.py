@@ -44,8 +44,8 @@ class BackendClient:
         endpoint = f"/lottery/winners?idLottery={idLottery}"
         return await self.make_request('GET', endpoint)
 
-    async def get_id_lottery(self):
-        endpoint = "/lottery/running"
+    async def get_lottery(self, id: int):
+        endpoint = f"/lottery?id={id}"
         return await self.make_request('GET', endpoint)
 
     async def stop_lottery(self):

@@ -1,5 +1,3 @@
-import asyncio
-
 from celery import Celery
 from celery.schedules import crontab
 from os import environ
@@ -8,7 +6,7 @@ import json
 import logging
 from database import session
 from database import Base, User, Bet, Lottery
-import aiohttp
+from requests import request
 
 logging.basicConfig(
     format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p", level=logging.INFO
@@ -76,20 +74,28 @@ def bets():
                 except Exception as e:
                     logging.error(f"couldnt convert Bet data {e}")
 
-                logging.info(
-                    f'message {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}'
-                )
+                user = session.query(User).filter(User.idUser == data["idUser"]).first()
+                if user:
+                    logging.info(
+                        f'message {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}'
+                    )
 
-                # 1 BTC per 1 click. 10 clicks = 10 BTC
-                thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"], data["betSize"])
-                session.add(thisBet)
-                session.commit()
+                    # 1 BTC per 1 click. 10 clicks = 10 BTC
+                    thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"], data["betSize"])
+                    session.add(thisBet)
+                    session.commit()
 
-                thisMessage = json.dumps({data["idUser"]: "Submitted"})
-                redis_service.publish(
-                    "notify", thisMessage
-                )
-
+                    # TODO: Update balance of the user
+                    thisMessage = json.dumps({data["idUser"]: "Submitted"})
+                    redis_service.publish(
+                        "notify", thisMessage
+                    )
+                else:
+                    logging.info(f'received bet from non-registered user {data["idUser"]}')
+                    thisMessage = json.dumps({data["idUser"]: "Restart the bot"})
+                    redis_service.publish(
+                        "notify", thisMessage
+                    )
             else:
                 logging.error(f"Invalid message data received {data}")
 
@@ -107,17 +113,18 @@ def blocks():
                 logging.error(f"Invalid block data received {data}")
 
 
-async def make_request(URL, method, endpoint, **kwargs):
-    async with aiohttp.ClientSession() as session:
-        url = f"{URL}{endpoint}"
-        async with session.request(method, url, **kwargs) as response:
-            data = await response.json()
-            return data
+def make_request(method, url, endpoint, **kwargs):
+    response = request(method, f"{url}{endpoint}", **kwargs)
+    try:
+        return response.json()
+    except Exception as e:
+        logging.error(f"{e}")
+        return response.text()
 
 
-async def get_unique_user(self, idLottery):
+def get_unique_user(self, idLottery):
     data = None
-    data = await make_request(DATABASE_URL, 'GET', "/users/allVote")
+    data = make_request('GET', DATABASE_URL, "/users/allVote")
     if not data:
         return None
     for bet in data:
@@ -126,39 +133,39 @@ async def get_unique_user(self, idLottery):
     return {'Got idUsers'}
 
 
-async def post_winning_choice(winningChoice):
+def post_winning_result(winningChoice):
     endpoint = f"/lottery/winningFruit"
-    URL = "http://localhost:5000/api"
+    url = "http://localhost:5000/api"
     data = {
         "winningChoice": winningChoice,
     }
-    return await make_request(URL, 'POST', endpoint, json=data)
+    return make_request('POST', url, endpoint, json=data)
 
 
 @app.task
-async def notify_results():
-    idLottery = await make_request(DATABASE_URL, "GET", "/lottery/running")
+def notify_results():
+    idLottery = make_request("GET", DATABASE_URL, "/lottery/running")
     if idLottery:
         print('found lottery, checking')
-        lotteryHeight = await make_request(DATABASE_URL, "GET", "/lottery/height")
-        lastHeight = await make_request(BTC_URL, "GET", "/tip")
+        lotteryHeight = make_request("GET", DATABASE_URL, "/lottery/height")
+        lastHeight = make_request("GET", BTC_URL, "/tip")
         if lastHeight > lotteryHeight:
             print("stop allowing votes")
             # stop people from voting, real function in the bot itself
 
             if lastHeight > lotteryHeight + 1:
-                currentHash = await make_request(BTC_URL, "GET", "/tip/hash")
+                currentHash = make_request("GET", BTC_URL, "/tip/hash")
                 decimalId = int(currentHash, 16)
                 if decimalId % 2 == 0:
                     print('even')
-                    await post_winning_choice('even')
+                    post_winning_result('even')
                 else:
                     print('odd')
-                    await post_winning_choice('odd')
+                    post_winning_result('odd')
 
                 # await client.stop_lottery()  no such thing anymore
 
-                data = await make_request(DATABASE_URL, 'GET', "/users/allVote")
+                data = make_request('GET', DATABASE_URL, "/users/allVote")
                 subscribers = []   # time to get all user that voted on this lottery
                 if not data:
                     logging.info("No user voted on this lottery")
@@ -167,7 +174,7 @@ async def notify_results():
                     if bet["idLottery"] == idLottery:
                         subscribers.append(bet["idUser"])
 
-                winners = await make_request(DATABASE_URL, 'GET', f"/lottery/winners?idLottery={idLottery}")
+                winners = make_request('GET', DATABASE_URL, f"/lottery/winners?idLottery={idLottery}")
 
                 if not winners:
                     for idUser in subscribers:
@@ -184,7 +191,6 @@ async def notify_results():
                         redis_service.publish(
                             "notify", thisMessage
                         )
-
 
 
 @app.task
