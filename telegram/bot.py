@@ -107,27 +107,27 @@ async def cmd_lottery(message: types.Message):
         height = await client.get_height()
         #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
-            f"Lottery is running! {height} started height\n https://t.me/StreetBitTestBot"
+            f"Lottery is running! {height} started height\n https://t.me/Hahafunnybot?start=start "
             f"You can vote odd or even!",
-            reply_markup=get_keyboard(lottery=idLottery),
+            reply_markup=get_keyboard(lottery=height),
         )
-    elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
+    elif idLottery2:  # because we disable th   e voting when the height move 1st time then stop lottery the 2nd time
         height = await client.get_height()
         await message.reply(
-            f"Lottery voting time is up! {height} started height\n https://t.me/StreetBitTestBot"
+            f"Lottery voting time is up! {height} started height\n https://t.me/Hahafunnybot?start=start "
             f"You can vote odd or even!",
-            reply_markup=get_keyboard(lottery=idLottery),
+            reply_markup=get_keyboard(lottery=height),
         )
     else:
         await client.start_lottery()
         #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
-            f"Lottery started! {height} started height\n" f"You can vote odd or even! https://t.me/StreetBitTestBot",
+            f"Lottery started! {height} started height\n You can vote odd or even! https://t.me/Hahafunnybot?start=start ",
             reply_markup=get_keyboard(lottery=height),
         )
 
 
-@dp.callback_query_handler(bet_cb.filter(action=["odd", "even"]))
+@dp.callback_query_handler(bet_cb.filter(action=["odd", "even", "lottery"]))
 async def callback_bet_action(
     query: types.CallbackQuery, callback_data: typing.Dict[str, str]
 ):

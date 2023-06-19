@@ -96,7 +96,7 @@ def bets():
                     )
                 else:
                     logging.info(f'received bet from non-registered user {data["idUser"]}')
-                    thisMessage = json.dumps({data["idUser"]: "Restart the bot"})
+                    thisMessage = json.dumps({data["idUser"]: "Restart the bot (/start) to register user"})
                     redis_service.publish(
                         "notify", thisMessage
                     )
