@@ -89,8 +89,12 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
+    query_param = message.get_args()
     BTC_URL = "http://localhost:5001"
     endpoint = "/tip"
+    registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)" # default since it only goes to start command
+    # if you need it to do something else you have to do it in start function and check query parameter
+
     height = None
     # TODO: move it into make_request handler
     async with aiohttp.ClientSession() as session:
@@ -107,23 +111,29 @@ async def cmd_lottery(message: types.Message):
         height = await client.get_height()
         #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
-            f"Lottery is running! {height} started height\n https://t.me/Hahafunnybot?start=start "
-            f"You can vote odd or even!",
+            f"Lottery is running, {height} started height\n"
+            f"You can vote odd or even\n"
+            f"register {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2"
         )
-    elif idLottery2:  # because we disable th   e voting when the height move 1st time then stop lottery the 2nd time
+    elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         height = await client.get_height()
         await message.reply(
-            f"Lottery voting time is up! {height} started height\n https://t.me/Hahafunnybot?start=start "
-            f"You can vote odd or even!",
+            f"Lottery voting time is up, {height} started height\n"
+            f"You can vote odd or even\n"
+            f"register {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2"
         )
     else:
         await client.start_lottery()
         #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
-            f"Lottery started! {height} started height\n You can vote odd or even! https://t.me/Hahafunnybot?start=start ",
+            f"Lottery started, {height} started height\n You can vote odd or even\n"
+            f"register {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2"
         )
 
 
