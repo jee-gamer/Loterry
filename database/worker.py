@@ -28,7 +28,11 @@ bets_sub.subscribe("bets")
 blocks_sub = redis_service.pubsub()
 blocks_sub.subscribe("blocks")
 
+invoice_sub = redis_service.pubsub()
+invoice_sub.subscribe("invoice")
+
 DATABASE_URL = "http://localhost:5000/api"
+
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
@@ -37,7 +41,7 @@ def setup_periodic_tasks(sender, **kwargs):
     )
     sender.add_periodic_task(10.0, blocks, name="checking for new blocks in the queue")
     sender.add_periodic_task(10.0, notify_results, name="checking if the lottery ended")
-
+    sender.add_periodic_task(10.0, process_invoice, name="checking if invoice is valid")
     sender.add_periodic_task(
         crontab(hour=7, minute=30, day_of_week=1),
         ads.s("Happy Mondays!"),
@@ -178,6 +182,33 @@ def notify_results():
                         redis_service.publish(
                             "notify", thisMessage
                         )
+
+
+@app.task()
+def process_invoice():  # add balance to user if got invoice
+    for message in invoice_sub.listen():
+        channel = message["channel"].decode("utf-8")
+        if message["type"] == "message" and channel == "invoice":
+            logging.info("got invoice msg")
+            str_data = message["data"].decode()
+            data = json.loads(str_data)
+            if "userId" and "paymentHash" in data:
+                invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{data['paymentHash']}",
+                               headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+                invoiceStatusData = json.loads(invoiceStatus.text)
+                logging.info(invoiceStatusData)
+            else:
+                logging.info("Invalid userId or paymentHash")
+
+            if invoiceStatusData["paid"]:
+                user = session.query(User).filter(User.idUser == data["idUser"]).first()
+                if user:
+                    user.balance += invoiceStatusData['amount']
+                else:
+                    logging.info("User doesn't exist")
+
+                pass
+                #  add balance
 
 
 @app.task

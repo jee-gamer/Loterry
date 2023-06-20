@@ -87,6 +87,7 @@ async def cmd_start(message: types.Message):
         "type /result to see the Lottery results (not active)"
     )
 
+
 @dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))
 async def cmd_deposit(message: types.Message):
     inputs = message.text.split(" ")
@@ -98,19 +99,25 @@ async def cmd_deposit(message: types.Message):
         )
 
     async with aiohttp.ClientSession() as session:
-        header = {"X-Api-Key": "213a645c317840f19e3ded8b8c2a15d1"}
+        header = {"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"}
         data = {"out": False, "amount": amount, "memo": f"{message.from_user.id}", "expiry": 7200}
         async with session.post(f"https://legend.lnbits.com/api/v1/payments",
-                                header=header,
+                                headers=header,
                                 json=data) as response:
             data = await response.json()
-            await message.reply(
-                f"{data}"
+            try:
+                paymentRequest = data['payment_request']
+                invoiceInfo = {"idUser": message.from_user.id,
+                               "paymentHash": data['payment_hash']
+                               }
+
+                await redis_service.publish('invoice', json.dumps(invoiceInfo))
+            except Exception as e:
+                logging.info(e)
+            return await message.reply(
+                f"{paymentRequest}"
             )
 
-    await message.reply(
-        "You want deposit money"
-    )
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
