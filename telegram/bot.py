@@ -7,6 +7,7 @@ import asyncio
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.dispatcher.filters import RegexpCommandsFilter
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
 
@@ -86,6 +87,30 @@ async def cmd_start(message: types.Message):
         "type /result to see the Lottery results (not active)"
     )
 
+@dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))
+async def cmd_deposit(message: types.Message):
+    inputs = message.text.split(" ")
+    try:
+        amount = int(inputs[1])
+    except ValueError:
+        return await message.reply(
+            "Incorrect number provided"
+        )
+
+    async with aiohttp.ClientSession() as session:
+        header = {"X-Api-Key": "213a645c317840f19e3ded8b8c2a15d1"}
+        data = {"out": False, "amount": amount, "memo": f"{message.from_user.id}", "expiry": 7200}
+        async with session.post(f"https://legend.lnbits.com/api/v1/payments",
+                                header=header,
+                                json=data) as response:
+            data = await response.json()
+            await message.reply(
+                f"{data}"
+            )
+
+    await message.reply(
+        "You want deposit money"
+    )
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
