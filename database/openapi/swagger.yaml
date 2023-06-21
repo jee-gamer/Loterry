@@ -174,6 +174,33 @@ paths:
                   type: string
                   example: "Users not found in the database"
 
+    /users/balance:
+      get:
+        operationId: api.get_balance
+        description: Return the user balance
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: id
+            type: integer
+            required: true
+        responses:
+          '200':
+            description: returned the user balance
+            schema:
+              type: array
+              items:
+                type: integer
+          '400':
+            description: Generic error
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Users not found in the database"
+
     /lottery:
       get:
         operationId: api.get_lottery

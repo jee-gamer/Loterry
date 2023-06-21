@@ -85,7 +85,11 @@ async def cmd_start(message: types.Message):
         "\n"
         "type /Lottery to start/see ongoing Lottery"
         "\n"
-        "type /result to see the Lottery results (not active)"
+        "type /deposit #amount to deposit money"
+        "\n"
+        "type /withdraw #invoiceId to withdraw money"
+        "\n"
+        "type /balance to check your balance in the bot"
     )
 
 
@@ -121,7 +125,7 @@ async def cmd_deposit(message: types.Message):
 
 
 @dp.message_handler(RegexpCommandsFilter(regexp_commands=['withdraw\s(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+']))  # any string after withdraw
-async def cmd_deposit(message: types.Message):
+async def cmd_withdraw(message: types.Message):
     inputs = message.text.split(" ")
 
     pattern = r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+"
@@ -142,6 +146,18 @@ async def cmd_deposit(message: types.Message):
         await redis_service.publish('withdraw', json.dumps(invoiceInfo))
 
 
+@dp.message_handler(commands=["balance"])
+async def cmd_balance(message: types.Message):
+    async with aiohttp.ClientSession() as session:
+        url = f"http://localhost:5000/api/users/balance?id={message.from_user.id}"
+        async with session.request("GET", url) as response:
+            balance = await response.json()
+            logging.info(balance)
+            registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)"
+            if not balance:
+                await message.reply(f"User is not registered \n register {registerDeepLink}")
+            else:
+                await message.reply(f"You have {balance} balance")
 
 
 @dp.message_handler(commands=["lottery"])
