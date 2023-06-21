@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import typing
 import aiohttp
 import asyncio
@@ -117,6 +118,27 @@ async def cmd_deposit(message: types.Message):
             return await message.reply(
                 f"{paymentRequest}"
             )
+
+
+@dp.message_handler(RegexpCommandsFilter(regexp_commands=['withdraw\s(\w+)']))  # any string after withdraw
+async def cmd_deposit(message: types.Message):
+    inputs = message.text.split(" ")
+    try:
+        pattern = r"^(lnbc)[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+"
+        bolt11 = re.match(pattern, inputs[1])
+    except ValueError:
+        return await message.reply(
+            "Incorrect invoiceId provided!"
+        )
+    if bolt11:
+        invoiceInfo = {"idUser": message.from_user.id,
+                       "paymentHash": inputs[1]
+                       }
+        await redis_service.publish('withdraw', json.dumps(invoiceInfo))
+    else:
+        logging.info("bolt11 value is incorrect")
+        return
+
 
 
 @dp.message_handler(commands=["lottery"])

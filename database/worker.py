@@ -31,6 +31,9 @@ blocks_sub.subscribe("blocks")
 invoice_sub = redis_service.pubsub()
 invoice_sub.subscribe("invoice")
 
+withdraw_sub = redis_service.pubsub()
+withdraw_sub.subscribe("withdraw")
+
 DATABASE_URL = "http://localhost:5000/api"
 
 
@@ -41,7 +44,8 @@ def setup_periodic_tasks(sender, **kwargs):
     )
     sender.add_periodic_task(10.0, blocks, name="checking for new blocks in the queue")
     sender.add_periodic_task(10.0, notify_results, name="checking if the lottery ended")
-    sender.add_periodic_task(10.0, process_invoice, name="checking if invoice is valid")
+    sender.add_periodic_task(10.0, check_invoice, name="checking if invoice is valid")
+    sender.add_periodic_task(10.0, pay_invoice, name="checking if user balance and invoice is valid for paying")
     sender.add_periodic_task(
         crontab(hour=7, minute=30, day_of_week=1),
         ads.s("Happy Mondays!"),
@@ -185,7 +189,7 @@ def notify_results():
 
 
 @app.task()
-def process_invoice():  # add balance to user if got invoice
+def check_invoice():  # add balance to user if got invoice
     for message in invoice_sub.listen():
         channel = message["channel"].decode("utf-8")
         if message["type"] == "message" and channel == "invoice":
@@ -207,8 +211,35 @@ def process_invoice():  # add balance to user if got invoice
                 else:
                     logging.info("User doesn't exist")
 
-                pass
-                #  add balance
+
+@app.task()
+def pay_invoice():  # pay user that request withdraw and balance is valid
+    for message in withdraw_sub.listen():
+        channel = message["channel"].decode("utf-8")
+        if message["type"] == "message" and channel == "withdraw":
+            logging.info("got invoice msg")
+            str_data = message["data"].decode()
+            data = json.loads(str_data)
+            if "userId" and "paymentHash" in data:
+                invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{data['paymentHash']}",
+                               headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+                invoiceStatusData = json.loads(invoiceStatus.text)
+                logging.info(invoiceStatusData)
+            else:
+                logging.info("Invalid userId or paymentHash")
+            user = session.query(User).filter(User.idUser == data["idUser"]).first()  # the amount is big? still don't understand that
+            if user and invoiceStatusData["amount"] <= user.balance:
+                user.balance = user.balance - invoiceStatusData["amount"]
+                withdrawInfo = {"out": True, "bolt11": data["paymentHash"]}
+                request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
+                        headers={"X-Api-Key": "bd5d9c5422f2419ba0c94781d2fadf64"})  # admin key
+            else:
+                logging.info("User doesn't exist or user balance isn't enough")
+
+
+
+
+
 
 
 @app.task
