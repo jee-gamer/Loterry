@@ -120,24 +120,27 @@ async def cmd_deposit(message: types.Message):
             )
 
 
-@dp.message_handler(RegexpCommandsFilter(regexp_commands=['withdraw\s(\w+)']))  # any string after withdraw
+@dp.message_handler(RegexpCommandsFilter(regexp_commands=['withdraw\s(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+']))  # any string after withdraw
 async def cmd_deposit(message: types.Message):
     inputs = message.text.split(" ")
-    try:
-        pattern = r"^(lnbc)[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+"
-        bolt11 = re.match(pattern, inputs[1])
-    except ValueError:
+
+    pattern = r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+"
+    bolt11 = re.match(pattern, inputs[1])
+    if not bolt11:
+        logging.info("bolt11 value is incorrect")
         return await message.reply(
             "Incorrect invoiceId provided!"
         )
-    if bolt11:
-        invoiceInfo = {"idUser": message.from_user.id,
-                       "paymentHash": inputs[1]
-                       }
-        await redis_service.publish('withdraw', json.dumps(invoiceInfo))
     else:
-        logging.info("bolt11 value is incorrect")
-        return
+        bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])
+        amount = int(bolt11.group(2))/10
+        invoiceInfo = {"idUser": message.from_user.id,
+                       "bolt11": inputs[1],
+                       "amount": amount
+                       }
+        logging.info(f"sending invoice info {invoiceInfo}")
+        await redis_service.publish('withdraw', json.dumps(invoiceInfo))
+
 
 
 

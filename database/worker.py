@@ -220,17 +220,13 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
             logging.info("got invoice msg")
             str_data = message["data"].decode()
             data = json.loads(str_data)
-            if "userId" and "paymentHash" in data:
-                invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{data['paymentHash']}",
-                               headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
-                invoiceStatusData = json.loads(invoiceStatus.text)
-                logging.info(invoiceStatusData)
-            else:
-                logging.info("Invalid userId or paymentHash")
+            logging.info(data)
             user = session.query(User).filter(User.idUser == data["idUser"]).first()  # the amount is big? still don't understand that
-            if user and invoiceStatusData["amount"] <= user.balance:
-                user.balance = user.balance - invoiceStatusData["amount"]
-                withdrawInfo = {"out": True, "bolt11": data["paymentHash"]}
+            if user and data["amount"] <= user.balance:
+                logging.info("enough balance, proceed with payment")
+                user.balance = user.balance - data["amount"]
+                session.commit()
+                withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
                 request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
                         headers={"X-Api-Key": "bd5d9c5422f2419ba0c94781d2fadf64"})  # admin key
             else:
