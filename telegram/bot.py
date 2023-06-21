@@ -105,7 +105,7 @@ async def cmd_deposit(message: types.Message):
 
     async with aiohttp.ClientSession() as session:
         header = {"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"}
-        data = {"out": False, "amount": amount, "memo": f"{message.from_user.id}", "expiry": 7200}
+        data = {"out": False, "amount": amount, "memo": f"{message.from_user.id}", "expiry": 7200}  # 2 hour
         async with session.post(f"https://legend.lnbits.com/api/v1/payments",
                                 headers=header,
                                 json=data) as response:
@@ -155,7 +155,7 @@ async def cmd_balance(message: types.Message):
             logging.info(balance)
             registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)"
             if not balance:
-                await message.reply(f"User is not registered \n register {registerDeepLink}")
+                await message.reply(f"User is not registered \n register {registerDeepLink}", parse_mode="MarkDownV2")
             else:
                 await message.reply(f"You have {balance} balance")
 

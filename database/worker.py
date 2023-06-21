@@ -1,3 +1,5 @@
+
+
 from celery import Celery
 from celery.schedules import crontab
 from os import environ
@@ -7,6 +9,8 @@ import logging
 from database import session
 from database import Base, User, Bet, Lottery
 from requests import request
+import time
+
 
 logging.basicConfig(
     format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p", level=logging.INFO
@@ -188,6 +192,43 @@ def notify_results():
                         )
 
 
+def status_check(idUser, paymentHash):
+    invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
+                            headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+    invoiceStatusData = json.loads(invoiceStatus.text)
+    logging.info(f"This is the data we got {invoiceStatusData}")
+    timeout = int(invoiceStatusData["details"]["expiry"])
+
+    while True:
+        timeNow = time.time()
+
+        if timeNow >= timeout:
+            logging.info("Timeout reached")
+            msg = {idUser: f"The invoice is expired"}
+            redis_service.publish("notify", json.dumps(msg))
+            return
+
+        invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
+                                headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+        invoiceStatusData = json.loads(invoiceStatus.text)
+        if invoiceStatusData["paid"]:
+            user = session.query(User).filter(User.idUser == idUser).first()
+            if user:
+                depositedMoney = int(abs(invoiceStatusData['details']['amount'])/1000)  # the amount return positive when the payment is done for some reason
+                user.balance += depositedMoney
+                session.commit()
+                balance = user.balance
+                msg = {idUser: f"Deposit {depositedMoney} balance successfully \n"
+                               f"Your balance is now {balance}"}
+                redis_service.publish("notify", json.dumps(msg))
+            else:
+                logging.info(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
+
+                return
+            return
+        time.sleep(10)
+
+
 @app.task()
 def check_invoice():  # add balance to user if got invoice
     for message in invoice_sub.listen():
@@ -196,20 +237,15 @@ def check_invoice():  # add balance to user if got invoice
             logging.info("got invoice msg")
             str_data = message["data"].decode()
             data = json.loads(str_data)
-            if "userId" and "paymentHash" in data:
-                invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{data['paymentHash']}",
-                               headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
-                invoiceStatusData = json.loads(invoiceStatus.text)
-                logging.info(invoiceStatusData)
-            else:
-                logging.info("Invalid userId or paymentHash")
-
-            if invoiceStatusData["paid"]:
+            if "idUser" and "paymentHash" in data:
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
-                    user.balance += invoiceStatusData['amount']
+                    status_check(data["idUser"], data["paymentHash"])
                 else:
-                    logging.info("User doesn't exist")
+                    msg = {data["idUser"]: f"User is not registered"}
+                    redis_service.publish("notify", json.dumps(msg))
+                    return
+
 
 
 @app.task()
