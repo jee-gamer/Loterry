@@ -151,10 +151,11 @@ async def cmd_balance(message: types.Message):
     async with aiohttp.ClientSession() as session:
         url = f"http://localhost:5000/api/users/balance?id={message.from_user.id}"
         async with session.request("GET", url) as response:
+            balance = -1
             balance = await response.json()
             logging.info(balance)
             registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)"
-            if balance == {'message': 'User not found'}:
+            if balance == {'message': 'User not found'} or balance == -1:
                 await message.reply(f"User is not registered \n register {registerDeepLink}", parse_mode="MarkDownV2")
             else:
                 await message.reply(f"You have {balance} balance")
