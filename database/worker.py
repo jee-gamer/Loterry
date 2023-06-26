@@ -88,7 +88,7 @@ def bets():
                         logging.error(f'unknown bet type {data["userBet"]}')
                     data["betSize"] = int(data["betSize"])
                 except Exception as e:
-                    logging.error(f"couldnt convert Bet data {e}")
+                    logging.error(f"couldn't convert Bet data {e}")
 
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
@@ -192,6 +192,7 @@ def notify_results():
                         )
 
 
+@app.task()
 def status_check(idUser, paymentHash):
     invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
                             headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
@@ -214,7 +215,7 @@ def status_check(idUser, paymentHash):
         if invoiceStatusData["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
             if user:
-                depositedMoney = int(abs(invoiceStatusData['details']['amount'])/1000)  # the amount return positive when the payment is done for some reason
+                depositedMoney = int(abs(invoiceStatusData['details']['amount'])/1000)  # the amount return negative when the payment is done for some reason
                 user.balance += depositedMoney
                 session.commit()
                 balance = user.balance
@@ -223,8 +224,6 @@ def status_check(idUser, paymentHash):
                 redis_service.publish("notify", json.dumps(msg))
             else:
                 logging.info(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
-
-                return
             return
         time.sleep(10)
 
@@ -240,12 +239,10 @@ def check_invoice():  # add balance to user if got invoice
             if "idUser" and "paymentHash" in data:
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
-                    status_check(data["idUser"], data["paymentHash"])
+                    status_check.apply_async((data["idUser"], data["paymentHash"]), ignore_result=True)
                 else:
                     msg = {data["idUser"]: f"User is not registered"}
                     redis_service.publish("notify", json.dumps(msg))
-                    return
-
 
 
 @app.task()
@@ -267,11 +264,6 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                         headers={"X-Api-Key": "bd5d9c5422f2419ba0c94781d2fadf64"})  # admin key
             else:
                 logging.info("User doesn't exist or user balance isn't enough")
-
-
-
-
-
 
 
 @app.task

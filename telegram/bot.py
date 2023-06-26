@@ -154,7 +154,7 @@ async def cmd_balance(message: types.Message):
             balance = await response.json()
             logging.info(balance)
             registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)"
-            if not balance:
+            if balance == {'message': 'User not found'}:
                 await message.reply(f"User is not registered \n register {registerDeepLink}", parse_mode="MarkDownV2")
             else:
                 await message.reply(f"You have {balance} balance")
