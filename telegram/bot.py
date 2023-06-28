@@ -11,6 +11,7 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher.filters import RegexpCommandsFilter
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
+from aiogram.contrib.fsm_storage.redis import RedisStorage2
 
 from os import environ
 
@@ -28,19 +29,20 @@ logging.basicConfig(level=logging.INFO)
 API_TOKEN = environ.get("BotApi")
 client = BackendClient()
 
-REDIS_HOST = environ.get("host", default="localhost")
-REDIS_PORT = environ.get("port", default=6379)
+REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
+REDIS_PORT = environ.get("REDIS_PORT", default=6379)
+DB_HOST = environ.get("host", default="localhost")
+DB_PORT = environ.get("port", default=5000)
+DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
+
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 notification_sub = redis_service.pubsub()
 
-
-DATABASE_URL = client.get_base_url()
-# DATABASE_URL = environ.get("DATABASE_URL")
-
+storage = RedisStorage2(host=REDIS_HOST, port=REDIS_PORT, db=5)
 bot = Bot(token=API_TOKEN)
 timer = LotteryTimer(bot)
 
-dp = Dispatcher(bot)
+dp = Dispatcher(bot, storage=RedisStorage2(db=5))
 dp.middleware.setup(LoggingMiddleware())
 
 bet_cb = CallbackData("bet", "action", "lottery")  # vote:<action>
@@ -149,7 +151,7 @@ async def cmd_withdraw(message: types.Message):
 @dp.message_handler(commands=["balance"])
 async def cmd_balance(message: types.Message):
     async with aiohttp.ClientSession() as session:
-        url = f"http://localhost:5000/api/users/balance?id={message.from_user.id}"
+        url = f"http://{DB_HOST}:{DB_PORT}/api/users/balance?id={message.from_user.id}"
         async with session.request("GET", url) as response:
             balance = -1
             balance = await response.json()

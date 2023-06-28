@@ -16,10 +16,10 @@ logging.basicConfig(
     format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p", level=logging.INFO
 )
 
-REDIS_HOST = environ.get("host", default="localhost")
-REDIS_PORT = environ.get("port", default=6379)
+REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
+REDIS_PORT = environ.get("REDIS_PORT", default=6379)
 
-app = Celery(broker="redis://localhost")
+app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 # pubsub = redis_service.pubsub()

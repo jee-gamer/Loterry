@@ -1,8 +1,8 @@
-version: "3"
+version: '3.5'
 
 services:
   redis:
-    network_mode: "host"
+    #network_mode: "host"
     container_name: redis
     image: redis
     hostname: redis
@@ -11,7 +11,9 @@ services:
       - '6379:6379'
 
   database:
-    network_mode: "host"
+    #network_mode: "host"
+    env_file:
+      - .env
     build: database
     container_name: dataservice
     privileged: true
@@ -22,19 +24,18 @@ services:
       - redis
 
   btc_worker:
-    network_mode: "host"
+    #network_mode: "host"
     build: btc
     container_name: btc_worker
     privileged: true
     hostname: btc_worker
-
     depends_on:
       - redis
 
   telegram_bot:
     env_file:
       - .env
-    network_mode: "host"
+    #network_mode: "host"
     build: telegram
     container_name: telegram_bot
     privileged: true
@@ -42,3 +43,6 @@ services:
 
     depends_on:
       - redis
+networks:
+ default:
+  name: gate-bot
