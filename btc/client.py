@@ -8,6 +8,8 @@ import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
+
+
 class BlockstreamClient:
     _base_path = "https://blockstream.info/api"
     _recent_blocks = []
