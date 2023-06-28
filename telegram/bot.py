@@ -43,7 +43,7 @@ storage = RedisStorage2(host=REDIS_HOST, port=REDIS_PORT, db=5)
 bot = Bot(token=API_TOKEN)
 timer = LotteryTimer(bot)
 
-dp = Dispatcher(bot, storage=RedisStorage2(db=5))
+dp = Dispatcher(bot, storage=RedisStorage2(host=REDIS_HOST, port=REDIS_PORT, db=5))
 dp.middleware.setup(LoggingMiddleware())
 
 bet_cb = CallbackData("bet", "action", "lottery")  # vote:<action>
@@ -268,7 +268,7 @@ async def listen():
                     logging.info(f"sending a message to {user_id}")
                     await bot.send_message(user_id, data[user])
             except Exception as e:
-                logging.error(f"exception during sending message to user: {e}")
+                logging.error(f"exception during sending message {message} to user: {e}")
                 continue
         await asyncio.sleep(0.1)
 
