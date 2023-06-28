@@ -31,9 +31,10 @@ client = BackendClient()
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default=6379)
-DB_HOST = environ.get("host", default="localhost")
-DB_PORT = environ.get("port", default=5000)
+DB_HOST = environ.get("DB_HOST", default="localhost")
+DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
+BTC_URL = "http://localhost:5001"
 
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 notification_sub = redis_service.pubsub()
@@ -166,7 +167,6 @@ async def cmd_balance(message: types.Message):
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
     query_param = message.get_args()
-    BTC_URL = "http://localhost:5001"
     endpoint = "/tip"
     registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)" # default since it only goes to start command
     # if you need it to do something else you have to do it in start function and check query parameter
@@ -185,7 +185,6 @@ async def cmd_lottery(message: types.Message):
     # In Python we have None type
     if idLottery:
         height = await client.get_height()
-        #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
             f"Lottery is running, {height} started height\n"
             f"You can vote odd or even\n"
@@ -204,7 +203,6 @@ async def cmd_lottery(message: types.Message):
         )
     else:
         await client.start_lottery()
-        #TODO: Put deeplink onto bot here for unregistered users
         await message.reply(
             f"Lottery started, {height} started height\n You can vote odd or even\n"
             f"register {registerDeepLink}",
