@@ -6,8 +6,8 @@ import logging
 from aiohttp import web
 from os import environ
 
-REDIS_HOST = environ.get("host", default="localhost")
-REDIS_PORT = environ.get("port", default="6379")
+REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
+REDIS_PORT = environ.get("REDIS_PORT", default="6379")
 
 bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}")
 

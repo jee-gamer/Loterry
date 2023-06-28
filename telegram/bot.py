@@ -34,7 +34,9 @@ REDIS_PORT = environ.get("REDIS_PORT", default=6379)
 DB_HOST = environ.get("DB_HOST", default="localhost")
 DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
-BTC_URL = "http://localhost:5001"
+BTC_HOST = environ.get("BTC_HOST", default="localhost")
+BTC_PORT = environ.get("BTC_PORT", default=5001)
+BTC_URL = f"http://{BTC_HOST}:{BTC_PORT}"
 
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 notification_sub = redis_service.pubsub()
@@ -43,7 +45,7 @@ storage = RedisStorage2(host=REDIS_HOST, port=REDIS_PORT, db=5)
 bot = Bot(token=API_TOKEN)
 timer = LotteryTimer(bot)
 
-dp = Dispatcher(bot, storage=RedisStorage2(host=REDIS_HOST, port=REDIS_PORT, db=5))
+dp = Dispatcher(bot, storage=storage)
 dp.middleware.setup(LoggingMiddleware())
 
 bet_cb = CallbackData("bet", "action", "lottery")  # vote:<action>
@@ -175,10 +177,12 @@ async def cmd_lottery(message: types.Message):
     # TODO: move it into make_request handler
     async with aiohttp.ClientSession() as session:
         url = f"{BTC_URL}{endpoint}"
+        logging.info(url)
         async with session.request("GET", url) as response:
             height = await response.json()
             if not height:
-                await message.reply(f"Couldnt  start lottery! Received {height} as a height")
+                await message.reply(f"Couldn't  start lottery! Received {height} as a height")
+                return
 
     idLottery = await client.get_lottery(id=height)
     idLottery2 = await client.get_lottery(id=height-1)

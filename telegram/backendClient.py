@@ -1,11 +1,15 @@
 
 import aiohttp
 import asyncio
+from os import environ
+
+DB_HOST = environ.get("DB_HOST", default="localhost")
+DB_PORT = environ.get("DB_PORT", default=5000)
 
 
 class BackendClient:
     def __init__(self):
-        self.DATABASE_URL = "http://localhost:5000/api"
+        self.DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
     def get_base_url(self):
         return self.DATABASE_URL

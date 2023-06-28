@@ -18,6 +18,8 @@ REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default=6379)
 DB_HOST = environ.get("DB_HOST", default="localhost")
 DB_PORT = environ.get("DB_PORT", default=5000)
+BTC_HOST = environ.get("BTC_HOST", default="localhost")
+BTC_PORT = environ.get("BTC_PORT", default=5001)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
@@ -61,7 +63,7 @@ def send_clicks(clickCount=99):
 
 
 def make_request_btc(method, endpoint):
-    response = request(method, f"http://localhost:5001{endpoint}")
+    response = request(method, f"http://{BTC_HOST}:{BTC_PORT}{endpoint}")
     return response.json()
 
 

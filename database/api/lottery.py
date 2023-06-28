@@ -5,14 +5,18 @@ import logging
 from datetime import datetime
 from sqlalchemy import func, desc
 from requests import request
+from os import environ
 
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
 
+BTC_HOST = environ.get("BTC_HOST", default="localhost")
+BTC_PORT = environ.get("BTC_PORT", default=5001)
+
 
 def make_request(method, endpoint):
-    response = request(method, f"http://localhost:5001{endpoint}")
+    response = request(method, f"http://{BTC_HOST}:{BTC_PORT}{endpoint}")
     return response.json()
 
 
