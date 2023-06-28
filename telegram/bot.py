@@ -31,8 +31,8 @@ client = BackendClient()
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default=6379)
-DB_HOST = environ.get("host", default="localhost")
-DB_PORT = environ.get("port", default=5000)
+DB_HOST = environ.get("DB_HOST", default="localhost")
+DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
