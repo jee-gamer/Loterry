@@ -1,5 +1,3 @@
-
-
 from celery import Celery
 from celery.schedules import crontab
 from os import environ
@@ -18,6 +16,9 @@ logging.basicConfig(
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default=6379)
+DB_HOST = environ.get("DB_HOST", default="localhost")
+DB_PORT = environ.get("DB_PORT", default=5000)
+DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 
@@ -37,8 +38,6 @@ invoice_sub.subscribe("invoice")
 
 withdraw_sub = redis_service.pubsub()
 withdraw_sub.subscribe("withdraw")
-
-DATABASE_URL = "http://localhost:5000/api"
 
 
 @app.on_after_configure.connect
