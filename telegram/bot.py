@@ -16,12 +16,8 @@ from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from os import environ
 
 from backendClient import BackendClient
-from lottery_timer import LotteryTimer  # this run the class
 import redis.asyncio as redis
 from uuid import uuid4
-
-# from BitcoinWorker.app import REDIS_HOST, REDIS_PORT  # this run the class
-# cut out the complication first, talk later
 
 logging.basicConfig(level=logging.INFO)
 
@@ -43,7 +39,6 @@ notification_sub = redis_service.pubsub()
 
 storage = RedisStorage2(host=REDIS_HOST, port=REDIS_PORT, db=5)
 bot = Bot(token=API_TOKEN)
-timer = LotteryTimer(bot)
 
 dp = Dispatcher(bot, storage=storage)
 dp.middleware.setup(LoggingMiddleware())
@@ -96,6 +91,54 @@ async def cmd_start(message: types.Message):
         "\n"
         "type /balance to check your balance in the bot"
     )
+
+
+@dp.message_handler(commands=["lottery"])
+async def cmd_lottery(message: types.Message):
+    endpoint = "/tip"
+    registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)" # default since it only goes to start command
+    # if you need it to do something else you have to do it in start function and check query parameter
+
+    height = None
+    # TODO: move it into make_request handler
+    async with aiohttp.ClientSession() as session:
+        url = f"{BTC_URL}{endpoint}"
+        logging.info(url)
+        async with session.request("GET", url) as response:
+            height = await response.json()
+            if not height:
+                await message.reply(f"Couldn't  start lottery! Received {height} as a height")
+                return
+
+    idLottery = await client.get_lottery(id=height)
+    idLottery2 = await client.get_lottery(id=height-1)
+    # In Python we have None type
+    if idLottery:
+        height = await client.get_height()
+        await message.reply(
+            f"Lottery is running, {height} started height\n"
+            f"You can vote odd or even\n"
+            f"register {registerDeepLink}",
+            reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2"
+        )
+    elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
+        height = await client.get_height()
+        await message.reply(
+            f"Lottery voting time is up, {height} started height\n"
+            f"You can vote odd or even\n"
+            f"register {registerDeepLink}",
+            reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2"
+        )
+    else:
+        await client.start_lottery()
+        await message.reply(
+            f"Lottery started, {height} started height\n You can vote odd or even\n"
+            f"register {registerDeepLink}",
+            reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2"
+        )
 
 
 @dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))
@@ -164,55 +207,6 @@ async def cmd_balance(message: types.Message):
                 await message.reply(f"User is not registered \n register {registerDeepLink}", parse_mode="MarkDownV2")
             else:
                 await message.reply(f"You have {balance} balance")
-
-
-@dp.message_handler(commands=["lottery"])
-async def cmd_lottery(message: types.Message):
-    query_param = message.get_args()
-    endpoint = "/tip"
-    registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)" # default since it only goes to start command
-    # if you need it to do something else you have to do it in start function and check query parameter
-
-    height = None
-    # TODO: move it into make_request handler
-    async with aiohttp.ClientSession() as session:
-        url = f"{BTC_URL}{endpoint}"
-        logging.info(url)
-        async with session.request("GET", url) as response:
-            height = await response.json()
-            if not height:
-                await message.reply(f"Couldn't  start lottery! Received {height} as a height")
-                return
-
-    idLottery = await client.get_lottery(id=height)
-    idLottery2 = await client.get_lottery(id=height-1)
-    # In Python we have None type
-    if idLottery:
-        height = await client.get_height()
-        await message.reply(
-            f"Lottery is running, {height} started height\n"
-            f"You can vote odd or even\n"
-            f"register {registerDeepLink}",
-            reply_markup=get_keyboard(lottery=height),
-            parse_mode="MarkdownV2"
-        )
-    elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
-        height = await client.get_height()
-        await message.reply(
-            f"Lottery voting time is up, {height} started height\n"
-            f"You can vote odd or even\n"
-            f"register {registerDeepLink}",
-            reply_markup=get_keyboard(lottery=height),
-            parse_mode="MarkdownV2"
-        )
-    else:
-        await client.start_lottery()
-        await message.reply(
-            f"Lottery started, {height} started height\n You can vote odd or even\n"
-            f"register {registerDeepLink}",
-            reply_markup=get_keyboard(lottery=height),
-            parse_mode="MarkdownV2"
-        )
 
 
 @dp.callback_query_handler(bet_cb.filter(action=["odd", "even", "lottery"]))

@@ -2,7 +2,6 @@ version: '3.5'
 
 services:
   redis:
-    #network_mode: "host"
     container_name: redis
     image: redis
     hostname: redis
@@ -11,7 +10,6 @@ services:
       - '6379:6379'
 
   database:
-    #network_mode: "host"
     env_file:
       - .env
     build: database
@@ -24,7 +22,6 @@ services:
       - redis
 
   btc_worker:
-    #network_mode: "host"
     env_file:
       - .env
     build: btc
@@ -37,7 +34,6 @@ services:
   telegram_bot:
     env_file:
       - .env
-    #network_mode: "host"
     build: telegram
     container_name: telegram_bot
     privileged: true
