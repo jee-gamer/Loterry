@@ -22,6 +22,7 @@ services:
       - redis
 
   btc_worker:
+    #network_mode: "host"
     env_file:
       - .env
     build: btc

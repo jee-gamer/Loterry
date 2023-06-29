@@ -1,7 +1,8 @@
 FROM python:3.11-slim-buster
 
 RUN mkdir "/db"
-WORKDIR /database
+RUN mkdir "/runtime"
+WORKDIR /runtime
 
 COPY requirements.txt ./
 
@@ -11,7 +12,7 @@ COPY . .
 
 EXPOSE 5000
 
-RUN ["chmod", "+x", "/database/docker-entrypoint.sh"]
+RUN ["chmod", "+x", "/runtime/docker-entrypoint.sh"]
 
-ENTRYPOINT ["/database/docker-entrypoint.sh"]
+ENTRYPOINT ["/runtime/docker-entrypoint.sh"]
 CMD ["dataservice"]

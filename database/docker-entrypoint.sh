@@ -1,11 +1,13 @@
 #!/bin/sh
-*.sh text eol=lf
+# 30 June 2023 this command leads to bash: docker-entrypoint.sh: command not
+# found. It exists because of legacy reasons
+# *.sh text eol=lf
 
 set -e
 if [ "$1" = 'dataservice' ]; then
     echo "Launching workers"
-    cd /database && celery -A worker worker -B --loglevel INFO &
+    cd /runtime && celery -A worker worker -B --loglevel INFO &
     echo "Launching service"
-    cd /database && exec python3 app.py
+    cd /runtime && exec python3 app.py
 fi
 #exec "$@"
