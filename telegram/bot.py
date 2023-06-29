@@ -164,7 +164,7 @@ async def cmd_deposit(message: types.Message):
                                "paymentHash": data['payment_hash']
                                }
 
-                await redis_service.publish('invoice', json.dumps(invoiceInfo))
+                await redis_service.publish('tg/invoice', json.dumps(invoiceInfo))
             except Exception as e:
                 logging.info(e)
             return await message.reply(
@@ -191,7 +191,7 @@ async def cmd_withdraw(message: types.Message):
                        "amount": amount
                        }
         logging.info(f"sending invoice info {invoiceInfo}")
-        await redis_service.publish('withdraw', json.dumps(invoiceInfo))
+        await redis_service.publish('tg/withdraw', json.dumps(invoiceInfo))
 
 
 @dp.message_handler(commands=["balance"])
@@ -224,7 +224,7 @@ async def callback_bet_action(
     logging.debug("Redis pinged. Sending a message")
 
     await redis_service.publish(
-        "bets",
+        "tg/bets",
         json.dumps(
             {
                 "uuid": uuid4().hex, # common thing in software development
@@ -273,9 +273,9 @@ async def listen():
 
 async def notify():
     async with notification_sub as pubsub:
-        await pubsub.subscribe("notify")
+        await pubsub.subscribe("tg/notify")
         future = asyncio.create_task(listen())
-        await redis_service.publish("notify", "Notification task started!")
+        await redis_service.publish("tg/notify", "Notification task started!")
         await future
 
 

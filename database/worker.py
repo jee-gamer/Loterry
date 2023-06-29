@@ -30,16 +30,16 @@ redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 # pubsub.subscribe('blocks')
 
 bets_sub = redis_service.pubsub()
-bets_sub.subscribe("bets")
+bets_sub.subscribe("tg/bets")
 
 blocks_sub = redis_service.pubsub()
-blocks_sub.subscribe("blocks")
+blocks_sub.subscribe("tg/blocks")
 
 invoice_sub = redis_service.pubsub()
-invoice_sub.subscribe("invoice")
+invoice_sub.subscribe("tg/invoice")
 
 withdraw_sub = redis_service.pubsub()
-withdraw_sub.subscribe("withdraw")
+withdraw_sub.subscribe("tg/withdraw")
 
 
 @app.on_after_configure.connect
@@ -73,7 +73,7 @@ def bets():
 
     for message in bets_sub.listen():
         channel = message["channel"].decode("utf-8")
-        if message["type"] == "message" and channel == "bets":
+        if message["type"] == "message":
             str_data = message["data"].decode()
             data = json.loads(str_data)
             if "idUser" in data.keys():
@@ -105,13 +105,13 @@ def bets():
                     # TODO: Update balance of the user
                     thisMessage = json.dumps({data["idUser"]: "Submitted"})
                     redis_service.publish(
-                        "notify", thisMessage
+                        "tg/notify", thisMessage
                     )
                 else:
                     logging.info(f'received bet from non-registered user {data["idUser"]}')
                     thisMessage = json.dumps({data["idUser"]: "Restart the bot (/start) to register user"})
                     redis_service.publish(
-                        "notify", thisMessage
+                        "tg/notify", thisMessage
                     )
             else:
                 logging.error(f"Invalid message data received {data}")
@@ -121,7 +121,7 @@ def bets():
 def blocks():
     for message in blocks_sub.listen():
         channel = message["channel"].decode("utf-8")
-        if message["type"] == "message" and channel == "blocks":
+        if message["type"] == "message":
             str_data = message["data"].decode()
             data = json.loads(str_data)
             if "id" in data.keys():
@@ -182,14 +182,14 @@ def notify_results():
                     for idUser in subscribers:
                         thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
                         redis_service.publish(
-                            "notify", thisMessage
+                            "tg/notify", thisMessage
                         )
                 else:
                     for idUser in subscribers:
                         thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
                                                           f"Winners are {winners}"})
                         redis_service.publish(
-                            "notify", thisMessage
+                            "tg/notify", thisMessage
                         )
 
 
@@ -207,7 +207,7 @@ def status_check(idUser, paymentHash):
         if timeNow >= timeout:
             logging.info("Timeout reached")
             msg = {idUser: f"The invoice is expired"}
-            redis_service.publish("notify", json.dumps(msg))
+            redis_service.publish("tg/notify", json.dumps(msg))
             return
 
         invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
@@ -222,7 +222,7 @@ def status_check(idUser, paymentHash):
                 balance = user.balance
                 msg = {idUser: f"Deposit {depositedMoney} balance successfully \n"
                                f"Your balance is now {balance}"}
-                redis_service.publish("notify", json.dumps(msg))
+                redis_service.publish("tg/notify", json.dumps(msg))
             else:
                 logging.info(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
             return
@@ -233,7 +233,7 @@ def status_check(idUser, paymentHash):
 def check_invoice():  # add balance to user if got invoice
     for message in invoice_sub.listen():
         channel = message["channel"].decode("utf-8")
-        if message["type"] == "message" and channel == "invoice":
+        if message["type"] == "message":
             logging.info("got invoice msg")
             str_data = message["data"].decode()
             data = json.loads(str_data)
@@ -243,14 +243,14 @@ def check_invoice():  # add balance to user if got invoice
                     status_check.apply_async((data["idUser"], data["paymentHash"]), ignore_result=True)
                 else:
                     msg = {data["idUser"]: f"User is not registered"}
-                    redis_service.publish("notify", json.dumps(msg))
+                    redis_service.publish("tg/notify", json.dumps(msg))
 
 
 @app.task()
 def pay_invoice():  # pay user that request withdraw and balance is valid
     for message in withdraw_sub.listen():
         channel = message["channel"].decode("utf-8")
-        if message["type"] == "message" and channel == "withdraw":
+        if message["type"] == "message":
             logging.info("got invoice msg")
             str_data = message["data"].decode()
             data = json.loads(str_data)
