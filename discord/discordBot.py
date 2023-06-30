@@ -187,7 +187,14 @@ async def on_message(message):
         replyMessage = await message.reply(msg, view=view)
         view.message = replyMessage
 
-    elif p_message == RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']):
+    elif re.match(r"!deposit\s([0-9]+)", p_message):
+        logging.info("HE DEPOSITING???")
+        pass
+    elif re.match(r'!withdraw\s(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+', p_message):
+        logging.info("HE WITHDRAWING???")
+        pass
+    elif p_message == "!balance":
+        logging.info("HE BALANCE???")
         pass
     elif p_message == "!help":
         await message.reply(
