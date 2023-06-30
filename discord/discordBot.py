@@ -21,6 +21,10 @@ from backendClient import BackendClient
 import redis.asyncio as redis
 from uuid import uuid4
 
+# these are just for local testing
+# from dotenv import load_dotenv
+# load_dotenv()
+
 logging.basicConfig(level=logging.INFO)
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
@@ -32,7 +36,13 @@ BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 BTC_URL = f"http://{BTC_HOST}:{BTC_PORT}"
 
-API_TOKEN = environ.get("BotApi")
+redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+notification_sub = redis_service.pubsub()
+
+storage = RedisStorage2(host=REDIS_HOST, port=REDIS_PORT, db=5)
+
+API_TOKEN = environ.get("DiscordBotApi")
+client = BackendClient()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -49,18 +59,51 @@ async def on_ready():
 
 
 class VoteButton(discord.ui.View):  # button class
+    def __init__(self, height):
+        super().__init__()
+        self.height = height
+
     async def disable_all_items(self):
         for item in self.children:
             item.disabled = True
         await self.message.edit(view=self)
 
+    async def send_redis(self, idUser, lottery, action):
+        logging.debug("Redis pinged. Sending a message")
+
+        await redis_service.publish(
+            "tg/bets",
+            json.dumps(
+                {
+                    "uuid": uuid4().hex,  # common thing in software development
+                    "idUser": idUser,
+                    "idLottery": lottery,
+                    "userBet": action,
+                    "betSize": 1000
+                }
+            ),
+        )
+
+        logging.info(
+            f'Sent user {idUser} bet in Lottery {lottery} ,{action}'
+        )
+
     @discord.ui.button(label="odd", style=discord.ButtonStyle.red)
     async def odd(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("World")
+        # await interaction.response.send_message("working")         --THIS IS HOW YOU RESPOND TO INTERACTION
+        idUser = interaction.user.id
+        if not await redis_service.ping():
+            logging.error(f"No ping to Redis {REDIS_HOST}:{REDIS_PORT}")
+            return
+        await self.send_redis(idUser, self.height, "odd")
 
     @discord.ui.button(label="even", style=discord.ButtonStyle.blurple)
     async def even(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("World")
+        idUser = interaction.user.id
+        if not await redis_service.ping():
+            logging.error(f"No ping to Redis {REDIS_HOST}:{REDIS_PORT}")
+            return
+        await self.send_redis(idUser, self.height, "even")
 
 
 @bot.event
@@ -73,10 +116,10 @@ async def on_message(message):
 
     # just as guide
     username = str(message.author)
-    userId = str(message.author.id)
+    idUser = str(message.author.id)
     userMessage = str(message.content)
     channel = str(message.channel)
-    print(f"{username} id:{userId} said {userMessage} in {channel}")
+    logging.info(f"{username} id:{idUser} said {userMessage} in {channel}")
 
     private = False  # private chat or not?
 
@@ -89,15 +132,15 @@ async def on_message(message):
     if p_message == "!start":
         data = None
         user_data = {
-            "id": message.author.id,
-            "alias": message.author,
+            "id": int(idUser),
+            "alias": username,
             "firstName": "discord",
             "lastName": "discord"
         }
-        # async with aiohttp.ClientSession() as session:
-        #     async with session.post(f"{DATABASE_URL}/users", json=user_data) as response:
-        #         data = await response.json()
-        #         print(data)
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f"{DATABASE_URL}/users", json=user_data) as response:
+                data = await response.json()
+                logging.info(data)
 
         await message.reply(
             "Welcome here. This is a Lottery bot where people play against each other"
@@ -111,8 +154,37 @@ async def on_message(message):
             "type !balance to check your balance in the bot"
         )
     elif p_message == "!lottery":
-        view = VoteButton()
-        replyMessage = await message.reply("temp", view=view)
+
+        endpoint = "/tip"
+        #registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)"
+
+        height = None
+        async with aiohttp.ClientSession() as session:
+            url = f"{BTC_URL}{endpoint}"
+            logging.info(url)
+            async with session.request("GET", url) as response:
+                height = await response.json()
+                if not height:
+                    await message.reply(f"Couldn't  start lottery! Received {height} as a height")
+                    return
+
+        idLottery = await client.get_lottery(id=height)
+        idLottery2 = await client.get_lottery(id=height - 1)
+        # In Python we have None type
+        if idLottery:
+            height = await client.get_height()
+            msg = f"Lottery is running, {height} started height\nYou can vote odd or even\n"
+
+        elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
+            height = await client.get_height()
+            msg = f"Lottery voting time is up, {height} started height\nYou can vote odd or even\n "
+
+        else:
+            await client.start_lottery()
+            msg = f"Lottery started, {height} started height\nYou can vote odd or even\n"
+
+        view = VoteButton(height=height)
+        replyMessage = await message.reply(msg, view=view)
         view.message = replyMessage
 
     elif p_message == RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']):
@@ -132,6 +204,6 @@ async def on_message(message):
 
 
 if __name__ == "__main__":
-    print(API_TOKEN)
+    logging.info(API_TOKEN)
     bot.run(API_TOKEN)
-    print("Bot Stopped")
+    logging.info("Bot Stopped")

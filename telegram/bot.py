@@ -22,7 +22,7 @@ from uuid import uuid4
 logging.basicConfig(level=logging.INFO)
 
 
-API_TOKEN = environ.get("BotApi")
+API_TOKEN = environ.get("TgBotApi")
 client = BackendClient()
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")

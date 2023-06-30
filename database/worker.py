@@ -6,6 +6,7 @@ import json
 import logging
 from database import session
 from database import Base, User, Bet, Lottery
+
 from requests import request
 import time
 
