@@ -116,7 +116,7 @@ async def on_message(message):
 
     # just as guide
     username = str(message.author)
-    idUser = str(message.author.id)
+    idUser = int(message.author.id)
     userMessage = str(message.content)
     channel = str(message.channel)
     logging.info(f"{username} id:{idUser} said {userMessage} in {channel}")
@@ -132,7 +132,7 @@ async def on_message(message):
     if p_message == "!start":
         data = None
         user_data = {
-            "id": int(idUser),
+            "id": idUser,
             "alias": username,
             "firstName": "discord",
             "lastName": "discord"
@@ -189,25 +189,68 @@ async def on_message(message):
 
     elif re.match(r"!deposit\s([0-9]+)", p_message):
         logging.info("HE DEPOSITING???")
-        pass
+        inputs = p_message.split(" ")
+        try:
+            amount = int(inputs[1])
+        except ValueError:
+            return await message.reply(
+                "Incorrect number provided"
+            )
+
+        async with aiohttp.ClientSession() as session:
+            header = {"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"}
+            data = {"out": False, "amount": amount, "memo": f"{idUser}", "expiry": 7200}  # 2 hour
+            async with session.post(f"https://legend.lnbits.com/api/v1/payments",
+                                    headers=header,
+                                    json=data) as response:
+                data = await response.json()
+                try:
+                    paymentRequest = data['payment_request']
+                    invoiceInfo = {"idUser": idUser,
+                                   "paymentHash": data['payment_hash']
+                                   }
+
+                    await redis_service.publish('discord/invoice', json.dumps(invoiceInfo))
+                except Exception as e:
+                    logging.info(e)
+                return await message.reply(
+                    f"{paymentRequest}"
+                )
+
     elif re.match(r'!withdraw\s(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+', p_message):
         logging.info("HE WITHDRAWING???")
-        pass
+        inputs = p_message.split(" ")
+
+        pattern = r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+"
+        bolt11 = re.match(pattern, inputs[1])
+        if not bolt11:
+            logging.info("bolt11 value is incorrect")
+            return await message.reply(
+                "Incorrect invoiceId provided!"
+            )
+        else:
+            bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])
+            amount = int(bolt11.group(2)) / 10
+            invoiceInfo = {"idUser": idUser,
+                           "bolt11": inputs[1],
+                           "amount": amount
+                           }
+            logging.info(f"sending invoice info {invoiceInfo}")
+            await redis_service.publish('discord/withdraw', json.dumps(invoiceInfo))
+
     elif p_message == "!balance":
         logging.info("HE BALANCE???")
-        pass
-    elif p_message == "!help":
-        await message.reply(
-            "Welcome here. This is a Lottery bot where people play against each other"
-            "\n"
-            "type !Lottery to start/see ongoing Lottery"
-            "\n"
-            "type !deposit #amount to deposit money"
-            "\n"
-            "type !withdraw #invoiceId to withdraw money"
-            "\n"
-            "type !balance to check your balance in the bot"
-        )
+        async with aiohttp.ClientSession() as session:
+            url = f"http://{DB_HOST}:{DB_PORT}/api/users/balance?id={idUser}"
+            async with session.request("GET", url) as response:
+                balance = -1
+                balance = await response.json()
+                logging.info(balance)
+                if balance == {'message': 'User not found'} or balance == -1:
+                    await message.reply(f"User is not registered \nregister by typing !start")
+
+                else:
+                    await message.reply(f"You have {balance} balance")
 
 
 if __name__ == "__main__":
