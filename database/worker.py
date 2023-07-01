@@ -46,14 +46,16 @@ withdraw_sub.subscribe("tg/withdraw")
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     bets.apply_async()
-    sender.add_periodic_task(10.0, blocks, name="checking for new blocks in the queue")
+    blocks.apply_async()
+    check_invoice.apply_async()
+    pay_invoice.apply_async()
     sender.add_periodic_task(10.0, notify_results, name="checking if the lottery ended")
-    sender.add_periodic_task(10.0, check_invoice, name="checking if invoice is valid")
-    sender.add_periodic_task(10.0, pay_invoice, name="checking if user balance and invoice is valid for paying")
-    sender.add_periodic_task(
-        crontab(hour=7, minute=30, day_of_week=1),
-        ads.s("Happy Mondays!"),
-    )
+    # sender.add_periodic_task(10.0, check_invoice, name="checking if invoice is valid")
+    # sender.add_periodic_task(10.0, pay_invoice, name="checking if user balance and invoice is valid for paying")
+    # sender.add_periodic_task(
+    #     crontab(hour=7, minute=30, day_of_week=1),
+    #     ads.s("Happy Mondays!"),
+    # )
 
 
 def send_clicks(clickCount=99):
