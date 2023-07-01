@@ -153,6 +153,7 @@ def notify_results():
     elif lottery2:
         logging.info("stop allowing votes")
     elif lottery3:  # means it's time to get results since the height has gone up by 2
+        logging.info("announce results NOW")
         startedHeight = lottery3.startedHeight
         currentHash = make_request_btc("GET", "/tip/hash")
         decimalId = int(currentHash, 16)
@@ -165,7 +166,6 @@ def notify_results():
             lottery3.winningFruit = 1
             session.commit()
 
-        # await client.stop_lottery()  no such thing anymore
         data = [v.as_dict() for v in session.query(Bet).all()]
         subscribers = []   # time to get all user that voted on this lottery
         if not data:
