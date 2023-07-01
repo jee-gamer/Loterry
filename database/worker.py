@@ -45,9 +45,7 @@ withdraw_sub.subscribe("tg/withdraw")
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(
-        10.0, bets, name="checking for new vote messages in the queue"
-    )
+    bets.apply_async()
     sender.add_periodic_task(10.0, blocks, name="checking for new blocks in the queue")
     sender.add_periodic_task(10.0, notify_results, name="checking if the lottery ended")
     sender.add_periodic_task(10.0, check_invoice, name="checking if invoice is valid")
@@ -133,65 +131,65 @@ def blocks():
 
 @app.task
 def notify_results():
-    height = make_request_btc("GET", "/tip")
-    lottery = session.query(Lottery).filter(Lottery.startedHeight == height).first()
+    lastHeight = make_request_btc("GET", "/tip")
+    lottery = session.query(Lottery).filter(Lottery.startedHeight == lastHeight).first()
+    lottery2 = session.query(Lottery).filter(Lottery.startedHeight == lastHeight - 1).first()
+    lottery3 = session.query(Lottery).filter(Lottery.startedHeight == lastHeight - 2).first()
+    logging.info("HERE")
     if lottery:
-        print('found lottery, checking')
-        lotteryHeight = lottery.startedHeight
-        lastHeight = make_request_btc("GET", "/tip")
-        if lastHeight > lotteryHeight:
-            print("stop allowing votes")
-            # stop people from voting, real function in the bot itself
+        logging.info('current height lottery running')
+    elif lottery2:
+        logging.info("stop allowing votes")
+    elif lottery3:  # means it's time to get results since the height has gone up by 2
+        startedHeight = lottery3.startedHeight
+        currentHash = make_request_btc("GET", "/tip/hash")
+        decimalId = int(currentHash, 16)
+        if decimalId % 2 == 0:
+            print('even')
+            lottery3.winningFruit = 2
+            session.commit()
+        else:
+            print('odd')
+            lottery3.winningFruit = 1
+            session.commit()
 
-            if lastHeight > lotteryHeight + 1:
-                currentHash = make_request_btc("GET", "/tip/hash")
-                decimalId = int(currentHash, 16)
-                if decimalId % 2 == 0:
-                    print('even')
-                    lottery.winningFruit = 2
-                    session.commit()
-                else:
-                    print('odd')
-                    lottery.winningFruit = 1
-                    session.commit()
+        # await client.stop_lottery()  no such thing anymore
+        data = [v.as_dict() for v in session.query(Bet).all()]
+        subscribers = []   # time to get all user that voted on this lottery
+        if not data:
+            logging.info("No user voted on this lottery")
+            return None
+        for bet in data:
+            if bet["idLottery"] == startedHeight:
+                subscribers.append(bet["idUser"])
 
-                # await client.stop_lottery()  no such thing anymore
-                data = [v.as_dict() for v in session.query(Bet).all()]
-                subscribers = []   # time to get all user that voted on this lottery
-                if not data:
-                    logging.info("No user voted on this lottery")
-                    return None
-                for bet in data:
-                    if bet["idLottery"] == lotteryHeight:
-                        subscribers.append(bet["idUser"])
-
-                #  getting winners
-                winningFruit = lottery.winningFruit
-                winningBet = session.query(Bet).filter(Bet.idLottery == lotteryHeight, Bet.userBet == winningFruit).all()
-                winners = []
-                if not winningBet:
-                    logging.info("no winner")
-                    return False
-                for bet in winningBet:
-                    if bet.user is None:  # if user is not registered (remove later)
-                        name = f"UserId_{bet.idUser}"
-                    else:
-                        name = bet.user.alias  # this requires that the user of this bet have registered
-                    print(name)
-                    winners.append(name)
-                if not winners:
-                    for idUser in subscribers:
-                        thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
-                        redis_service.publish(
-                            "tg/notify", thisMessage
-                        )
-                else:
-                    for idUser in subscribers:
-                        thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                          f"Winners are {winners}"})
-                        redis_service.publish(
-                            "tg/notify", thisMessage
-                        )
+        #  getting winners
+        winningFruit = lottery.winningFruit
+        winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == winningFruit).all()
+        winners = []
+        if not winningBet:
+            logging.info("no winner")
+            return False
+        for bet in winningBet:
+            if bet.user is None:  # if user is not registered (remove later)
+                name = f"UserId_{bet.idUser}"
+            else:
+                name = bet.user.alias  # this requires that the user of this bet have registered
+            print(name)
+            winners.append(name)
+        if not winners:
+            for idUser in subscribers:
+                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
+                redis_service.publish(
+                    "tg/notify", thisMessage
+                )
+        else:
+            for idUser in subscribers:
+                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"Winners are {winners}"})
+                redis_service.publish(
+                    "tg/notify", thisMessage
+                )
 
 
 @app.task()
