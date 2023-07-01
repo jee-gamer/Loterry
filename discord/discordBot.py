@@ -72,7 +72,7 @@ class VoteButton(discord.ui.View):  # button class
         logging.debug("Redis pinged. Sending a message")
 
         await redis_service.publish(
-            "tg/bets",
+            "discord/bets",
             json.dumps(
                 {
                     "uuid": uuid4().hex,  # common thing in software development
@@ -88,7 +88,7 @@ class VoteButton(discord.ui.View):  # button class
             f'Sent user {idUser} bet in Lottery {lottery} ,{action}'
         )
 
-    @discord.ui.button(label="odd", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="odd", style=discord.ButtonStyle.red)  # BUTTON IS BROKEN
     async def odd(self, interaction: discord.Interaction, button: discord.ui.Button):
         # await interaction.response.send_message("working")         --THIS IS HOW YOU RESPOND TO INTERACTION
         idUser = interaction.user.id
@@ -170,22 +170,27 @@ async def on_message(message):
 
         idLottery = await client.get_lottery(id=height)
         idLottery2 = await client.get_lottery(id=height - 1)
+        idLottery3 = await client.get_lottery(id=height - 2)
         # In Python we have None type
+
         if idLottery:
             height = await client.get_height()
             msg = f"Lottery is running, {height} started height\nYou can vote odd or even\n"
-
+            view = VoteButton(height=height)
+            replyMessage = await message.reply(msg, view=view)
+            view.message = replyMessage
+            return
         elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
             height = await client.get_height()
             msg = f"Lottery voting time is up, {height} started height\nYou can vote odd or even\n "
-
+        elif idLottery3:  # cooldown to announce results
+            height = await client.get_height()
+            msg = f"Lottery is on cooldown!, {height} started height\nYou can start new lottery when next block comes"
         else:
             await client.start_lottery()
             msg = f"Lottery started, {height} started height\nYou can vote odd or even\n"
 
-        view = VoteButton(height=height)
-        replyMessage = await message.reply(msg, view=view)
-        view.message = replyMessage
+        replyMessage = await message.reply(msg)
 
     elif re.match(r"!deposit\s([0-9]+)", p_message):
         logging.info("HE DEPOSITING???")
@@ -233,7 +238,7 @@ async def on_message(message):
             amount = int(bolt11.group(2)) / 10
             invoiceInfo = {"idUser": idUser,
                            "bolt11": inputs[1],
-                           "amount": amount
+                           "amount": amount  # BROKEN BROKEN
                            }
             logging.info(f"sending invoice info {invoiceInfo}")
             await redis_service.publish('discord/withdraw', json.dumps(invoiceInfo))
@@ -253,7 +258,47 @@ async def on_message(message):
                     await message.reply(f"You have {balance} balance")
 
 
+async def listen():
+    while True:
+        message = await notification_sub.get_message(ignore_subscribe_messages=True)
+        if message and "data" in message:
+            logging.info(f"received: {message}")
+            str_data = message["data"].decode()
+            try:
+                data = json.loads(str_data)
+                logging.info(f"decoded JSON: {data}")
+                for user in data.keys():
+                    user_id = int(user)
+                    logging.info(f"sending a message to {user_id}")
+                    user = await bot.fetch_user(user_id)
+                    msg = data[user]
+                    await user.send(msg)
+            except Exception as e:
+                logging.error(f"exception during sending message {message} to user: {e}")
+                continue
+        await asyncio.sleep(0.1)
+
+
+async def notify():
+    async with notification_sub as pubsub:
+        await pubsub.subscribe("discord/notify")
+        future = asyncio.create_task(listen())
+        await redis_service.publish("discord/notify", "Notification task started!")
+        await future
+
+
 if __name__ == "__main__":
     logging.info(API_TOKEN)
+    loop = asyncio.get_event_loop()
+    future = asyncio.run_coroutine_threadsafe(notify(), loop)
     bot.run(API_TOKEN)
+    try:
+        result = future.result(timeout=1.0)
+    except asyncio.TimeoutError:
+        print("The coroutine took too long, cancelling the task...")
+        future.cancel()
+    except Exception as exc:
+        print(f"The coroutine raised an exception: {exc!r}")
+    else:
+        print(f"The coroutine returned: {result!r}")
     logging.info("Bot Stopped")

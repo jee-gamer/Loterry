@@ -32,15 +32,18 @@ redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 
 bets_sub = redis_service.pubsub()
 bets_sub.subscribe("tg/bets")
+bets_sub.subscribe("discord/bets")
 
 blocks_sub = redis_service.pubsub()
 blocks_sub.subscribe("tg/blocks")
 
 invoice_sub = redis_service.pubsub()
 invoice_sub.subscribe("tg/invoice")
+invoice_sub.subscribe("discord/invoice")
 
 withdraw_sub = redis_service.pubsub()
 withdraw_sub.subscribe("tg/withdraw")
+withdraw_sub.subscribe("discord/withdraw")
 
 
 @app.on_after_configure.connect
@@ -74,6 +77,10 @@ def bets():
 
     for message in bets_sub.listen():
         channel = message["channel"].decode("utf-8")
+        if channel == "discord/bets":
+            replyChannel = "discord/notify"
+        else:
+            replyChannel = "tg/notify"
         if message["type"] == "message":
             str_data = message["data"].decode()
             data = json.loads(str_data)
@@ -116,13 +123,13 @@ def bets():
                     # TODO: Update balance of the user
                     thisMessage = json.dumps({data["idUser"]: "Submitted"})
                     redis_service.publish(
-                        "tg/notify", thisMessage
+                        replyChannel, thisMessage
                     )
                 else:
                     logging.info(f'received bet from non-registered user {data["idUser"]}')
                     thisMessage = json.dumps({data["idUser"]: "Restart the bot (/start) to register user"})
                     redis_service.publish(
-                        "tg/notify", thisMessage
+                        replyChannel, thisMessage
                     )
             else:
                 logging.error(f"Invalid message data received {data}")
@@ -244,6 +251,10 @@ def status_check(idUser, paymentHash):
 def check_invoice():  # add balance to user if got invoice
     for message in invoice_sub.listen():
         channel = message["channel"].decode("utf-8")
+        if channel == "discord/invoice":
+            replyChannel = "discord/notify"
+        else:
+            replyChannel = "tg/notify"
         if message["type"] == "message":
             logging.info("got invoice msg")
             str_data = message["data"].decode()
@@ -254,13 +265,17 @@ def check_invoice():  # add balance to user if got invoice
                     status_check.apply_async((data["idUser"], data["paymentHash"]), ignore_result=True)
                 else:
                     msg = {data["idUser"]: f"User is not registered"}
-                    redis_service.publish("tg/notify", json.dumps(msg))
+                    redis_service.publish(replyChannel, json.dumps(msg))
 
 
 @app.task()
 def pay_invoice():  # pay user that request withdraw and balance is valid
     for message in withdraw_sub.listen():
         channel = message["channel"].decode("utf-8")
+        if channel == "discord/invoice":
+            replyChannel = "discord/notify"
+        else:
+            replyChannel = "tg/notify"
         if message["type"] == "message":
             logging.info("got invoice msg")
             str_data = message["data"].decode()
@@ -274,8 +289,12 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
                 request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
                         headers={"X-Api-Key": "bd5d9c5422f2419ba0c94781d2fadf64"})  # admin key
+                msg = {user.idUser: f"withdraw {data['amount']} sats complete"}
+                redis_service.publish(replyChannel, json.dumps(msg))
             else:
                 logging.info("User doesn't exist or user balance isn't enough")
+                msg = {user.idUser: f"User is not registered or user balance isn't enough"}
+                redis_service.publish(replyChannel, json.dumps(msg))
 
 
 @app.task
