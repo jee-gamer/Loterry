@@ -77,6 +77,7 @@ def bets():
         if message["type"] == "message":
             str_data = message["data"].decode()
             data = json.loads(str_data)
+
             if "idUser" in data.keys():
                 try:
                     data["idUser"] = int(data["idUser"])
@@ -91,6 +92,15 @@ def bets():
                     data["betSize"] = int(data["betSize"])
                 except Exception as e:
                     logging.error(f"couldn't convert Bet data {e}")
+
+                lastHeight = make_request_btc("GET", "/tip")
+
+                if not data["idLottery"] == lastHeight:
+                    thisMessage = json.dumps({data["idUser"]: "Time for voting is up!"})
+                    redis_service.publish(
+                        "tg/notify", thisMessage
+                    )
+                    return
 
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
