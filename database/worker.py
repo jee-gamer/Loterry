@@ -161,6 +161,7 @@ def notify_results():
         logging.info("stop allowing votes")
     elif lottery3:  # means it's time to get results since the height has gone up by 2
         logging.info("announce results NOW")
+        logging.info(f"Lottery info {lottery3}")
         startedHeight = lottery3.startedHeight
         currentHash = make_request_btc("GET", "/tip/hash")
         decimalId = int(currentHash, 16)
@@ -272,7 +273,7 @@ def check_invoice():  # add balance to user if got invoice
 def pay_invoice():  # pay user that request withdraw and balance is valid
     for message in withdraw_sub.listen():
         channel = message["channel"].decode("utf-8")
-        if channel == "discord/invoice":
+        if channel == "discord/withdraw":
             replyChannel = "discord/notify"
         else:
             replyChannel = "tg/notify"
@@ -281,19 +282,39 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
             str_data = message["data"].decode()
             data = json.loads(str_data)
             logging.info(data)
-            user = session.query(User).filter(User.idUser == data["idUser"]).first()  # the amount is big? still don't understand that
-            if user and data["amount"] <= user.balance:
+            user = session.query(User).filter(User.idUser == data["idUser"]).first()
+            if not user:
+                logging.info("User doesn't exist")
+                msg = {user.idUser: f"User is not registered"}
+                redis_service.publish(replyChannel, json.dumps(msg))
+                return
+            withdrawInfo = {
+                "data": data["bolt11"]
+            }
+            response = request("POST", f"https://legend.lnbits.com/api/v1/payments/decode", json=withdrawInfo,
+                               headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+            logging.info("SUCCESS OR NAH")
+            decodeData = response.json()
+            if response.status_code == 200:
+                logging.info(f"decoded invoice {decodeData}")
+                amount = decodeData["amount_msat"]/1000
+            else:
+                logging.info(f"Error decoding invoice from request {data}")
+                msg = {user.idUser: f"Error decoding invoice"}
+                redis_service.publish(replyChannel, json.dumps(msg))
+                return
+            if amount <= user.balance:
                 logging.info("enough balance, proceed with payment")
-                user.balance = user.balance - data["amount"]
+                user.balance = user.balance - amount
                 session.commit()
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
                 request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
                         headers={"X-Api-Key": "bd5d9c5422f2419ba0c94781d2fadf64"})  # admin key
-                msg = {user.idUser: f"withdraw {data['amount']} sats complete"}
+                msg = {user.idUser: f"withdraw {amount} sats complete"}
                 redis_service.publish(replyChannel, json.dumps(msg))
             else:
-                logging.info("User doesn't exist or user balance isn't enough")
-                msg = {user.idUser: f"User is not registered or user balance isn't enough"}
+                logging.info("User balance isn't enough")
+                msg = {user.idUser: f"User balance isn't enough"}
                 redis_service.publish(replyChannel, json.dumps(msg))
 
 

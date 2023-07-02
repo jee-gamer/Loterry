@@ -56,6 +56,7 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print("------")
+    bot.loop.create_task(notify())
 
 
 class VoteButton(discord.ui.View):  # button class
@@ -235,10 +236,8 @@ async def on_message(message):
             )
         else:
             bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])
-            amount = int(bolt11.group(2)) / 10
             invoiceInfo = {"idUser": idUser,
-                           "bolt11": inputs[1],
-                           "amount": amount  # BROKEN BROKEN
+                           "bolt11": inputs[1]
                            }
             logging.info(f"sending invoice info {invoiceInfo}")
             await redis_service.publish('discord/withdraw', json.dumps(invoiceInfo))
@@ -270,9 +269,8 @@ async def listen():
                 for user in data.keys():
                     user_id = int(user)
                     logging.info(f"sending a message to {user_id}")
-                    user = await bot.fetch_user(user_id)
-                    msg = data[user]
-                    await user.send(msg)
+                    discordUser = bot.get_user(user_id)  # can't get user but my id is correct..??
+                    await discordUser.send(data[user])
             except Exception as e:
                 logging.error(f"exception during sending message {message} to user: {e}")
                 continue
@@ -289,16 +287,16 @@ async def notify():
 
 if __name__ == "__main__":
     logging.info(API_TOKEN)
-    loop = asyncio.get_event_loop()
-    future = asyncio.run_coroutine_threadsafe(notify(), loop)
     bot.run(API_TOKEN)
-    try:
-        result = future.result(timeout=1.0)
-    except asyncio.TimeoutError:
-        print("The coroutine took too long, cancelling the task...")
-        future.cancel()
-    except Exception as exc:
-        print(f"The coroutine raised an exception: {exc!r}")
-    else:
-        print(f"The coroutine returned: {result!r}")
+    # loop = asyncio.get_event_loop()
+    # future = asyncio.run_coroutine_threadsafe(notify(), loop)
+    # try:
+    #     result = future.result(timeout=1.0)
+    # except asyncio.TimeoutError:
+    #     print("The coroutine took too long, cancelling the task...")
+    #     future.cancel()
+    # except Exception as exc:
+    #     print(f"The coroutine raised an exception: {exc!r}")
+    # else:
+    #     print(f"The coroutine returned: {result!r}")
     logging.info("Bot Stopped")
