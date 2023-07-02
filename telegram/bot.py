@@ -198,8 +198,7 @@ async def cmd_withdraw(message: types.Message):
         bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])
         amount = int(bolt11.group(2))/10  # THIS COUNTING SYSTEM IS BROKEN BROKEN BETTER FIX
         invoiceInfo = {"idUser": message.from_user.id,
-                       "bolt11": inputs[1],
-                       "amount": amount
+                       "bolt11": inputs[1]
                        }
         logging.info(f"sending invoice info {invoiceInfo}")
         await redis_service.publish('tg/withdraw', json.dumps(invoiceInfo))
