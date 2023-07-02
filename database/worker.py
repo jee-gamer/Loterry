@@ -22,6 +22,8 @@ DB_PORT = environ.get("DB_PORT", default=5000)
 BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
+LNBITS_API = environ.get("LNBITS_API")
+
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 
@@ -214,7 +216,7 @@ def notify_results():
 @app.task()
 def status_check(idUser, paymentHash):
     invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
-                            headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+                            headers={"X-Api-Key": LNBITS_API})
     invoiceStatusData = json.loads(invoiceStatus.text)
     logging.info(f"This is the data we got {invoiceStatusData}")
     timeout = int(invoiceStatusData["details"]["expiry"])
@@ -229,7 +231,7 @@ def status_check(idUser, paymentHash):
             return
 
         invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
-                                headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+                                headers={"X-Api-Key": LNBITS_API})
         invoiceStatusData = json.loads(invoiceStatus.text)
         if invoiceStatusData["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
@@ -288,7 +290,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 session.commit()
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
                 request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
-                        headers={"X-Api-Key": "bd5d9c5422f2419ba0c94781d2fadf64"})  # admin key
+                        headers={"X-Api-Key": LNBITS_API})  # admin key
                 msg = {user.idUser: f"withdraw {data['amount']} sats complete"}
                 redis_service.publish(replyChannel, json.dumps(msg))
             else:
