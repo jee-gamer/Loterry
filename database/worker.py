@@ -153,10 +153,10 @@ def blocks():
 @app.task
 def notify_results():
     lastHeight = make_request_btc("GET", "/tip")
+    logging.info(f"setting-up lotteries, current blockchain height {lastHeight}")
     lottery = session.query(Lottery).filter(Lottery.startedHeight == lastHeight).first()
     lottery2 = session.query(Lottery).filter(Lottery.startedHeight == lastHeight - 1).first()
     lottery3 = session.query(Lottery).filter(Lottery.startedHeight == lastHeight - 2).first()
-    logging.info("HERE")
     if lottery:
         logging.info('current height lottery running')
     elif lottery2:
