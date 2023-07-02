@@ -23,6 +23,7 @@ BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 LNBITS_API = environ.get("LNBITS_API")
+LNBITS_ADMIN_API = environ.get("LNBITS_ADMIN_API")
 
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
@@ -294,7 +295,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 "data": data["bolt11"]
             }
             response = request("POST", f"https://legend.lnbits.com/api/v1/payments/decode", json=withdrawInfo,
-                               headers={"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"})
+                               headers={"X-Api-Key": LNBITS_API})
             logging.info("SUCCESS OR NAH")
             decodeData = response.json()
             if response.status_code == 200:
@@ -311,7 +312,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 session.commit()
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
                 request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
-                        headers={"X-Api-Key": {LNBITS_API}})  # admin key
+                        headers={"X-Api-Key": LNBITS_ADMIN_API})  # admin key
                 msg = {user.idUser: f"withdraw {amount} sats complete"}
                 redis_service.publish(replyChannel, json.dumps(msg))
             else:
