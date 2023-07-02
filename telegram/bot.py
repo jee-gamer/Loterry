@@ -33,6 +33,8 @@ DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 BTC_URL = f"http://{BTC_HOST}:{BTC_PORT}"
+LNBITS_API = environ.get("LNBITS_API")
+
 
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 notification_sub = redis_service.pubsub()
@@ -161,7 +163,7 @@ async def cmd_deposit(message: types.Message):
         )
 
     async with aiohttp.ClientSession() as session:
-        header = {"X-Api-Key": "a92d0ac5e4484910a35e9904903d3d53"}
+        header = {"X-Api-Key": LNBITS_API}
         data = {"out": False, "amount": amount, "memo": f"{message.from_user.id}", "expiry": 7200}  # 2 hour
         async with session.post(f"https://legend.lnbits.com/api/v1/payments",
                                 headers=header,
