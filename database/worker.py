@@ -124,7 +124,7 @@ def bets():
                     session.commit()
 
                     # TODO: Update balance of the user
-                    thisMessage = json.dumps({data["idUser"]: "Submitted"})
+                    thisMessage = json.dumps({data["idUser"]: "Submitted bet successfully"})
                     redis_service.publish(
                         replyChannel, thisMessage
                     )
@@ -170,11 +170,11 @@ def notify_results():
         decimalId = int(currentHash, 16)
         if decimalId % 2 == 0:
             print('even')
-            lottery3.winningFruit = 2
+            lottery3.winningHash = 2
             session.commit()
         else:
             print('odd')
-            lottery3.winningFruit = 1
+            lottery3.winningHash = 1
             session.commit()
 
         data = [v.as_dict() for v in session.query(Bet).all()]
@@ -192,8 +192,8 @@ def notify_results():
                     tgSub.append(bet["idUser"])
 
         #  getting winners
-        winningFruit = lottery.winningFruit
-        winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == winningFruit).all()
+        winningHash = lottery.winningHash
+        winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == winningHash).all()
         winners = []
         if not winningBet:
             logging.info("no winner")
