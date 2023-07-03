@@ -108,7 +108,7 @@ def bets():
                 if not data["idLottery"] == lastHeight:
                     thisMessage = json.dumps({data["idUser"]: "Time for voting is up!"})
                     redis_service.publish(
-                        "tg/notify", thisMessage
+                        replyChannel, thisMessage
                     )
                     return
 
@@ -178,13 +178,18 @@ def notify_results():
             session.commit()
 
         data = [v.as_dict() for v in session.query(Bet).all()]
-        subscribers = []   # time to get all user that voted on this lottery
+        tgSub = []   # time to get all user that voted on this lottery
+        discordSub = []
         if not data:
             logging.info("No user voted on this lottery")
             return None
         for bet in data:
             if bet["idLottery"] == startedHeight:
-                subscribers.append(bet["idUser"])
+                idLen = len(str(bet["idUser"]))
+                if idLen == 18:
+                    discordSub.append(bet["idUser"])
+                else:
+                    tgSub.append(bet["idUser"])
 
         #  getting winners
         winningFruit = lottery.winningFruit
@@ -201,22 +206,33 @@ def notify_results():
             print(name)
             winners.append(name)
         if not winners:
-            for idUser in subscribers:
+            for idUser in tgSub:
                 thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
                 redis_service.publish(
                     "tg/notify", thisMessage
                 )
+            for idUser in discordSub:
+                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
+                redis_service.publish(
+                    "discord/notify", thisMessage
+                )
         else:
-            for idUser in subscribers:
+            for idUser in tgSub:
                 thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
                                                   f"Winners are {winners}"})
                 redis_service.publish(
                     "tg/notify", thisMessage
                 )
+            for idUser in discordSub:
+                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"Winners are {winners}"})
+                redis_service.publish(
+                    "discord/notify", thisMessage
+                )
 
 
 @app.task()
-def status_check(idUser, paymentHash):
+def status_check(idUser, paymentHash, replyChannel):
     invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
                             headers={"X-Api-Key": LNBITS_API})
     invoiceStatusData = json.loads(invoiceStatus.text)
@@ -229,7 +245,7 @@ def status_check(idUser, paymentHash):
         if timeNow >= timeout:
             logging.info("Timeout reached")
             msg = {idUser: f"The invoice is expired"}
-            redis_service.publish("tg/notify", json.dumps(msg))
+            redis_service.publish(replyChannel, json.dumps(msg))
             return
 
         invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
@@ -244,7 +260,7 @@ def status_check(idUser, paymentHash):
                 balance = user.balance
                 msg = {idUser: f"Deposit {depositedMoney} balance successfully \n"
                                f"Your balance is now {balance}"}
-                redis_service.publish("tg/notify", json.dumps(msg))
+                redis_service.publish(replyChannel, json.dumps(msg))
             else:
                 logging.info(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
             return
@@ -266,7 +282,7 @@ def check_invoice():  # add balance to user if got invoice
             if "idUser" and "paymentHash" in data:
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
-                    status_check.apply_async((data["idUser"], data["paymentHash"]), ignore_result=True)
+                    status_check.apply_async((data["idUser"], data["paymentHash"], replyChannel), ignore_result=True)
                 else:
                     msg = {data["idUser"]: f"User is not registered"}
                     redis_service.publish(replyChannel, json.dumps(msg))
@@ -285,7 +301,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
             str_data = message["data"].decode()
             data = json.loads(str_data)
             logging.info(data)
-            user = session.query(User).filter(User.idUser == data["idUser"]).first()
+            user = session.query(User).filter(User.idUser == data["idUser"]).first() #  ( I guess it doesn't update when I overwrite it in db brower but it works anyway)
             if not user:
                 logging.info("User doesn't exist")
                 msg = {user.idUser: f"User is not registered"}
@@ -307,7 +323,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 redis_service.publish(replyChannel, json.dumps(msg))
                 return
             if amount <= user.balance:
-                logging.info("enough balance, proceed with payment")
+                logging.info(f"enough balance, proceed with payment, withdrawing {amount}")
                 user.balance = user.balance - amount
                 session.commit()
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
@@ -316,7 +332,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 msg = {user.idUser: f"withdraw {amount} sats complete"}
                 redis_service.publish(replyChannel, json.dumps(msg))
             else:
-                logging.info("User balance isn't enough")
+                logging.info(f"User balance isn't enough, Balance is {user.balance}, trying to withdraw {amount}")
                 msg = {user.idUser: f"User balance isn't enough"}
                 redis_service.publish(replyChannel, json.dumps(msg))
 
