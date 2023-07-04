@@ -162,9 +162,9 @@ def notify_results():
         logging.info('current height lottery running')
     elif lottery2:
         logging.info("stop allowing votes")
-    elif lottery3:  # means it's time to get results since the height has gone up by 2
+    elif lottery3 and not lottery3.winningHash:  # means it's time to get results since the height has gone up by 2
+        # also check winningHash for announced and finished lottery
         logging.info("announce results NOW")
-        logging.info(f"Lottery info {lottery3}")
         startedHeight = lottery3.startedHeight
         currentHash = make_request_btc("GET", "/tip/hash")
         decimalId = int(currentHash, 16)
@@ -184,7 +184,7 @@ def notify_results():
             logging.info("No user voted on this lottery")
             return None
         for bet in data:
-            if bet["idLottery"] == startedHeight:
+            if bet["idLottery"] == startedHeight and bet["idUser"] not in tgSub and bet["idUser"] not in discordSub:
                 idLen = len(str(bet["idUser"]))
                 if idLen == 18:
                     discordSub.append(bet["idUser"])
@@ -192,7 +192,7 @@ def notify_results():
                     tgSub.append(bet["idUser"])
 
         #  getting winners
-        winningHash = lottery.winningHash
+        winningHash = lottery3.winningHash
         winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == winningHash).all()
         winners = []
         if not winningBet:

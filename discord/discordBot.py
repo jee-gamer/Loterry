@@ -62,7 +62,29 @@ async def on_ready():
     bot.loop.create_task(notify())
 
 
+async def send_redis(idUser, lottery, action):
+    logging.debug("Redis pinged. Sending a message")
+
+    await redis_service.publish(
+        "discord/bets",
+        json.dumps(
+            {
+                "uuid": uuid4().hex,  # common thing in software development
+                "idUser": idUser,
+                "idLottery": lottery,
+                "userBet": action,
+                "betSize": 1000
+            }
+        ),
+    )
+
+    logging.info(
+        f'Sent user {idUser} bet in Lottery {lottery} ,{action}'
+    )
+
+
 class VoteButton(discord.ui.View):  # button class
+
     def __init__(self, height):
         super().__init__()
         self.height = height
@@ -72,42 +94,26 @@ class VoteButton(discord.ui.View):  # button class
             item.disabled = True
         await self.message.edit(view=self)
 
-    async def send_redis(self, idUser, lottery, action):
-        logging.debug("Redis pinged. Sending a message")
-
-        await redis_service.publish(
-            "discord/bets",
-            json.dumps(
-                {
-                    "uuid": uuid4().hex,  # common thing in software development
-                    "idUser": idUser,
-                    "idLottery": lottery,
-                    "userBet": action,
-                    "betSize": 1000
-                }
-            ),
-        )
-
-        logging.info(
-            f'Sent user {idUser} bet in Lottery {lottery} ,{action}'
-        )
-
-    @discord.ui.button(label="odd", style=discord.ButtonStyle.red)  # BUTTON IS BROKEN
+    @discord.ui.button(label="odd", style=discord.ButtonStyle.red)
     async def odd(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # await interaction.response.send_message("working")         --THIS IS HOW YOU RESPOND TO INTERACTION
+        await interaction.response.send_message("pending bets", ephemeral=True, delete_after=5)
         idUser = interaction.user.id
         if not await redis_service.ping():
             logging.error(f"No ping to Redis {REDIS_HOST}:{REDIS_PORT}")
             return
-        await self.send_redis(idUser, self.height, "odd")
+        await send_redis(idUser, self.height, "odd")
+        self.stop()
+
 
     @discord.ui.button(label="even", style=discord.ButtonStyle.blurple)
     async def even(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("pending bets", ephemeral=True, delete_after=5)
         idUser = interaction.user.id
         if not await redis_service.ping():
             logging.error(f"No ping to Redis {REDIS_HOST}:{REDIS_PORT}")
             return
-        await self.send_redis(idUser, self.height, "even")
+        await send_redis(idUser, self.height, "even")
+        self.stop()
 
 
 @bot.event
@@ -176,17 +182,17 @@ async def on_message(message):
         idLottery2 = await client.get_lottery(id=height - 1)
         idLottery3 = await client.get_lottery(id=height - 2)
         # In Python we have None type
-
         if idLottery:
             height = await client.get_height()
             msg = f"Lottery is running, {height} started height\nYou can vote odd or even\n"
             view = VoteButton(height=height)
+            await asyncio.sleep(1)  # sleep to make the vote button load in time
             replyMessage = await message.reply(msg, view=view)
             view.message = replyMessage
             return
         elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
             height = await client.get_height()
-            msg = f"Lottery voting time is up, {height} started height\nYou can vote odd or even\n "
+            msg = f"Lottery voting time is up, {height} started height"
         elif idLottery3:  # cooldown to announce results
             height = await client.get_height()
             msg = f"Lottery is on cooldown!, {height} started height\nYou can start new lottery when next block comes"
