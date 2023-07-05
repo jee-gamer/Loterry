@@ -175,7 +175,7 @@ async def on_message(message):
             async with session.request("GET", url) as response:
                 height = await response.json()
                 if not height:
-                    await message.reply(f"Couldn't  start lottery! Received {height} as a height")
+                    await message.reply(f"Couldn't  start lottery, Received {height} as a height")
                     return
 
         idLottery = await client.get_lottery(id=height)
@@ -195,7 +195,7 @@ async def on_message(message):
             msg = f"Lottery voting time is up, {height} started height"
         elif idLottery3:  # cooldown to announce results
             height = await client.get_height()
-            msg = f"Lottery is on cooldown!, {height} started height\nYou can start new lottery when next block comes"
+            msg = f"Lottery is on cooldown, {height} started height\nYou can start new lottery when next block comes"
         else:
             await client.start_lottery()
             msg = f"Lottery started, {height} started height\nYou can vote odd or even\n"
@@ -241,7 +241,7 @@ async def on_message(message):
         if not bolt11:
             logging.info("bolt11 value is incorrect")
             return await message.reply(
-                "Incorrect invoiceId provided!"
+                "Incorrect invoiceId provided"
             )
         else:
             bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])

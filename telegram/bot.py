@@ -109,7 +109,7 @@ async def cmd_lottery(message: types.Message):
         async with session.request("GET", url) as response:
             height = await response.json()
             if not height:
-                await message.reply(f"Couldn't  start lottery! Received {height} as a height")
+                await message.reply(f"Couldn't  start lottery, Received {height} as a height")
                 return
 
     idLottery = await client.get_lottery(id=height)
@@ -136,7 +136,7 @@ async def cmd_lottery(message: types.Message):
     elif idLottery3:  # cooldown to announce results
         height = await client.get_height()
         await message.reply(
-            f"Lottery is on cooldown!, {height} started height\n"
+            f"Lottery is on cooldown, {height} started height\n"
             f"You can start new lottery when next block comes\n"
             f"register {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
@@ -192,7 +192,7 @@ async def cmd_withdraw(message: types.Message):
     if not bolt11:
         logging.info("bolt11 value is incorrect")
         return await message.reply(
-            "Incorrect invoiceId provided!"
+            "Incorrect invoiceId provided"
         )
     else:
         bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])
