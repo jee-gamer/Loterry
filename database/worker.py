@@ -148,6 +148,7 @@ def blocks():
 @app.task
 def notify_results():
     while True:
+        logging.info(f"running lottery result routine")
         time.sleep(60)
         lastHeight = make_request_btc("GET", "/tip")
         startedHeight = lastHeight - 2
