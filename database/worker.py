@@ -150,57 +150,57 @@ def notify_results():
     while True:
         time.sleep(60)
         lastHeight = make_request_btc("GET", "/tip")
-        logging.info(f"setting-up lotteries, current blockchain height {lastHeight}")
-        lottery = session.query(Lottery).filter(Lottery.startedHeight == lastHeight).first()
-        lottery2 = session.query(Lottery).filter(Lottery.startedHeight == lastHeight - 1).first()
-        lottery3 = session.query(Lottery).filter(Lottery.startedHeight == lastHeight - 2).first()
-        if lottery:
-            logging.info('current height lottery running')
-        elif lottery2:
-            logging.info("stop allowing votes")
-        elif lottery3 and not lottery3.winningHash:  # means it's time to get results since the height has gone up by 2
-            # also check winningHash for announced and finished lottery
-            logging.info("announce results NOW")
-            startedHeight = lottery3.startedHeight
+        startedHeight = lastHeight - 2
+        logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
+        lottery = session.query(Lottery).filter(Lottery.startedHeight == startedHeight).first()
+        if not lottery:
+            logging.info(f"lottery {startedHeight} does not exist")
+            continue
+        else:
+            logging.info(f"announce results for {startedHeight} at {lastHeight}")
             currentHash = make_request_btc("GET", "/tip/hash")
             decimalId = int(currentHash, 16)
+            lottery.winningHash = currentHash
+            result = 0
             if decimalId % 2 == 0:
-                print('even')
-                lottery3.winningHash = 2
-                session.commit()
+                logging.info(f"result EVEN for {startedHeight}")
+                result = 2
             else:
-                print('odd')
-                lottery3.winningHash = 1
-                session.commit()
+                logging.info(f"result ODD for {startedHeight}")
+                result = 1
+            session.commit()
 
-            data = [v.as_dict() for v in session.query(Bet).all()]
+            bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
+
+            if not bets: # one_or_none() -- an option
+                logging.info("No user voted on this lottery")
+                continue
+
             tgSub = []   # time to get all user that voted on this lottery
             discordSub = []
-            if not data:
-                logging.info("No user voted on this lottery")
-                return None
-            for bet in data:
-                if bet["idLottery"] == startedHeight and bet["idUser"] not in tgSub and bet["idUser"] not in discordSub:
-                    idLen = len(str(bet["idUser"]))
-                    if idLen == 18:
-                        discordSub.append(bet["idUser"])
+
+            for bet in bets:
+                if bet.idUser not in tgSub and bet.idUser not in discordSub:
+                    if len(str(bet.idUser)) == 18:
+                        discordSub.append(bet.idUser)
                     else:
-                        tgSub.append(bet["idUser"])
+                        tgSub.append(bet.idUser)
 
             #  getting winners
-            winningHash = lottery3.winningHash
-            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == winningHash).all()
+            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).all()
             winners = []
             if not winningBet:
-                logging.info("no winner")
-                return False
+                logging.info(f"no winners, nobody tried this lottery {startedHeight}")
+                continue
+
             for bet in winningBet:
                 if bet.user is None:  # if user is not registered (remove later)
                     name = f"UserId_{bet.idUser}"
                 else:
                     name = bet.user.alias  # this requires that the user of this bet have registered
-                print(name)
+                logging.info(f"user {name} is winner in {startedHeight} / {result}")
                 winners.append(name)
+
             if not winners:
                 for idUser in tgSub:
                     thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})

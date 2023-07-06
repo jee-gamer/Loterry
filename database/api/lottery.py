@@ -81,7 +81,7 @@ def get_height():
         return {'message': 'Lottery not found'}
 
     height = lottery.startedHeight
-    logging.info(f"height{height}")
+    logging.info(f"height {height}")
     return jsonify(height)
 
 
