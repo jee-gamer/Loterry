@@ -6,7 +6,7 @@
 set -e
 if [ "$1" = 'dataservice' ]; then
     echo "Launching workers"
-    cd /runtime && celery -A worker worker -B --loglevel INFO &
+    cd /runtime && celery -A worker worker --loglevel INFO &
     echo "Launching service"
     cd /runtime && exec python3 app.py
 fi
