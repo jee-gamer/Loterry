@@ -73,6 +73,7 @@ def bets():
     logging.info(f"running bets")
 
     for message in bets_sub.listen():
+        time.sleep(1)
         channel = message["channel"].decode("utf-8")
         if channel == "discord/bets":
             replyChannel = "discord/notify"
@@ -135,6 +136,7 @@ def bets():
 @app.task
 def blocks():
     for message in blocks_sub.listen():
+        time.sleep(60)
         channel = message["channel"].decode("utf-8")
         if message["type"] == "message":
             str_data = message["data"].decode()
@@ -267,6 +269,7 @@ def status_check(idUser, paymentHash, replyChannel):
 @app.task()
 def check_invoice():  # add balance to user if got invoice
     for message in invoice_sub.listen():
+        time.sleep(10)
         channel = message["channel"].decode("utf-8")
         if channel == "discord/invoice":
             replyChannel = "discord/notify"
@@ -288,6 +291,7 @@ def check_invoice():  # add balance to user if got invoice
 @app.task()
 def pay_invoice():  # pay user that request withdraw and balance is valid
     for message in withdraw_sub.listen():
+        time.sleep(10)
         channel = message["channel"].decode("utf-8")
         if channel == "discord/withdraw":
             replyChannel = "discord/notify"
