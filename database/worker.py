@@ -159,7 +159,7 @@ def notify_results():
         if not lottery:
             logging.info(f"lottery {startedHeight} does not exist")
             continue
-        else:
+        elif not lottery.winningHash:
             logging.info(f"announce results for {startedHeight} at {lastHeight}")
             currentHash = make_request_btc("GET", "/tip/hash")
             decimalId = int(currentHash, 16)
