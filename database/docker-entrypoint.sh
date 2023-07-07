@@ -1,7 +1,7 @@
 #!/bin/sh
 # 30 June 2023 this command leads to bash: docker-entrypoint.sh: command not
 # found. It exists because of legacy reasons
-# *.sh text eol=lf
+# .sh text eol=lf
 
 set -e
 if [ "$1" = 'dataservice' ]; then

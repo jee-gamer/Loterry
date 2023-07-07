@@ -51,11 +51,12 @@ withdraw_sub.subscribe("discord/withdraw")
 
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
+    notify_results.apply_async()
     bets.apply_async()
     blocks.apply_async()
     check_invoice.apply_async()
     pay_invoice.apply_async()
-    notify_results.apply_async()
+    # moved it up and works for some reason, there must be a limit or something
 
 
 def send_clicks(clickCount=99):
@@ -150,14 +151,13 @@ def blocks():
 @app.task
 def notify_results():
     while True:
-        logging.info(f"running lottery result routine")
         time.sleep(60)
         lastHeight = make_request_btc("GET", "/tip")
         startedHeight = lastHeight - 2
         logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
         lottery = session.query(Lottery).filter(Lottery.startedHeight == startedHeight).first()
         if not lottery:
-            logging.info(f"lottery {startedHeight} does not exist")
+            logging.info(f"Checked for announcing, lottery {startedHeight} does not exist")
             continue
         elif not lottery.winningHash:
             logging.info(f"announce results for {startedHeight} at {lastHeight}")
@@ -190,7 +190,8 @@ def notify_results():
                         tgSub.append(bet.idUser)
 
             #  getting winners
-            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).all()
+            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).\
+                group_by(Bet.idUser).all()  # group all bet with same user id together
             winners = []
             if not winningBet:
                 logging.info(f"no winners, nobody tried this lottery {startedHeight}")
