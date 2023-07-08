@@ -51,13 +51,12 @@ withdraw_sub.subscribe("discord/withdraw")
 
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
-    from database import session
-    notify_results.apply_async(args=[session])
-    bets.apply_async(args=[session])
+    notify_results.apply_async()
+    bets.apply_async()
     # active one above
-    blocks.apply_async(args=[session])
-    check_invoice.apply_async(args=[session])
-    pay_invoice.apply_async(args=[session])
+    blocks.apply_async()
+    check_invoice.apply_async()
+    pay_invoice.apply_async()
 
     # seems like redis can run in background without taking space on the thread, so we have to put active one above
 
@@ -152,7 +151,7 @@ def blocks():
 
 
 @app.task
-def notify_results(session):
+def notify_results():
     logging.info(f"running notify results")
     while True:
         logging.info(f"running lottery result routine")
@@ -237,7 +236,7 @@ def notify_results(session):
 
 
 @app.task()
-def status_check(session, idUser, paymentHash, replyChannel):
+def status_check(idUser, paymentHash, replyChannel):
     invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
                             headers={"X-Api-Key": LNBITS_API})
     invoiceStatusData = json.loads(invoiceStatus.text)
@@ -273,7 +272,7 @@ def status_check(session, idUser, paymentHash, replyChannel):
 
 
 @app.task()
-def check_invoice(session):  # add balance to user if got invoice
+def check_invoice():  # add balance to user if got invoice
     for message in invoice_sub.listen():
         time.sleep(10)
         channel = message["channel"].decode("utf-8")
@@ -288,14 +287,14 @@ def check_invoice(session):  # add balance to user if got invoice
             if "idUser" and "paymentHash" in data:
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
-                    status_check.apply_async((session, data["idUser"], data["paymentHash"], replyChannel), ignore_result=True)
+                    status_check.apply_async((data["idUser"], data["paymentHash"], replyChannel), ignore_result=True)
                 else:
                     msg = {data["idUser"]: f"User is not registered"}
                     redis_service.publish(replyChannel, json.dumps(msg))
 
 
 @app.task()
-def pay_invoice(session):  # pay user that request withdraw and balance is valid
+def pay_invoice():  # pay user that request withdraw and balance is valid
     for message in withdraw_sub.listen():
         time.sleep(10)
         channel = message["channel"].decode("utf-8")
