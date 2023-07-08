@@ -1,5 +1,5 @@
 import pytest
-from database.worker import notify_results
+from worker import notify_results
 
 
 @pytest.mark.celery(result_backend='redis://')
