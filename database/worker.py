@@ -51,12 +51,14 @@ withdraw_sub.subscribe("discord/withdraw")
 
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
+    notify_results.apply_async()
+    bets.apply_async()
+    # active one above
     blocks.apply_async()
     check_invoice.apply_async()
     pay_invoice.apply_async()
-    notify_results.apply_async()
-    bets.apply_async()
-    # moved it up and works for some reason, there must be a limit or something
+
+    # seems like redis can run in background without taking space on the thread, so we have to put active one above
 
 
 def send_clicks(clickCount=99):
@@ -106,7 +108,7 @@ def bets():
                     redis_service.publish(
                         replyChannel, thisMessage
                     )
-                    return
+                    continue
 
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
@@ -309,7 +311,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 logging.info("User doesn't exist")
                 msg = {user.idUser: f"User is not registered"}
                 redis_service.publish(replyChannel, json.dumps(msg))
-                return
+                continue
             withdrawInfo = {
                 "data": data["bolt11"]
             }
@@ -324,7 +326,7 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 logging.info(f"Error decoding invoice from request {data}")
                 msg = {user.idUser: f"Error decoding invoice"}
                 redis_service.publish(replyChannel, json.dumps(msg))
-                return
+                continue
             if amount <= user.balance:
                 logging.info(f"enough balance, proceed with payment, withdrawing {amount}")
                 user.balance = user.balance - amount
