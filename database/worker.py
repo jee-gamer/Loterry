@@ -51,11 +51,11 @@ withdraw_sub.subscribe("discord/withdraw")
 
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
-    notify_results.apply_async()
-    bets.apply_async()
     blocks.apply_async()
     check_invoice.apply_async()
     pay_invoice.apply_async()
+    notify_results.apply_async()
+    bets.apply_async()
     # moved it up and works for some reason, there must be a limit or something
 
 
@@ -150,6 +150,7 @@ def blocks():
 
 @app.task
 def notify_results():
+    logging.info(f"running notify results")
     while True:
         time.sleep(60)
         lastHeight = make_request_btc("GET", "/tip")
@@ -339,6 +340,6 @@ def pay_invoice():  # pay user that request withdraw and balance is valid
                 redis_service.publish(replyChannel, json.dumps(msg))
 
 
-@app.task
+@app.task()
 def ads(arg):
     logging.info(f"Ad message {arg}")
