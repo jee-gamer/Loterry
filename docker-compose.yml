@@ -43,16 +43,16 @@ services:
     depends_on:
       - redis
 
-  discord_bot:
-    env_file:
-      - .env
-    build: discord
-    container_name: discord_bot
-    privileged: true
-    hostname: discord_bot
-
-    depends_on:
-      - redis
+#  discord_bot:
+#    env_file:
+#      - .env
+#    build: discord
+#    container_name: discord_bot
+#    privileged: true
+#    hostname: discord_bot
+#
+#    depends_on:
+#      - redis
 networks:
  default:
-  name: gate-bot
+  name: gate-lottery-bot

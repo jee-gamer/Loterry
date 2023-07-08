@@ -4,6 +4,7 @@ from os import environ
 import redis
 import json
 import logging
+from database import session
 from database import Base, User, Bet, Lottery
 
 from requests import request
@@ -51,11 +52,14 @@ withdraw_sub.subscribe("discord/withdraw")
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
     from database import session
+    notify_results.apply_async(args=[session])
     bets.apply_async(args=[session])
+    # active one above
     blocks.apply_async(args=[session])
     check_invoice.apply_async(args=[session])
     pay_invoice.apply_async(args=[session])
-    notify_results.apply_async(args=[session])
+
+    # seems like redis can run in background without taking space on the thread, so we have to put active one above
 
 
 def send_clicks(clickCount=99):
@@ -69,11 +73,11 @@ def make_request_btc(method, endpoint):
 
 
 @app.task
-def bets(session):
+def bets():
     logging.info(f"running bets")
 
     for message in bets_sub.listen():
-        time.sleep(1)
+        logging.info("got msg")
         channel = message["channel"].decode("utf-8")
         if channel == "discord/bets":
             replyChannel = "discord/notify"
@@ -105,7 +109,7 @@ def bets(session):
                     redis_service.publish(
                         replyChannel, thisMessage
                     )
-                    return
+                    continue
 
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
@@ -149,6 +153,7 @@ def blocks():
 
 @app.task
 def notify_results(session):
+    logging.info(f"running notify results")
     while True:
         logging.info(f"running lottery result routine")
         time.sleep(60)
@@ -157,9 +162,9 @@ def notify_results(session):
         logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
         lottery = session.query(Lottery).filter(Lottery.startedHeight == startedHeight).first()
         if not lottery:
-            logging.info(f"lottery {startedHeight} does not exist")
+            logging.info(f"Checked for announcing, lottery {startedHeight} does not exist")
             continue
-        else:
+        elif not lottery.winningHash:
             logging.info(f"announce results for {startedHeight} at {lastHeight}")
             currentHash = make_request_btc("GET", "/tip/hash")
             decimalId = int(currentHash, 16)
@@ -190,7 +195,8 @@ def notify_results(session):
                         tgSub.append(bet.idUser)
 
             #  getting winners
-            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).all()
+            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).\
+                group_by(Bet.idUser).all()  # group all bet with same user id together
             winners = []
             if not winningBet:
                 logging.info(f"no winners, nobody tried this lottery {startedHeight}")
@@ -307,7 +313,7 @@ def pay_invoice(session):  # pay user that request withdraw and balance is valid
                 logging.info("User doesn't exist")
                 msg = {user.idUser: f"User is not registered"}
                 redis_service.publish(replyChannel, json.dumps(msg))
-                return
+                continue
             withdrawInfo = {
                 "data": data["bolt11"]
             }
@@ -322,7 +328,7 @@ def pay_invoice(session):  # pay user that request withdraw and balance is valid
                 logging.info(f"Error decoding invoice from request {data}")
                 msg = {user.idUser: f"Error decoding invoice"}
                 redis_service.publish(replyChannel, json.dumps(msg))
-                return
+                continue
             if amount <= user.balance:
                 logging.info(f"enough balance, proceed with payment, withdrawing {amount}")
                 user.balance = user.balance - amount
@@ -338,6 +344,6 @@ def pay_invoice(session):  # pay user that request withdraw and balance is valid
                 redis_service.publish(replyChannel, json.dumps(msg))
 
 
-@app.task
+@app.task()
 def ads(arg):
     logging.info(f"Ad message {arg}")

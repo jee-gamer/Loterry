@@ -91,7 +91,7 @@ class BlockstreamClient:
             except Exception as e:
                 logging.info(e)
                 pass
-            await asyncio.sleep(600)
+            await asyncio.sleep(300)
 
 
 if __name__ == "__main__":
