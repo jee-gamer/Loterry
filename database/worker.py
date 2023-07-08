@@ -74,7 +74,7 @@ def bets():
     logging.info(f"running bets")
 
     for message in bets_sub.listen():
-        time.sleep(1)
+        logging.info("got msg")
         channel = message["channel"].decode("utf-8")
         if channel == "discord/bets":
             replyChannel = "discord/notify"
