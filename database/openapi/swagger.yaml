@@ -284,10 +284,10 @@ paths:
                   type: string
                   example: "Lottery is not found in the database"
 
-    /lottery/winningFruit:
+    /lottery/winningHash:
       get:
-        operationId: api.get_winning_fruit
-        description: Returns the winning fruit of a lottery
+        operationId: api.get_winning_hash
+        description: Returns the winning hash of a lottery
         produces:
           - application/json
         parameters:
@@ -297,7 +297,7 @@ paths:
             required: true
         responses:
           '200':
-            description: winning fruit of a lottery
+            description: winning hash of a lottery
             schema:
               type: array
               items:
@@ -311,7 +311,7 @@ paths:
                   type: string
                   example: "Lottery is not found in the database"
       post:
-        operationId: api.post_winning_choice
+        operationId: api.post_winning_hash
         description: post a winning choice to a lottery database
         consumes:
           - application/json
@@ -325,15 +325,14 @@ paths:
               # Body schema with atomic property examples
               type: object
               required:
-                - winningChoice
+                - winningHash
               properties:
-                winningChoice:
+                winningHash:
                   type: string
                   example: odd
         responses:
           '201':
-            description: post the winning choice
-
+            description: post the winning hash
 
     /lottery/winners:
       get:

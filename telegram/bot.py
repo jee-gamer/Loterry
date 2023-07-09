@@ -34,6 +34,7 @@ BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 BTC_URL = f"http://{BTC_HOST}:{BTC_PORT}"
 LNBITS_API = environ.get("LNBITS_API")
+BOT_NAME = environ.get("BOT_NAME")
 
 
 redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
@@ -97,7 +98,7 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
-    registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)" # default since it only goes to start command
+    registerDeepLink = f"[here](https://t.me/{BOT_NAME}?start=default)"  # default since it only goes to start command
     # if you need it to do something else you have to do it in start function and check query parameter
 
     height = None
