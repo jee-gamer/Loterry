@@ -57,7 +57,6 @@ def setup_tasks(sender, **kwargs):
     blocks.apply_async()
     check_invoice.apply_async()
     pay_invoice.apply_async()
-
     # seems like redis can run in background without taking space on the thread, so we have to put active one above
 
 
@@ -76,7 +75,7 @@ def bets():
     logging.info(f"running bets")
 
     for message in bets_sub.listen():
-        logging.info("got msg")
+        logging.info("received user bet from redis")
         channel = message["channel"].decode("utf-8")
         if channel == "discord/bets":
             replyChannel = "discord/notify"
@@ -112,15 +111,13 @@ def bets():
 
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
-                    logging.info(
-                        f'message {data["idUser"]} - {data["userBet"]} for lottery {data["idLottery"]}'
-                    )
-
                     # 1 BTC per 1 click. 10 clicks = 10 BTC
                     thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"], data["betSize"])
                     session.add(thisBet)
                     session.commit()
-
+                    logging.info(
+                        f'commited bet {data["userBet"]} for lottery {data["idLottery"]} in database. Now messaging {data["idUser"]}'
+                    )
                     # TODO: Update balance of the user
                     thisMessage = json.dumps({data["idUser"]: "Submitted bet successfully"})
                     redis_service.publish(
@@ -159,7 +156,7 @@ def notify_results():
         lastHeight = make_request_btc("GET", "/tip")
         startedHeight = lastHeight - 2
         logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
-        lottery = session.query(Lottery).filter(Lottery.startedHeight == startedHeight).first()
+        lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
         if not lottery:
             logging.info(f"Checked for announcing, lottery {startedHeight} does not exist")
             continue

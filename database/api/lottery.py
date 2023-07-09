@@ -25,30 +25,27 @@ def get_lottery(id: int):
     if id < 794881:
         logging.error(f"attempt to create invalid lottery {id}")
         return jsonify(None)
-    lottery = session.query(Lottery).filter(Lottery.startedHeight == id).first()
+    lottery = session.query(Lottery).filter(Lottery.idLottery == id).first()
     if not lottery:
         return jsonify(None)
         #return jsonify({'message': 'Lottery not found'}), 404
-    return jsonify([session.query(Lottery).filter(Lottery.startedHeight == id).one().as_dict()])
+    return jsonify([session.query(Lottery).filter(Lottery.idLottery == id).one().as_dict()])
 
 
 def start_lottery():
-
-    maxId = session.query(func.max(Lottery.idLottery)).scalar()
-    if not maxId:
-        maxId = 0
-    idLottery = maxId + 1
-
-    endpoint = f"/tip"
-    height = make_request('GET', endpoint)
-
+    height = make_request('GET', "/tip")
     if not height:
         return jsonify({'message': 'Cant get block height'})
-    lottery = Lottery(idLottery, height)
+
+    # to avoid error on add
+    lottery = session.query(Lottery).filter(Lottery.idLottery == height).first()
+    if lottery:
+        return jsonify({"height": height})
+
+    lottery = Lottery(height)
     session.add(lottery)
     session.commit()
-    return jsonify([session.query(Lottery).filter(Lottery.startedHeight == height).first().as_dict()])
-    # {'message': 'lottery started'}
+    return jsonify({"height": height})
 
 
 def post_winning_choice():
@@ -80,7 +77,7 @@ def get_height():
     if not lottery:
         return {'message': 'Lottery not found'}
 
-    height = lottery.startedHeight
+    height = lottery.idLottery
     logging.info(f"height {height}")
     return jsonify(height)
 
@@ -95,7 +92,7 @@ def get_winning_fruit(idLottery):
 
 
 def get_winners(idLottery):
-    lottery = session.query(Lottery).filter(Lottery.startedHeight == idLottery).first()
+    lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
     if not lottery:
         return False  # {'message': 'Lottery not found'}
 

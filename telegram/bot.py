@@ -97,14 +97,13 @@ async def cmd_start(message: types.Message):
 
 @dp.message_handler(commands=["lottery"])
 async def cmd_lottery(message: types.Message):
-    endpoint = "/tip"
     registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)" # default since it only goes to start command
     # if you need it to do something else you have to do it in start function and check query parameter
 
     height = None
     # TODO: move it into make_request handler
     async with aiohttp.ClientSession() as session:
-        url = f"{BTC_URL}{endpoint}"
+        url = f"{BTC_URL}/tip"
         logging.info(url)
         async with session.request("GET", url) as response:
             height = await response.json()

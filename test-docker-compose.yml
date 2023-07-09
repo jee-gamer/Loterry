@@ -1,0 +1,45 @@
+version: '3.5'
+
+services:
+  redis:
+    container_name: redis
+    image: redis
+    hostname: redis
+    privileged: true
+    network_mode: host
+
+  database:
+    env_file:
+      - .test-env
+    build: database
+    container_name: dataservice
+    privileged: true
+    network_mode: host
+    hostname: worker
+    volumes:
+      - ./cache/db:/db
+    depends_on:
+      - redis
+
+  btc_worker:
+    env_file:
+      - .test-env
+    build: btc
+    container_name: btc_worker
+    privileged: true
+    network_mode: host
+    hostname: btc_worker
+    depends_on:
+      - redis
+
+  telegram_bot:
+    env_file:
+      - .test-env
+    build: telegram
+    container_name: telegram_bot
+    privileged: true
+    network_mode: host
+    hostname: telegram_bot
+
+    depends_on:
+      - redis

@@ -234,6 +234,11 @@ paths:
           - application/json
         produces:
           - application/json
+        parameters:
+          - in: query
+            name: id
+            type: integer
+            required: false
         responses:
           '201':
             description: Created
