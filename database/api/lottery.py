@@ -48,13 +48,13 @@ def start_lottery():
     return jsonify({"height": height})
 
 
-def post_winning_choice():
-    lottery = session.query(Lottery).filter(Lottery.running == 1).first()
+def post_winning_hash(idLottery):
+    lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
     data = request.get_json()
     if lottery:
-        lottery.winningFruit = data["winningChoice"]
+        lottery.winningHash = data["winningHash"]
         session.commit()
-        return jsonify([session.query(Lottery).filter(Lottery.running == 1).first().as_dict()])
+        return jsonify([session.query(Lottery).filter(Lottery.idLottery == idLottery).first().as_dict()])
     return {'message': 'Lottery not found'}
     # {'message': 'lottery started'}
 
@@ -82,35 +82,43 @@ def get_height():
     return jsonify(height)
 
 
-def get_winning_fruit(idLottery):
+def get_winning_hash(idLottery):
     lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
     if not lottery:
         return {'message': 'Lottery not found'}
 
-    winningFruit = lottery.winningFruit
-    return jsonify(winningFruit)
+    winningHash = lottery.winningHash
+    return jsonify(winningHash)
 
 
-def get_winners(idLottery):
+def get_winners(idLottery):  # get winner that is already registered/processed
     lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
     if not lottery:
         return False  # {'message': 'Lottery not found'}
 
-    winningFruit = lottery.winningFruit
+    winningHash = lottery.winningHash
+    decimalId = int(winningHash, 16)
+    result = 0
+    if decimalId % 2 == 0:
+        logging.info(f"result EVEN for {idLottery}")
+        result = 2
+    else:
+        logging.info(f"result ODD for {idLottery}")
+        result = 1
     winner = []
-    winningBet = session.query(Bet).filter(Bet.idLottery == idLottery, Bet.userBet == winningFruit).all()
+    winningBet = session.query(Bet).filter(Bet.idLottery == idLottery, Bet.userBet == result). \
+        group_by(Bet.idUser).all()  # group all bet with same user id together
+    winners = []
     if not winningBet:
-        print("no winner")
-        return False  # {'message': 'No winner'}
-    winner = []
+        logging.info(f"no winners, nobody tried this lottery {idLottery}")
 
     for bet in winningBet:
-        if bet.user is None:
+        if bet.user is None:  # if user is not registered (remove later)
             name = f"UserId_{bet.idUser}"
         else:
             name = bet.user.alias  # this requires that the user of this bet have registered
-        print(name)
-        winner.append(name)
+        logging.info(f"user {name} is winner in {lottery.idLottery} / {result}")
+        winners.append(name)
 
     return jsonify(winner)
 
