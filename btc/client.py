@@ -9,18 +9,25 @@ import logging
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
 
-
 class BlockstreamClient:
     _base_path = "https://blockstream.info/api"
     _recent_blocks = []
     _tip = 0
     _tip_hash = ""
     _redis = None
+    _test = False
 
-    def __init__(self, redis_uri="localhost:6379"):
+    def __init__(self, redis_uri="localhost:6379", test=False, test_blocks=[]):
         host, port = redis_uri.split(":")
         logging.info(f"Redis URI client: {redis_uri}")
         self._redis = redis.Redis(host=host, port=port, db=0)
+        self._test = test
+        if self._test and test_blocks:
+            self._recent_blocks = test_blocks
+        elif self._test and not test_blocks:
+            raise ValueError("The list test_blocks should be not empty")
+        else:
+            pass
 
     async def make_request(self, endpoint, method="GET", **kwargs):
         async with aiohttp.ClientSession() as session:
@@ -43,6 +50,12 @@ class BlockstreamClient:
                             # it's long I'm repeating myself right? but to be able to debug error it's here
                             # maybe we can change it later once it works for sure.. I'll need your feedback
                 return data
+
+
+    async def next_block(self):
+        # TODO: roll over recent blocks to some next block in the list but with higher height
+        self._tip = self._tip + 1
+        return self._tip, self._tip_hash
 
     async def get_tip(self):
         return self._tip, self._tip_hash
@@ -77,8 +90,9 @@ class BlockstreamClient:
             logging.info("Redis pinged. Started syncing")
         while True:
             try:
-                blocks = await self.get_all_blocks()
-                for b in sorted(blocks, key=lambda b: b["height"]):
+                if not self._test:
+                    self._recent_blocks = await self.get_all_blocks()
+                for b in sorted(self._recent_blocks, key=lambda b: b["height"]):
                     if self._tip == 0 or b["height"] > self._tip:
                         self._tip = b["height"]
                         self._tip_hash = b["id"]
@@ -88,6 +102,9 @@ class BlockstreamClient:
                     else:
                         continue
                 logging.info(f"Synced {self._tip}/{self._tip_hash}")
+                if self._test:
+                    logging.info("Client is in test mode, exiting sync_tip routine")
+                    return
             except Exception as e:
                 logging.info(e)
                 pass
@@ -95,6 +112,20 @@ class BlockstreamClient:
 
 
 if __name__ == "__main__":
+    with open("tests/data/blocks.json", "r") as f:
+        test_blocks = json.loads(f.read())
+    client = BlockstreamClient(test=True, test_blocks=test_blocks)
+    tip, hash = asyncio.run(client.get_tip())
+    print(f"Test configuration: {tip}, {hash}")
+    try:
+        asyncio.run(client.sync_tip())
+    except KeyboardInterrupt:
+        logging.info("Sync interrupted. Exiting")
+    tip, hash = asyncio.run(client.get_tip())
+    print(f"Test configuration: {tip}, {hash}")
+    tip, hash = asyncio.run(client.next_block())
+    print(f"Test configuration: {tip}, {hash}")
+
     client = BlockstreamClient()
     currentHash = asyncio.run(client.get_current_hash())
     asyncio.run(client.get_block_status(currentHash))
