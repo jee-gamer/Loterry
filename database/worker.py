@@ -6,6 +6,7 @@ import json
 import logging
 from database import session
 from database import Base, User, Bet, Lottery
+from sqlalchemy import desc
 
 from requests import request
 import time
@@ -157,79 +158,90 @@ def notify_results():
         startedHeight = lastHeight - 2
         logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
         lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
+        lotteryMissed = session.query(Lottery).filter(Lottery.idLottery < startedHeight).order_by(
+            desc(Lottery.idLottery)).first()
         if not lottery:
             logging.info(f"Checked for announcing, lottery {startedHeight} does not exist")
             continue
         elif not lottery.winningHash:
-            logging.info(f"announce results for {startedHeight} at {lastHeight}")
-            currentHash = make_request_btc("GET", "/tip/hash")
-            decimalId = int(currentHash, 16)
-            lottery.winningHash = currentHash
-            result = 0
-            if decimalId % 2 == 0:
-                logging.info(f"result EVEN for {startedHeight}")
-                result = 2
-            else:
-                logging.info(f"result ODD for {startedHeight}")
-                result = 1
-            session.commit()
+            logging.info(f"Announced lottery {startedHeight} results")
+            pass
+        elif not lotteryMissed.winningHash:
+            logging.info(f"Announced missed lottery {startedHeight} results")
+            lottery = lotteryMissed
+        else:
+            logging.info(f"Results are already announced")
+            continue
 
-            bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
+        logging.info(f"announce results for {startedHeight} at {lastHeight}")
+        currentHash = make_request_btc("GET", "/tip/hash")
+        decimalId = int(currentHash, 16)
+        lottery.winningHash = currentHash
+        result = 0
+        if decimalId % 2 == 0:
+            logging.info(f"result EVEN for {startedHeight}")
+            result = 2
+        else:
+            logging.info(f"result ODD for {startedHeight}")
+            result = 1
+        session.commit()
 
-            if not bets: # one_or_none() -- an option
-                logging.info("No user voted on this lottery")
-                continue
+        bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
 
-            tgSub = []   # time to get all user that voted on this lottery
-            discordSub = []
+        if not bets: # one_or_none() -- an option
+            logging.info("No user voted on this lottery")
+            continue
 
-            for bet in bets:
-                if bet.idUser not in tgSub and bet.idUser not in discordSub:
-                    if len(str(bet.idUser)) == 18:
-                        discordSub.append(bet.idUser)
-                    else:
-                        tgSub.append(bet.idUser)
+        tgSub = []   # time to get all user that voted on this lottery
+        discordSub = []
 
-            #  getting winners
-            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).\
-                group_by(Bet.idUser).all()  # group all bet with same user id together
-            winners = []
-            if not winningBet:
-                logging.info(f"no winners, nobody tried this lottery {startedHeight}")
-                continue
-
-            for bet in winningBet:
-                if bet.user is None:  # if user is not registered (remove later)
-                    name = f"UserId_{bet.idUser}"
+        for bet in bets:
+            if bet.idUser not in tgSub and bet.idUser not in discordSub:
+                if len(str(bet.idUser)) == 18:
+                    discordSub.append(bet.idUser)
                 else:
-                    name = bet.user.alias  # this requires that the user of this bet have registered
-                logging.info(f"user {name} is winner in {startedHeight} / {result}")
-                winners.append(name)
+                    tgSub.append(bet.idUser)
 
-            if not winners:
-                for idUser in tgSub:
-                    thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
-                    redis_service.publish(
-                        "tg/notify", thisMessage
-                    )
-                for idUser in discordSub:
-                    thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
-                    redis_service.publish(
-                        "discord/notify", thisMessage
-                    )
+        #  getting winners
+        winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).\
+            group_by(Bet.idUser).all()  # group all bet with same user id together
+        winners = []
+        if not winningBet:
+            logging.info(f"no winners, nobody tried this lottery {startedHeight}")
+            continue
+
+        for bet in winningBet:
+            if bet.user is None:  # if user is not registered (remove later)
+                name = f"UserId_{bet.idUser}"
             else:
-                for idUser in tgSub:
-                    thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                      f"Winners are {winners}"})
-                    redis_service.publish(
-                        "tg/notify", thisMessage
-                    )
-                for idUser in discordSub:
-                    thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                      f"Winners are {winners}"})
-                    redis_service.publish(
-                        "discord/notify", thisMessage
-                    )
+                name = bet.user.alias  # this requires that the user of this bet have registered
+            logging.info(f"user {name} is winner in {startedHeight} / {result}")
+            winners.append(name)
+
+        if not winners:
+            for idUser in tgSub:
+                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
+                redis_service.publish(
+                    "tg/notify", thisMessage
+                )
+            for idUser in discordSub:
+                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
+                redis_service.publish(
+                    "discord/notify", thisMessage
+                )
+        else:
+            for idUser in tgSub:
+                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"Winners are {winners}"})
+                redis_service.publish(
+                    "tg/notify", thisMessage
+                )
+            for idUser in discordSub:
+                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"Winners are {winners}"})
+                redis_service.publish(
+                    "discord/notify", thisMessage
+                )
 
 
 @app.task()
