@@ -6,7 +6,8 @@ import unittest
 async def tip_any():
     with open("data/blocks.json", "r") as f:
         blocks_test_vector = json.loads(f.read())
-    tip = 792113
+    tip = 797000
+    tip_hash = 12313132323
     for b in reversed(blocks_test_vector):
         if tip == 0:
             tip = b["height"]
@@ -18,6 +19,7 @@ async def tip_any():
             print(f"Catch up {tip}/{tip_hash}")
         else:
             continue
+    print(f"Synced with {tip}/{tip_hash}")
     assert 797947 == tip
     return True
 

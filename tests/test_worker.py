@@ -7,9 +7,11 @@ from pytest_httpserver import HTTPServer
 redis_my_proc = factories.redis_proc(port=6379)
 redis_my = factories.redisdb('redis_proc')
 
+
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
     return ("127.0.0.1", 5001)
+
 
 @pytest.mark.celery(result_backend='redis://')
 def test_my_redis(redis_my, httpserver: HTTPServer):
