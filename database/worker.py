@@ -165,8 +165,8 @@ def notify_results():
             continue
         elif not lottery.winningHash:
             logging.info(f"Announced lottery {startedHeight} results")
-            pass
         elif not lotteryMissed.winningHash:
+            startedHeight = lotteryMissed.idLottery
             logging.info(f"Announced missed lottery {startedHeight} results")
             lottery = lotteryMissed
         else:

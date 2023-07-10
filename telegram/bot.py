@@ -237,7 +237,7 @@ async def callback_bet_action(
         "tg/bets",
         json.dumps(
             {
-                "uuid": uuid4().hex, # common thing in software development
+                "uuid": uuid4().hex,  # common thing in software development
                 "idUser": query.from_user.id,
                 "idLottery": callback_data["lottery"],
                 "userBet": callback_data["action"],
