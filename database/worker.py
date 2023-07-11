@@ -140,6 +140,7 @@ def blocks():
             data = json.loads(str_data)
             if "id" in data.keys():
                 logging.info(f'Block processed {data["id"]}:{data["height"]}')
+                notify_results()
             else:
                 logging.error(f"Invalid block data received {data}")
 
