@@ -59,7 +59,6 @@ def test_submit_vote():
     m = np.get_message()
     assert 1 == m["data"]
     m = np.get_message()
-    print(m)
     assert b'{"1": "Submitted bet successfully"}' == m["data"]
 
 def test_round_complete():
