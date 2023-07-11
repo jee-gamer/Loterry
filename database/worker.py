@@ -155,18 +155,17 @@ def notify_results():
         startedHeight = lastHeight - 2
         logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
         pending_lotteries = session.query(Lottery).filter(Lottery.idLottery >= startedHeight)
-
+        # The first scenario: we have each State C, D, E
         for lottery in pending_lotteries:
             if lottery.idLottery - startedHeight > 0:
-                # Finish it
+                # Finish it, State C
                 pass
             elif lottery.idLottery - startedHeight == 1:
-                # Freeze it
+                # Freeze it, State D
                 pass
             else:
-                # IDK
+                # State C
                 pass
-
 
         lotteryMissed = session.query(Lottery).filter(Lottery.idLottery < startedHeight).order_by(
             desc(Lottery.idLottery)).first()

@@ -36,12 +36,12 @@ def start_lottery():
     height = make_request('GET', "/tip")
     if not height:
         return jsonify({'message': 'Cant get block height'})
-
     # to avoid error on add
     lottery = session.query(Lottery).filter(Lottery.idLottery == height).first()
     if lottery:
+        # State B
         return jsonify({"height": height})
-
+    # State A - the Lottery will be created and transits to State B
     lottery = Lottery(height)
     session.add(lottery)
     session.commit()
@@ -51,7 +51,8 @@ def start_lottery():
 def post_winning_hash(idLottery):
     lottery = session.query(Lottery).filter(Lottery.idLottery == idLottery).first()
     data = request.get_json()
-    if lottery:
+    if lottery and not lottery.winningHash:
+        # the state should be either started or frozen
         lottery.winningHash = data["winningHash"]
         session.commit()
         return jsonify([session.query(Lottery).filter(Lottery.idLottery == idLottery).first().as_dict()])
