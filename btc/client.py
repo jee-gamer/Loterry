@@ -6,7 +6,9 @@ import redis.asyncio as redis
 
 import logging
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p", level=logging.INFO
+)
 
 
 class BlockstreamClient:
@@ -18,14 +20,19 @@ class BlockstreamClient:
     _test = False
 
     def __init__(self, redis_uri="localhost:6379", test=False, test_blocks=[]):
+        self._test = test
         host, port = redis_uri.split(":")
         logging.info(f"Redis URI client: {redis_uri}")
         self._redis = redis.Redis(host=host, port=port, db=0)
-        self._test = test
+
+        if not test_blocks:
+            with open("./tests/data/blocks.json") as f:
+                test_blocks = json.loads(f.read())
+
         if self._test and test_blocks:
-            self._recent_blocks = test_blocks
+            self._recent_blocks = sorted(test_blocks, key=lambda b: b["height"])
         elif self._test and not test_blocks:
-            raise ValueError("The list test_blocks should be not empty")
+            raise ValueError("The list test_blocks should not be empty")
         else:
             pass
 
@@ -34,7 +41,7 @@ class BlockstreamClient:
             url = f"{self._base_path}{endpoint}"
             async with session.request(method, url, **kwargs) as response:
                 if response.status == 200:
-                    if response.headers.get('Content-Type') == 'text/plain':
+                    if response.headers.get("Content-Type") == "text/plain":
                         try:
                             data = await response.text()
                             logging.info(f"from BcClient {data}")
@@ -51,10 +58,22 @@ class BlockstreamClient:
                             # maybe we can change it later once it works for sure.. I'll need your feedback
                 return data
 
+    async def reset(self):
+        if self._test:
+            with open("./tests/data/blocks.json") as f:
+                self._recent_blocks = sorted(json.loads(f.read()), key=lambda b: b["height"])
+            self._tip = self._recent_blocks[-1]["height"]
+            self._tip_hash = self._recent_blocks[-1]["id"]
+        else:
+            pass
 
     async def next_block(self):
         # TODO: roll over recent blocks to some next block in the list but with higher height
         self._tip = self._tip + 1
+        block = self._recent_blocks.pop()
+        block["height"] = self._tip
+        self._recent_blocks.insert(0, block)
+        self._tip_hash = block["id"]
         return self._tip, self._tip_hash
 
     async def get_tip(self):

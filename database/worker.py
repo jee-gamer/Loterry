@@ -25,7 +25,8 @@ BTC_PORT = environ.get("BTC_PORT", default=5001)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 LNBITS_API = environ.get("LNBITS_API")
 LNBITS_ADMIN_API = environ.get("LNBITS_ADMIN_API")
-
+USER_TASK_TIMEOUT=int(environ.get("USER_TASK_TIMEOUT", default=1))
+BLOCK_TASK_TIMEOUT=int(environ.get("BLOCK_TASK_TIMEOUT", default=60))
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 
@@ -59,11 +60,6 @@ def setup_tasks(sender, **kwargs):
     check_invoice.apply_async()
     pay_invoice.apply_async()
     # seems like redis can run in background without taking space on the thread, so we have to put active one above
-
-
-def send_clicks(clickCount=99):
-    logging.info(f"Sent clickCount {clickCount}  to redis ")
-    # redis_service.publish("clickCount", clickCount)
 
 
 def make_request_btc(method, endpoint):
@@ -137,7 +133,7 @@ def bets():
 @app.task
 def blocks():
     for message in blocks_sub.listen():
-        time.sleep(60)
+        time.sleep(BLOCK_TASK_TIMEOUT)
         channel = message["channel"].decode("utf-8")
         if message["type"] == "message":
             str_data = message["data"].decode()
@@ -153,7 +149,7 @@ def notify_results():
     logging.info(f"running notify results")
     while True:
         logging.info(f"running lottery result routine")
-        time.sleep(60)
+        time.sleep(USER_TASK_TIMEOUT)
         lastHeight = make_request_btc("GET", "/tip")
         startedHeight = lastHeight - 2
         logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
@@ -277,13 +273,13 @@ def status_check(idUser, paymentHash, replyChannel):
             else:
                 logging.info(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
             return
-        time.sleep(10)
+        time.sleep(BLOCK_TASK_TIMEOUT)
 
 
 @app.task()
 def check_invoice():  # add balance to user if got invoice
     for message in invoice_sub.listen():
-        time.sleep(10)
+        time.sleep(USER_TASK_TIMEOUT)
         channel = message["channel"].decode("utf-8")
         if channel == "discord/invoice":
             replyChannel = "discord/notify"
@@ -305,7 +301,7 @@ def check_invoice():  # add balance to user if got invoice
 @app.task()
 def pay_invoice():  # pay user that request withdraw and balance is valid
     for message in withdraw_sub.listen():
-        time.sleep(10)
+        time.sleep(USER_TASK_TIMEOUT)
         channel = message["channel"].decode("utf-8")
         if channel == "discord/withdraw":
             replyChannel = "discord/notify"

@@ -1,6 +1,8 @@
 import asyncio
 import json
 import unittest
+from os import environ
+from btc.client import BlockstreamClient
 
 
 async def tip_any():
@@ -24,9 +26,16 @@ async def tip_any():
     return True
 
 
-class TestStuff(unittest.IsolatedAsyncioTestCase):
-    async def test_zero(self):
-        r = await tip_any()
-        self.assertTrue(r)
+class TestBtcWorkerTestSetup(unittest.IsolatedAsyncioTestCase):
+    REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
+    REDIS_PORT = environ.get("REDIS_PORT", default="6379")
+    test_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}", True)
+
+    async def test_tip(self):
+        await self.test_client.sync_tip()
+        tip, _ = await self.test_client.get_tip()
+        assert 797947 == tip
 
 
+if __name__ == "__main__":
+    unittest.main()
