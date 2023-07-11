@@ -28,6 +28,7 @@ def test_submit_vote():
     response = requests.request("POST", url).json()
     assert "height" in response
     start_height = response["height"]
+    assert 797947 == start_height
     """Check that it's actually working on redis database."""
     commands = redis.Redis(host='0.0.0.0', port=6379, db=0)
     notifications = redis.Redis(host='0.0.0.0', port=6379, db=0)
@@ -74,3 +75,5 @@ def test_round_complete():
         assert response['message'] == 'completed'
     assert result_height == 797949
 
+    response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/reset").json()
+    assert response['message'] == 'completed'
