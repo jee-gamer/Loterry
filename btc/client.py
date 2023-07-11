@@ -83,6 +83,8 @@ class BlockstreamClient:
         return self._recent_blocks
 
     async def get_current_hash(self):
+        if self._test:
+            return self._tip_hash
         endpoint = "/blocks/tip/hash"
         return await self.make_request(endpoint)
 

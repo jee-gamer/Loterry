@@ -16,8 +16,6 @@ services:
     privileged: true
     network_mode: host
     hostname: worker
-    volumes:
-      - ./cache/db:/db
     depends_on:
       - redis
 

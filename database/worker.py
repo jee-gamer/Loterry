@@ -153,7 +153,20 @@ def notify_results():
         lastHeight = make_request_btc("GET", "/tip")
         startedHeight = lastHeight - 2
         logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
-        lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
+        pending_lotteries = session.query(Lottery).filter(Lottery.idLottery >= startedHeight)
+
+        for lottery in pending_lotteries:
+            if lottery.idLottery - startedHeight > 0:
+                # Finish it
+                pass
+            elif lottery.idLottery - startedHeight == 1:
+                # Freeze it
+                pass
+            else:
+                # IDK
+                pass
+
+
         lotteryMissed = session.query(Lottery).filter(Lottery.idLottery < startedHeight).order_by(
             desc(Lottery.idLottery)).first()
         if not lottery:

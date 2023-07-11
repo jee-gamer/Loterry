@@ -36,6 +36,7 @@ class TestBtcWorkerTestSetup(unittest.IsolatedAsyncioTestCase):
         tip, _ = await self.test_client.get_tip()
         assert 797947 == tip
 
+    # test get current hash here
 
 if __name__ == "__main__":
     unittest.main()
