@@ -30,7 +30,7 @@ class BlockstreamClient:
                 test_blocks = json.loads(f.read())
 
         if self._test and test_blocks:
-            self._recent_blocks = test_blocks
+            self._recent_blocks = sorted(test_blocks, key=lambda b: b["height"])
         elif self._test and not test_blocks:
             raise ValueError("The list test_blocks should not be empty")
         else:
@@ -57,6 +57,15 @@ class BlockstreamClient:
                             # it's long I'm repeating myself right? but to be able to debug error it's here
                             # maybe we can change it later once it works for sure.. I'll need your feedback
                 return data
+
+    async def reset(self):
+        if self._test:
+            with open("./tests/data/blocks.json") as f:
+                self._recent_blocks = sorted(json.loads(f.read()), key=lambda b: b["height"])
+            self._tip = self._recent_blocks[-1]["height"]
+            self._tip_hash = self._recent_blocks[-1]["id"]
+        else:
+            pass
 
     async def next_block(self):
         # TODO: roll over recent blocks to some next block in the list but with higher height

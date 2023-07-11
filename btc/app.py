@@ -34,6 +34,13 @@ async def get_tip(request):
     else:
         return web.json_response({"message": "rejected in non-test setup"})
 
+@routes.get("/reset")
+async def get_tip(request):
+    if TEST:
+        await bitcoin_client.reset()
+        return web.json_response({"message": "completed"})
+    else:
+        return web.json_response({"message": "rejected in non-test setup"})
 
 @routes.get("/tip")
 async def get_tip(request):

@@ -1,5 +1,5 @@
 import pytest
-
+from requests import request
 from json import dumps, loads
 from uuid import uuid4
 import requests
@@ -23,7 +23,7 @@ def test_create_user():
     response = requests.request("POST", url, json=user_data).json()
     assert "message" in response
 
-def test_lottery_round():
+def test_submit_vote():
     url = f"{DATABASE_URL}/lottery"
     response = requests.request("POST", url).json()
     assert "height" in response
@@ -59,13 +59,19 @@ def test_lottery_round():
     m = np.get_message()
     assert 1 == m["data"]
     m = np.get_message()
+    print(m)
     assert b'{"1": "Submitted bet successfully"}' == m["data"]
-    with open("data/blocks.json", "r") as f:
-        blocks = loads(f.read())
-    n1 = blocks[0]
-    n2 = blocks[1]
 
-
-
-
+def test_round_complete():
+    BTC_HOST = environ.get("BTC_HOST", default="localhost")
+    BTC_PORT = environ.get("BTC_PORT", default=5001)
+    response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/reset").json()
+    assert response['message'] == 'completed'
+    result_height = 0
+    for i in range(0, 3):
+        result_height = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/tip").json()
+        assert result_height == 797947 + i
+        response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/next").json()
+        assert response['message'] == 'completed'
+    assert result_height == 797949
 
