@@ -114,7 +114,6 @@ async def cmd_lottery(message: types.Message):
 
     idLottery = await client.get_lottery(id=height)
     idLottery2 = await client.get_lottery(id=height-1)
-    idLottery3 = await client.get_lottery(id=height-2)
     # In Python we have None type
     if idLottery:
         height = await client.get_height()
@@ -129,15 +128,6 @@ async def cmd_lottery(message: types.Message):
         height = await client.get_height()
         await message.reply(
             f"Lottery voting time is up, {height} started height\n"
-            f"register {registerDeepLink}",
-            reply_markup=get_keyboard(lottery=height),
-            parse_mode="MarkdownV2"
-        )
-    elif idLottery3:  # cooldown to announce results
-        height = await client.get_height()
-        await message.reply(
-            f"Lottery is on cooldown, {height} started height\n"
-            f"You can start new lottery when next block comes\n"
             f"register {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
