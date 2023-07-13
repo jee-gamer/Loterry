@@ -109,6 +109,7 @@ def bets():
                 if user:
                     # 1 BTC per 1 click. 10 clicks = 10 BTC
                     thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"], data["betSize"])
+                    user.balance += data["betSize"]  # increase the balance for testing purpose
                     session.add(thisBet)
                     session.commit()
                     logging.info(
