@@ -44,15 +44,15 @@ class BlockstreamClient:
                     if response.headers.get("Content-Type") == "text/plain":
                         try:
                             data = await response.text()
-                            logging.info(f"from BcClient {data}")
+                            logging.debug(f"from BcClient {data}")
                         except Exception as e:
-                            logging.info(f"Can't obtain json {e}")
+                            logging.error(f"Can't obtain json {e}")
                     else:
                         try:
                             data = await response.json()
-                            logging.info(f"from BcClient {data}")
+                            logging.debug(f"from BcClient {data}")
                         except Exception as e:
-                            logging.info(f"Can't obtain json {e}")
+                            logging.error(f"Can't obtain json {e}")
 
                             # it's long I'm repeating myself right? but to be able to debug error it's here
                             # maybe we can change it later once it works for sure.. I'll need your feedback
