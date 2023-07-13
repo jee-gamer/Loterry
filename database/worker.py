@@ -157,7 +157,10 @@ def notify_results():
         lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
         # The first scenario: we have each State C, D, E
 
-        if lottery.winningHash:
+        if not lottery:
+            logging.info(f"Lottery at height {startedHeight} is not found")
+            continue
+        elif lottery.winningHash:
             logging.info(f"Results are already announced")
             continue
         else:  # if it runs every time a new block comes then there's no need to check so much
