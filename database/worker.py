@@ -40,7 +40,7 @@ bets_sub.subscribe("tg/bets")
 bets_sub.subscribe("discord/bets")
 
 blocks_sub = redis_service.pubsub()
-blocks_sub.subscribe("tg/blocks")
+blocks_sub.subscribe("blocks")
 
 invoice_sub = redis_service.pubsub()
 invoice_sub.subscribe("tg/invoice")
@@ -53,10 +53,9 @@ withdraw_sub.subscribe("discord/withdraw")
 
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
-    notify_results.apply_async()
+    blocks.apply_async()
     bets.apply_async()
     # active one above
-    blocks.apply_async()
     check_invoice.apply_async()
     pay_invoice.apply_async()
     # seems like redis can run in background without taking space on the thread, so we have to put active one above
@@ -132,9 +131,9 @@ def bets():
 
 @app.task
 def blocks():
+    logging.info(f"running blocks")
+
     for message in blocks_sub.listen():
-        time.sleep(BLOCK_TASK_TIMEOUT)
-        channel = message["channel"].decode("utf-8")
         if message["type"] == "message":
             str_data = message["data"].decode()
             data = json.loads(str_data)
@@ -147,92 +146,89 @@ def blocks():
 
 @app.task
 def notify_results():
-    logging.info(f"running notify results")
-    while True:
-        logging.info(f"running lottery result routine")
-        time.sleep(USER_TASK_TIMEOUT)
-        lastHeight = make_request_btc("GET", "/tip")
-        startedHeight = lastHeight - 2
-        logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
-        lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
-        # The first scenario: we have each State C, D, E
+    time.sleep(USER_TASK_TIMEOUT)
+    lastHeight = make_request_btc("GET", "/tip")
+    startedHeight = lastHeight - 2
+    logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
+    lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
+    # The first scenario: we have each State C, D, E
 
-        if not lottery:
-            logging.info(f"Lottery at height {startedHeight} is not found")
-            continue
-        elif lottery.winningHash:
-            logging.info(f"Results are already announced")
-            continue
-        else:  # if it runs every time a new block comes then there's no need to check so much
-            logging.info(f"announce results for {startedHeight} at {lastHeight}")
-            currentHash = make_request_btc("GET", "/tip/hash")
-            decimalId = int(currentHash, 16)
-            lottery.winningHash = currentHash
-            result = 0
-            if decimalId % 2 == 0:
-                logging.info(f"result EVEN for {startedHeight}")
-                result = 2
-            else:
-                logging.info(f"result ODD for {startedHeight}")
-                result = 1
-            session.commit()
+    if not lottery:
+        logging.info(f"Lottery at height {startedHeight} is not found")
+        return
+    elif lottery.winningHash:
+        logging.info(f"Results are already announced")
+        return
+    else:  # if it runs every time a new block comes then there's no need to check so much
+        logging.info(f"announce results for {startedHeight} at {lastHeight}")
+        currentHash = make_request_btc("GET", "/tip/hash")
+        decimalId = int(currentHash, 16)
+        lottery.winningHash = currentHash
+        result = 0
+        if decimalId % 2 == 0:
+            logging.info(f"result EVEN for {startedHeight}")
+            result = 2
+        else:
+            logging.info(f"result ODD for {startedHeight}")
+            result = 1
+        session.commit()
 
-            bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
+        bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
 
-            if not bets: # one_or_none() -- an option
-                logging.info("No user voted on this lottery")
-                continue
+        if not bets: # one_or_none() -- an option
+            logging.info("No user voted on this lottery")
+            return
 
-            tgSub = []   # time to get all user that voted on this lottery
-            discordSub = []
+        tgSub = []   # time to get all user that voted on this lottery
+        discordSub = []
 
-            for bet in bets:
-                if bet.idUser not in tgSub and bet.idUser not in discordSub:
-                    if len(str(bet.idUser)) == 18:
-                        discordSub.append(bet.idUser)
-                    else:
-                        tgSub.append(bet.idUser)
-
-            #  getting winners
-            winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).\
-                group_by(Bet.idUser).all()  # group all bet with same user id together
-            winners = []
-            if not winningBet:
-                logging.info(f"no winners, nobody tried this lottery {startedHeight}")
-                continue
-
-            for bet in winningBet:
-                if bet.user is None:  # if user is not registered (remove later)
-                    name = f"UserId_{bet.idUser}"
+        for bet in bets:
+            if bet.idUser not in tgSub and bet.idUser not in discordSub:
+                if len(str(bet.idUser)) == 18:
+                    discordSub.append(bet.idUser)
                 else:
-                    name = bet.user.alias  # this requires that the user of this bet have registered
-                logging.info(f"user {name} is winner in {startedHeight} / {result}")
-                winners.append(name)
+                    tgSub.append(bet.idUser)
 
-            if not winners:
-                for idUser in tgSub:
-                    thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
-                    redis_service.publish(
-                        "tg/notify", thisMessage
-                    )
-                for idUser in discordSub:
-                    thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
-                    redis_service.publish(
-                        "discord/notify", thisMessage
-                    )
+        #  getting winners
+        winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).\
+            group_by(Bet.idUser).all()  # group all bet with same user id together
+        winners = []
+        if not winningBet:
+            logging.info(f"no winners, nobody tried this lottery {startedHeight}")
+            return
+
+        for bet in winningBet:
+            if bet.user is None:  # if user is not registered (remove later)
+                name = f"UserId_{bet.idUser}"
             else:
-                for idUser in tgSub:
-                    thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                      f"Winners are {winners}"})
-                    redis_service.publish(
-                        "tg/notify", thisMessage
-                    )
-                for idUser in discordSub:
-                    thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                      f"Winners are {winners}"})
-                    redis_service.publish(
-                        "discord/notify", thisMessage
-                    )
+                name = bet.user.alias  # this requires that the user of this bet have registered
+            logging.info(f"user {name} is winner in {startedHeight} / {result}")
+            winners.append(name)
+
+        if not winners:
+            for idUser in tgSub:
+                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
+                redis_service.publish(
+                    "tg/notify", thisMessage
+                )
+            for idUser in discordSub:
+                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
+                redis_service.publish(
+                    "discord/notify", thisMessage
+                )
+        else:
+            for idUser in tgSub:
+                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"Winners are {winners}"})
+                redis_service.publish(
+                    "tg/notify", thisMessage
+                )
+            for idUser in discordSub:
+                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"Winners are {winners}"})
+                redis_service.publish(
+                    "discord/notify", thisMessage
+                )
 
 
 @app.task()
