@@ -68,12 +68,14 @@ class BlockstreamClient:
             pass
 
     async def next_block(self):
-        # TODO: roll over recent blocks to some next block in the list but with higher height
+        # Roll over recent blocks to some next block in the list but with higher height
         self._tip = self._tip + 1
         block = self._recent_blocks.pop()
         block["height"] = self._tip
         self._recent_blocks.insert(0, block)
         self._tip_hash = block["id"]
+        await self._redis.publish("blocks", json.dumps(block))
+        logging.info(f"Sent to redis {self._tip_hash}/{self._tip}")
         return self._tip, self._tip_hash
 
     async def get_tip(self):
@@ -117,8 +119,8 @@ class BlockstreamClient:
                     if self._tip == 0 or b["height"] > self._tip:
                         self._tip = b["height"]
                         self._tip_hash = b["id"]
-                        logging.info(f"Sent to redis {self._tip}/{self._tip_hash}")
                         await self._redis.publish("blocks", json.dumps(b))
+                        logging.info(f"Sent to redis {self._tip}/{self._tip_hash}")
                         await asyncio.sleep(0.01)
                     else:
                         continue

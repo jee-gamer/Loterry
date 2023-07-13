@@ -373,4 +373,19 @@ paths:
           '201':
             description: Created
 
-
+    /lottery/reset:
+      post:
+        operationId: api.reset_lottery
+        description: Resets database for specific lottery for tests
+        parameters:
+          - in: query
+            name: id
+            type: integer
+            required: true
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        responses:
+          '201':
+            description: Created

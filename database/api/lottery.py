@@ -131,3 +131,12 @@ def stop_lottery():
     lottery.running = 0
     session.commit()
     return {'message': 'Stopped a running lottery'}
+
+
+def reset_lottery(id: int):
+    lottery = session.query(Lottery).filter(Lottery.idLottery == id).first()
+    if not lottery:
+        return jsonify(None)
+    lottery.winningHash = ""
+    session.commit()
+    return jsonify({"result": "ok", 'message': 'removed'})

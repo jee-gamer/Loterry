@@ -66,9 +66,10 @@ def test_submit_vote():
     assert 1 == m["data"]
     m = np.get_message()
     assert b'{"1": "Submitted bet successfully"}' == m["data"]
+    sleep(1)
 
 
-def test_round_complete():
+def test_normal_round():
     response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/reset").json()
     assert response['message'] == 'completed'
     result_height = 0
@@ -80,7 +81,6 @@ def test_round_complete():
     assert result_height == 797949
 
     sleep(4)
-
     notifications = redis.Redis(host='0.0.0.0', port=6379, db=0)
     assert notifications.ping()
     np = notifications.pubsub()
@@ -88,5 +88,13 @@ def test_round_complete():
 
     m = np.get_message()
     assert 1 == m["data"]
-    m = np.get_message()
-    print(m)
+
+    url = f"{DATABASE_URL}/lottery/reset?id={797947}"
+    response = requests.request("POST", url).json()
+    assert "message" in response
+
+
+def test_double_round():
+    # two lotteries, one frozen, one not
+    pass
+

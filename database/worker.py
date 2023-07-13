@@ -132,25 +132,25 @@ def bets():
 
 @app.task
 def blocks():
-    logging.info(f"running blocks")
+    logging.info(f"running blocks consumer")
 
     for message in blocks_sub.listen():
         if message["type"] == "message":
             str_data = message["data"].decode()
-            data = json.loads(str_data)
-            if "id" in data.keys():
-                logging.info(f'Block processed {data["id"]}:{data["height"]}')
-                notify_results()
+            block = json.loads(str_data)
+            if "id" in block.keys():
+                logging.info(f'Block processed {block["id"]}:{block["height"]}')
+                notify_results(block)
             else:
-                logging.error(f"Invalid block data received {data}")
+                logging.error(f"Invalid block data received {block}")
 
 
 @app.task
-def notify_results():
+def notify_results(block: dict):
     time.sleep(USER_TASK_TIMEOUT)
-    lastHeight = make_request_btc("GET", "/tip")
+    lastHeight = block["height"]
     startedHeight = lastHeight - 2
-    logging.info(f"setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
+    logging.info(f"Setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
     lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
     # The first scenario: we have each State C, D, E
 
@@ -161,18 +161,17 @@ def notify_results():
         logging.info(f"Results are already announced")
         return
     else:  # if it runs every time a new block comes then there's no need to check so much
-        logging.info(f"announce results for {startedHeight} at {lastHeight}")
-        currentHash = make_request_btc("GET", "/tip/hash")
+        logging.info(f"Announce results for {startedHeight} at {lastHeight}")
+        currentHash = block["id"]
         decimalId = int(currentHash, 16)
         lottery.winningHash = currentHash
         result = 0
         if decimalId % 2 == 0:
-            logging.info(f"result EVEN for {startedHeight}")
             result = 2
         else:
-            logging.info(f"result ODD for {startedHeight}")
             result = 1
         session.commit()
+        logging.info(f"Result {result} for {startedHeight}:{currentHash} commited into database")
 
         bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
 
