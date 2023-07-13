@@ -129,7 +129,6 @@ async def cmd_lottery(message: types.Message):
         await message.reply(
             f"Lottery voting time is up, {height} started height\n"
             f"register {registerDeepLink}",
-            reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
     else:

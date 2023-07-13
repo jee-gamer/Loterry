@@ -67,6 +67,7 @@ def test_submit_vote():
     m = np.get_message()
     assert b'{"1": "Submitted bet successfully"}' == m["data"]
 
+
 def test_round_complete():
     response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/reset").json()
     assert response['message'] == 'completed'
