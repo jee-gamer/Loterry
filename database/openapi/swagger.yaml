@@ -50,23 +50,19 @@ paths:
               type: object
               required:
                 - id
-                - alias
-                - firstName
-                - lastName
               properties:
                 id:
                   type: integer
                   example: 0
                 alias:
                   type: string
-                  example: "ur dad"
+                  example: "Anonymous"
                 firstName:
                   type: string
-                  example: "haha"
+                  example: "John"
                 lastName:
                   type: string
-                  example: "haha"
-
+                  example: "Doe"
         responses:
           '201':
             description: Created

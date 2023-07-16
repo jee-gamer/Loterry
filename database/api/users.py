@@ -31,14 +31,16 @@ def get_users() -> dict:
 
 
 def post_user() -> dict:
-    data = request.get_json()
-    print(data)
-
+    data = request.get_json() or {'message': 'Empty User data'}
     user = session.query(User).filter(User.idUser == data["id"]).first()
     if user:
         return {'message': 'User with same id already exist'}
-
-    user = User(data["id"], data["alias"], data["firstName"], data["lastName"])
+    id = data.get("id")
+    alias = data.get("alias") or ""
+    first_name = data.get("firstName") or ""
+    last_name = data.get("lastName") or ""
+    logging.info("adding new user") or ""
+    user = User(id, alias, first_name, last_name)
     session.add(user)
     session.commit()
     return {'message': 'data received'}
