@@ -74,9 +74,9 @@ async def cmd_start(message: types.Message):
 
     user_data = {
         "id": message.from_user.id,
-        "alias": username,
-        "firstName": message.from_user.first_name,
-        "lastName": message.from_user.last_name,
+        "alias": username or "",
+        "firstName": message.from_user.first_name or "",
+        "lastName": message.from_user.last_name or "",
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{DATABASE_URL}/users", json=user_data) as response:
