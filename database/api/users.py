@@ -31,10 +31,10 @@ def get_users() -> dict:
 
 
 def post_user() -> dict:
-    data = request.get_json() or {'message': 'Empty User data'}
+    data = request.get_json() or{'result': 'ok', 'message': 'Empty User data'}
     user = session.query(User).filter(User.idUser == data["id"]).first()
     if user:
-        return {'message': 'User with same id already exist'}
+        return {'result': 'error', 'error': 'User with same id already exist'}
     id = data.get("id")
     alias = data.get("alias") or ""
     first_name = data.get("firstName") or ""
@@ -43,27 +43,27 @@ def post_user() -> dict:
     user = User(id, alias, first_name, last_name)
     session.add(user)
     session.commit()
-    return {'message': 'data received'}
+    return {'result': 'ok', 'message': 'User registered'}
 
 
 def get_user_vote(id):
     bet = session.query(Bet).filter(Bet.idUser == id).all()
     if not bet:
-        return {'message': 'User vote not found'}
+        return {'result': 'ok', 'message': 'User vote not found'}
     return jsonify([v.as_dict() for v in session.query(Bet).filter(User.idUser == id).all()])
 
 
 def get_users_vote():
     bet = session.query(Bet).all()
     if not bet:
-        return {'message': 'User vote not found'}
+        return {'result': 'ok', 'message': 'User vote not found'}
     return jsonify([v.as_dict() for v in bet])
 
 
 def get_balance(id):
     user = session.query(User).filter(User.idUser == id).first()
     if not user:
-        return {'message': 'User not found'}
+        return {'result': 'ok', 'message': 'User not found'}
     return jsonify(user.balance)
 
 
@@ -73,11 +73,11 @@ def post_user_vote() -> dict:  # need to check if lottery exist or working!
 
     sameBet = session.query(Bet).filter(Bet.idUser == data["idUser"], Bet.idLottery == data["idLottery"]).all()
     if sameBet:
-        return {'message': 'Already voted on this lottery'}
+        return {'result': 'ok', 'message': 'Already voted on this lottery'}
 
     lottery = session.query(Lottery).filter(Lottery.idLottery == data["idLottery"]).first()
     if not lottery:
-        return {'message': 'Lottery not found'}
+        return {'result': 'ok', 'message': 'Lottery not found'}
 
     # user = session.query(User).filter(User.idUser == data["idUser"]).first()
     # if not user:
@@ -91,4 +91,4 @@ def post_user_vote() -> dict:  # need to check if lottery exist or working!
     bet = Bet(idBet, data["idUser"], data["idLottery"], data["userBet"])
     session.add(bet)
     session.commit()
-    return {'message': 'data received'}
+    return {'result': 'ok', 'message': 'data received'}

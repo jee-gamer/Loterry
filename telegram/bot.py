@@ -66,34 +66,32 @@ def get_keyboard(lottery: int):
 
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
-    data = None
-    if message.from_user.username is None:
-        username = "No Username"
-    else:
-        username = message.from_user.username
-
     user_data = {
         "id": message.from_user.id,
-        "alias": username or "",
+        "alias": message.from_user.username or "",
         "firstName": message.from_user.first_name or "",
         "lastName": message.from_user.last_name or "",
     }
+
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{DATABASE_URL}/users", json=user_data) as response:
-            data = await response.json()
-            print(data)
-
-    await message.reply(
-        "Welcome here. This is a Lottery bot where people play against each other"
-        "\n"
-        "type /Lottery to start/see ongoing Lottery"
-        "\n"
-        "type /deposit #amount to deposit money"
-        "\n"
-        "type /withdraw #invoiceId to withdraw money"
-        "\n"
-        "type /balance to check your balance in the bot"
-    )
+            if response.status == 200:
+                # TODO: more checks may be added
+                data = await response.json()
+                return message.reply(
+                    "Welcome here. This is a Lottery bot where people play against each other"
+                    "\n"
+                    "type /lottery to start/see ongoing Lottery"
+                    "\n"
+                    "type /deposit #amount to deposit money"
+                    "\n"
+                    "type /withdraw #invoiceId to withdraw money"
+                    "\n"
+                    "type /balance to check your balance in the bot"
+                )
+            else:
+                logging.error("Couldnt add new user")
+                return message.reply("We have issues. Please, try again later")
 
 
 @dp.message_handler(commands=["lottery"])
@@ -105,18 +103,16 @@ async def cmd_lottery(message: types.Message):
     # TODO: move it into make_request handler
     async with aiohttp.ClientSession() as session:
         url = f"{BTC_URL}/tip"
-        logging.info(url)
         async with session.request("GET", url) as response:
             height = await response.json()
+            logging.info(f"requested {url}, received {height}")
             if not height:
-                await message.reply(f"Couldn't  start lottery, Received {height} as a height")
-                return
+                return message.reply(f"Couldn't  start lottery, Received {height} as a height")
 
     idLottery = await client.get_lottery(id=height)
     idLottery2 = await client.get_lottery(id=height-1)
     # In Python we have None type
     if idLottery:
-        height = await client.get_height()
         await message.reply(
             f"Lottery is running, {height} started height\n"
             f"You can vote odd or even\n"
@@ -125,7 +121,6 @@ async def cmd_lottery(message: types.Message):
             parse_mode="MarkdownV2"
         )
     elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
-        height = await client.get_height()
         await message.reply(
             f"Lottery voting time is up, {height} started height\n"
             f"register {registerDeepLink}",
