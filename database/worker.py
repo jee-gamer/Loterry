@@ -218,16 +218,16 @@ def notify_results(block: dict):
             for idUser in tgSub:
                 thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
                                                   f"This lottery hash: {shortHash}\n"
-                                                  f"Winners are {winners}\n"
-                                                  f"Losers are {losers}"})
+                                                  f"Winners are {', '.join(winners)}\n"
+                                                  f"Losers are {', '.join(losers)}"})
                 redis_service.publish(
                     "tg/notify", thisMessage
                 )
             for idUser in discordSub:
                 thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
                                                   f"This lottery hash: {shortHash}\n"
-                                                  f"Winners are {winners}\n"
-                                                  f"Losers are {losers}"})
+                                                  f"Winners are {', '.join(winners)}\n"
+                                                  f"Losers are {', '.join(losers)}"})
                 redis_service.publish(
                     "discord/notify", thisMessage
                 )
