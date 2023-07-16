@@ -105,32 +105,34 @@ async def cmd_lottery(message: types.Message):
         url = f"{BTC_URL}/tip"
         async with session.request("GET", url) as response:
             height = await response.json()
-            logging.info(f"requested {url}, received {height}")
             if not height:
-                return message.reply(f"Couldn't  start lottery, Received {height} as a height")
+                logging.error(f"Received {height} as a height from {url}")
+                return message.reply(f"Couldn't  get current block height")
 
-    idLottery = await client.get_lottery(id=height)
-    idLottery2 = await client.get_lottery(id=height-1)
+    logging.info(f"Checking running lotteries against block {height}")
+    active = await client.get_lottery(id=height)
+    frozen = await client.get_lottery(id=height-1)
     # In Python we have None type
-    if idLottery:
+    if active:
         await message.reply(
-            f"Lottery is running, {height} started height\n"
-            f"You can vote odd or even\n"
-            f"register {registerDeepLink}",
+            f"Lottery {height} is running\n"
+            f"You can vote odd or even for block {height + 2}\n"
+            f"Make sure you registered {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
-    elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
+    elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         await message.reply(
-            f"Lottery voting time is up, {height} started height\n"
-            f"register {registerDeepLink}",
+            f"Lottery {height} voting time is up!\n"
+            f"Register for the next round {registerDeepLink}",
             parse_mode="MarkdownV2"
         )
     else:
         await client.start_lottery()
         await message.reply(
-            f"Lottery started, {height} started height\n You can vote odd or even\n"
-            f"register {registerDeepLink}",
+            f"Lottery {height} started,\n"
+            f"You can vote odd or even for block {height + 2}\n"
+            f"Make sure you registered {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
