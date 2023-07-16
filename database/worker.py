@@ -165,13 +165,14 @@ def notify_results(block: dict):
         currentHash = block["id"]
         decimalId = int(currentHash, 16)
         lottery.winningHash = currentHash
-        result = 0
+        session.commit()
         if decimalId % 2 == 0:
             result = 2
         else:
             result = 1
-        session.commit()
         logging.info(f"Result {result} for {startedHeight}:{currentHash} commited into database")
+
+        shortHash = currentHash[:6] + "-" + currentHash[-6:]
 
         bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
 
@@ -216,6 +217,7 @@ def notify_results(block: dict):
         else:
             for idUser in tgSub:
                 thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"This lottery hash: {shortHash}\n"
                                                   f"Winners are {winners}\n"
                                                   f"Losers are {losers}"})
                 redis_service.publish(
@@ -223,6 +225,7 @@ def notify_results(block: dict):
                 )
             for idUser in discordSub:
                 thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
+                                                  f"This lottery hash: {shortHash}\n"
                                                   f"Winners are {winners}\n"
                                                   f"Losers are {losers}"})
                 redis_service.publish(
