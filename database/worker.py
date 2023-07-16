@@ -181,6 +181,8 @@ def notify_results(block: dict):
 
         tgSub = []   # time to get all user that voted on this lottery
         discordSub = []
+        winners = []
+        losers = []
 
         for bet in bets:
             if bet.idUser not in tgSub and bet.idUser not in discordSub:
@@ -188,24 +190,19 @@ def notify_results(block: dict):
                     discordSub.append(bet.idUser)
                 else:
                     tgSub.append(bet.idUser)
+                if bet.user is None:  # if user is not registered (remove later)
+                    name = f"UserId_{bet.idUser}"
+                else:
+                    name = bet.user.alias
+                if bet.userBet == result:
+                    winners.append(name)
+                else:
+                    losers.append(name)
 
-        #  getting winners
-        winningBet = session.query(Bet).filter(Bet.idLottery == startedHeight, Bet.userBet == result).\
-            group_by(Bet.idUser).all()  # group all bet with same user id together
-        winners = []
-        if not winningBet:
-            logging.info(f"no winners, nobody tried this lottery {startedHeight}")
+        if not winners and not losers:
+            logging.info(f"nobody tried this lottery {startedHeight}")
             return
-
-        for bet in winningBet:
-            if bet.user is None:  # if user is not registered (remove later)
-                name = f"UserId_{bet.idUser}"
-            else:
-                name = bet.user.alias  # this requires that the user of this bet have registered
-            logging.info(f"user {name} is winner in {startedHeight} / {result}")
-            winners.append(name)
-
-        if not winners:
+        elif not winners:
             for idUser in tgSub:
                 thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
                 redis_service.publish(
@@ -219,13 +216,15 @@ def notify_results(block: dict):
         else:
             for idUser in tgSub:
                 thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                  f"Winners are {winners}"})
+                                                  f"Winners are {winners}\n"
+                                                  f"Losers are {losers}"})
                 redis_service.publish(
                     "tg/notify", thisMessage
                 )
             for idUser in discordSub:
                 thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                  f"Winners are {winners}"})
+                                                  f"Winners are {winners}\n"
+                                                  f"Losers are {losers}"})
                 redis_service.publish(
                     "discord/notify", thisMessage
                 )
