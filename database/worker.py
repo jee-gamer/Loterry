@@ -80,52 +80,56 @@ def bets():
         if message["type"] == "message":
             str_data = message["data"].decode()
             data = json.loads(str_data)
-
+            id = 0
+            bet = "None"
+            lottery = 0
             if "idUser" in data.keys():
                 try:
-                    data["idUser"] = int(data["idUser"])
-                    data["idLottery"] = int(data["idLottery"])
+                    id = int(data["idUser"])
+                    lottery = int(data["idLottery"])
                     bet = data["userBet"]
                     if bet == "odd":
-                        data["userBet"] = 1
+                        bet = 1
                     elif bet == "even":
-                        data["userBet"] = 2
+                        bet = 2
                     else:
-                        logging.error(f'unknown bet type {data["userBet"]}')
+                        logging.error(f'unknown bet type {bet}')
                     data["betSize"] = int(data["betSize"])
                 except Exception as e:
                     logging.error(f"couldn't convert Bet data {e}")
+                    redis_service.publish(
+                        replyChannel, f"Failed to submit {bet} from user"
+                    )
+                    continue
 
                 lastHeight = make_request_btc("GET", "/tip")
 
-                if not data["idLottery"] == lastHeight:
-                    thisMessage = json.dumps({data["idUser"]: "Time for voting is up!"})
+                if not lottery == lastHeight:
+                    thisMessage = json.dumps({id: "Time for voting is up!"})
                     redis_service.publish(
                         replyChannel, thisMessage
                     )
                     continue
 
-                user = session.query(User).filter(User.idUser == data["idUser"]).first()
+                user = session.query(User).filter(User.idUser == id).first()
                 if user:
                     # 1 BTC per 1 click. 10 clicks = 10 BTC
-                    thisBet = Bet(data["uuid"], data["idUser"], data["idLottery"], data["userBet"], data["betSize"])
+                    thisBet = Bet(data["uuid"], id, lottery, bet, data["betSize"])
                     user.balance += data["betSize"]  # increase the balance for testing purpose
                     session.add(thisBet)
                     session.commit()
                     logging.info(
-                        f'commited bet {data["userBet"]} for lottery {data["idLottery"]} in database. Now messaging {data["idUser"]}'
+                        f'commited bet {bet} for lottery {lottery} in database. Now messaging {id}'
                     )
                     # TODO: Update balance of the user
-                    thisMessage = json.dumps({data["idUser"]: "Submitted bet successfully"})
-                    redis_service.publish(
-                        replyChannel, thisMessage
-                    )
+                    thisMessage = json.dumps({id: f"Submitted {bet} for {lottery}!"})
                 else:
-                    logging.info(f'received bet from non-registered user {data["idUser"]}')
-                    thisMessage = json.dumps({data["idUser"]: "Restart the bot (/start) to register user"})
-                    redis_service.publish(
-                        replyChannel, thisMessage
-                    )
+                    logging.error(f'received bet from non-registered user {id}')
+                    thisMessage = json.dumps({id: "Restart the bot (/start) to register user"})
+
+                redis_service.publish(
+                    replyChannel, thisMessage
+                )
             else:
                 logging.error(f"Invalid message data received {data}")
 
