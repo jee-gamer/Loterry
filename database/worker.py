@@ -122,7 +122,7 @@ def bets():
                         f'commited bet {bet} for lottery {lottery} in database. Now messaging {id}'
                     )
                     # TODO: Update balance of the user
-                    thisMessage = json.dumps({id: f"Submitted {bet} for {lottery}!"})
+                    thisMessage = json.dumps({id: f"Submitted {'odd' if bet == 1 else 'even'} for {lottery}!"})
                 else:
                     logging.error(f'received bet from non-registered user {id}')
                     thisMessage = json.dumps({id: "Restart the bot (/start) to register user"})
