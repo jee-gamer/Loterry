@@ -79,6 +79,7 @@ def bets():
             replyChannel = "tg/notify"
         if message["type"] == "message":
             str_data = message["data"].decode()
+            bet_id = data["uuid"]
             data = json.loads(str_data)
             id = 0
             bet = "None"
@@ -94,7 +95,6 @@ def bets():
                         bet = 2
                     else:
                         logging.error(f'unknown bet type {bet}')
-                    data["betSize"] = int(data["betSize"])
                 except Exception as e:
                     logging.error(f"couldn't convert Bet data {e}")
                     redis_service.publish(
@@ -113,16 +113,25 @@ def bets():
 
                 user = session.query(User).filter(User.idUser == id).first()
                 if user:
-                    # 1 BTC per 1 click. 10 clicks = 10 BTC
-                    thisBet = Bet(data["uuid"], id, lottery, bet, data["betSize"])
-                    user.balance += data["betSize"]  # increase the balance for testing purpose
-                    session.add(thisBet)
-                    session.commit()
-                    logging.info(
-                        f'commited bet {bet} for lottery {lottery} in database. Now messaging {id}'
-                    )
-                    # TODO: Update balance of the user
-                    thisMessage = json.dumps({id: f"Submitted {'odd' if bet == 1 else 'even'} for {lottery}"})
+                    new_balance = user.balance - user.betSize
+                    if new_balance > 0:
+                        # 1 BTC per 1 click. 10 clicks = 10 BTC
+                        thisBet = Bet(bet_id, id, lottery, bet, user.betSize)
+                        session.add(thisBet)
+                        session.commit()
+                        logging.info(
+                            f'commited bet {bet} for lottery {lottery} in database. Now messaging {id}'
+                        )
+                        logging.info(
+                            f'committing balance {new_balance} for {id}. Previous {user.balance}'
+                        )
+                        user.balance = new_balance  # increase the balance for testing purpose
+                        session.add(user)
+                        session.commit()
+                        # TODO: Update balance of the user
+                        thisMessage = json.dumps({id: f"Submitted {'odd' if bet == 1 else 'even'} for {lottery}"})
+                    else:
+                        thisMessage = json.dumps({id: "Not enough balance. Please, /deposit some sats"})
                 else:
                     logging.error(f'received bet from non-registered user {id}')
                     thisMessage = json.dumps({id: "Restart the bot (/start) to register user"})

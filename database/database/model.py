@@ -28,6 +28,7 @@ class User(Base):
     createdAt = mapped_column(DateTime)  # timestamp
     updatedAt = mapped_column(DateTime)
     balance = mapped_column(Integer)
+    betSize = mapped_column(Integer)
     enabled = mapped_column(Boolean)
 
     def __init__(self, idUser, alias="", firstName="", lastName=""):
@@ -40,6 +41,7 @@ class User(Base):
         self.updatedAt = self.createdAt
         self.enabled = False
         self.balance = 0
+        self.betSize = 1
 
 
 class Lottery(Base):

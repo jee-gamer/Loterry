@@ -255,7 +255,6 @@ async def callback_bet_action(
                 "idUser": query.from_user.id,
                 "idLottery": callback_data["lottery"],
                 "userBet": callback_data["action"],
-                "betSize": 1000,
             }
         ),
     )
