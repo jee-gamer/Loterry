@@ -90,34 +90,32 @@ async def make_request(path, endpoint, method="GET", idGroup=None, idLottery=Non
 
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
-    data = None
-    if message.from_user.username is None:
-        username = "No Username"
-    else:
-        username = message.from_user.username
-
     user_data = {
         "id": message.from_user.id,
-        "alias": username,
-        "firstName": message.from_user.first_name,
-        "lastName": message.from_user.last_name,
+        "alias": message.from_user.username or "",
+        "firstName": message.from_user.first_name or "",
+        "lastName": message.from_user.last_name or "",
     }
+
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{DATABASE_URL}/users", json=user_data) as response:
-            data = await response.json()
-            print(data)
-
-    await message.reply(
-        "Welcome here. This is a Lottery bot where people play against each other"
-        "\n"
-        "type /Lottery to start/see ongoing Lottery"
-        "\n"
-        "type /deposit #amount to deposit money"
-        "\n"
-        "type /withdraw #invoiceId to withdraw money"
-        "\n"
-        "type /balance to check your balance in the bot"
-    )
+            if response.status == 200:
+                # TODO: more checks may be added
+                data = await response.json()
+                return message.reply(
+                    "Welcome here. This is a Lottery bot where people play against each other"
+                    "\n"
+                    "type /lottery to start/see ongoing Lottery"
+                    "\n"
+                    "type /deposit #amount to deposit money"
+                    "\n"
+                    "type /withdraw #invoiceId to withdraw money"
+                    "\n"
+                    "type /balance to check your balance in the bot"
+                )
+            else:
+                logging.error("Couldnt add new user")
+                return message.reply("We have issues. Please, try again later")
 
 
 @dp.message_handler(commands=["lottery"])
@@ -128,40 +126,40 @@ async def cmd_lottery(message: types.Message):
     height = None
     height = int(await make_request(BTC_URL, "/tip", "GET"))
     if not height:
-        await message.reply(f"Couldn't  start lottery, Received {height} as a height")
+        return message.reply(f"Couldn't get current block height")
         return
 
-    idLottery = await client.get_lottery(id=height)
-    idLottery2 = await client.get_lottery(id=height-1)
+    logging.info(f"Checking running lotteries against block {height}")
+    active = await client.get_lottery(id=height)
+    frozen = await client.get_lottery(id=height-1)
 
     postData = {  # draft
         "idGroup": 99,
         "idLottery": height,
         "idChat": 99
     }
-    if idLottery:
-        height = await client.get_height()
+    if active:
         await message.reply(
-            f"Lottery is running, {height} started height\n"
-            f"You can vote odd or even\n"
-            f"register {registerDeepLink}",
+            f"Lottery {height} is running\n"
+            f"You can vote odd or even for block {height + 2}\n"
+            f"Make sure you registered {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
         await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
-    elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
-        height = await client.get_height()
+    elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         await message.reply(
-            f"Lottery voting time is up, {height} started height\n"
-            f"register {registerDeepLink}",
+            f"Lottery {height} voting time is up!\n"
+            f"Register for the next round {registerDeepLink}",
             parse_mode="MarkdownV2"
         )
         await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
     else:
         await client.start_lottery()
         await message.reply(
-            f"Lottery started, {height} started height\n You can vote odd or even\n"
-            f"register {registerDeepLink}",
+            f"Lottery {height} started,\n"
+            f"You can vote odd or even for block {height + 2}\n"
+            f"Make sure you registered {registerDeepLink}",
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )

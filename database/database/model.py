@@ -30,7 +30,7 @@ class User(Base):
     balance = mapped_column(Integer)
     enabled = mapped_column(Boolean)
 
-    def __init__(self, idUser, alias, firstName, lastName):
+    def __init__(self, idUser, alias="", firstName="", lastName=""):
         """"""
         self.idUser = idUser
         self.alias = alias

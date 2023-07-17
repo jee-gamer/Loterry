@@ -13,19 +13,30 @@ DB_HOST = environ.get("DB_HOST", default="localhost")
 DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
+# URLs
+user_endpoint = f"{DATABASE_URL}/users"
+
+
 def test_reset_btc():
     response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/reset").json()
     assert response['message'] == 'completed'
 
 def test_create_user():
-    url = f"{DATABASE_URL}/users"
+
     user_data = {
         "id": 1,
         "alias": "test",
         "firstName": "test",
         "lastName": "test",
     }
-    response = requests.request("POST", url, json=user_data).json()
+    response = requests.request("POST", user_endpoint, json=user_data).json()
+    assert "message" in response
+
+def test_no_name():
+    user_id_only = {
+        "id": 2
+    }
+    response = requests.request("POST", user_endpoint, json=user_id_only).json()
     assert "message" in response
 
 def test_submit_vote():
