@@ -54,8 +54,6 @@ class BlockstreamClient:
                         except Exception as e:
                             logging.error(f"Can't obtain json {e}")
 
-                            # it's long I'm repeating myself right? but to be able to debug error it's here
-                            # maybe we can change it later once it works for sure.. I'll need your feedback
                 return data
 
     async def reset(self):

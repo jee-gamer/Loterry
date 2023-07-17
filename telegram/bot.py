@@ -64,6 +64,30 @@ def get_keyboard(lottery: int):
     return keyboard
 
 
+async def make_request(path, endpoint, method="GET", idGroup=None, idLottery=None, idChat=None, **kwargs):  # additional parameters made just for posting new group bot start/run lottery with
+    async with aiohttp.ClientSession() as session:
+        if not idGroup:
+            url = f"{path}{endpoint}"
+        else:
+            url = f"{path}{endpoint}?idGroup={idGroup}&idLottery={idLottery}&idChat={idChat}"
+        async with session.request(method, url, **kwargs) as response:
+            if response.status == 200:
+                if response.headers.get("Content-Type") == "text/plain":
+                    try:
+                        data = await response.text()
+                        logging.info(f"from bot {data}")
+                    except Exception as e:
+                        logging.error(f"Can't obtain json {e}")
+                else:
+                    try:
+                        data = await response.json()
+                        logging.info(f"from bot {data}")
+                    except Exception as e:
+                        logging.error(f"Can't obtain json {e}")
+
+            return data
+
+
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
     data = None
@@ -102,19 +126,19 @@ async def cmd_lottery(message: types.Message):
     # if you need it to do something else you have to do it in start function and check query parameter
 
     height = None
-    # TODO: move it into make_request handler
-    async with aiohttp.ClientSession() as session:
-        url = f"{BTC_URL}/tip"
-        logging.info(url)
-        async with session.request("GET", url) as response:
-            height = await response.json()
-            if not height:
-                await message.reply(f"Couldn't  start lottery, Received {height} as a height")
-                return
+    height = int(await make_request(BTC_URL, "/tip", "GET"))
+    if not height:
+        await message.reply(f"Couldn't  start lottery, Received {height} as a height")
+        return
 
     idLottery = await client.get_lottery(id=height)
     idLottery2 = await client.get_lottery(id=height-1)
-    # In Python we have None type
+
+    postData = {  # draft
+        "idGroup": 99,
+        "idLottery": height,
+        "idChat": 99
+    }
     if idLottery:
         height = await client.get_height()
         await message.reply(
@@ -124,6 +148,7 @@ async def cmd_lottery(message: types.Message):
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
+        await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
     elif idLottery2:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         height = await client.get_height()
         await message.reply(
@@ -131,6 +156,7 @@ async def cmd_lottery(message: types.Message):
             f"register {registerDeepLink}",
             parse_mode="MarkdownV2"
         )
+        await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
     else:
         await client.start_lottery()
         await message.reply(
@@ -139,6 +165,7 @@ async def cmd_lottery(message: types.Message):
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
+        await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
 
 
 @dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))
