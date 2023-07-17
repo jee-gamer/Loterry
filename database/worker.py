@@ -79,8 +79,8 @@ def bets():
             replyChannel = "tg/notify"
         if message["type"] == "message":
             str_data = message["data"].decode()
-            bet_id = data["uuid"]
             data = json.loads(str_data)
+            bet_id = data["uuid"]
             id = 0
             bet = "None"
             lottery = 0
