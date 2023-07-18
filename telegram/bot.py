@@ -102,7 +102,7 @@ async def cmd_start(message: types.Message):
             if response.status == 200:
                 # TODO: more checks may be added
                 data = await response.json()
-                return message.reply(
+                await message.reply(
                     "Welcome here. This is a Lottery bot where people play against each other"
                     "\n"
                     "type /lottery to start/see ongoing Lottery"
@@ -115,7 +115,7 @@ async def cmd_start(message: types.Message):
                 )
             else:
                 logging.error("Couldnt add new user")
-                return message.reply("We have issues. Please, try again later")
+                await message.reply("We have issues. Please, try again later")
 
 
 @dp.message_handler(commands=["lottery"])
@@ -126,8 +126,7 @@ async def cmd_lottery(message: types.Message):
     height = None
     height = int(await make_request(BTC_URL, "/tip", "GET"))
     if not height:
-        return message.reply(f"Couldn't get current block height")
-        return
+        return await message.reply(f"Couldn't get current block height")
 
     logging.info(f"Checking running lotteries against block {height}")
     active = await client.get_lottery(id=height)
@@ -149,7 +148,7 @@ async def cmd_lottery(message: types.Message):
         await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
     elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         await message.reply(
-            f"Lottery {height} voting time is up!\n"
+            f"Lottery {height} voting time is up.\n"
             f"Register for the next round {registerDeepLink}",
             parse_mode="MarkdownV2"
         )

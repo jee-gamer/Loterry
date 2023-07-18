@@ -249,7 +249,7 @@ def notify_results(block: dict):
 @app.task()
 def status_check(idUser, paymentHash, replyChannel):
     timeNow = time.time()
-
+    logging.info(f"checking status for {paymentHash}, user {idUser} since {timeNow}")
     while True:
         invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
                                 headers={"X-Api-Key": LNBITS_API})
@@ -258,11 +258,11 @@ def status_check(idUser, paymentHash, replyChannel):
         timeout = int(invoiceStatusData["details"]["expiry"])
 
         if timeNow >= timeout:
-            logging.info("Timeout reached")
+            logging.info(f"timeout for {paymentHash}")
             msg = {idUser: f"Invoice expired"}
             redis_service.publish(replyChannel, json.dumps(msg))
             return
-
+        logging.info(f"payment {paymentHash}: {invoiceStatusData['paid']}")
         if invoiceStatusData["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
             if user:
