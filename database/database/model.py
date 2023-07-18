@@ -79,20 +79,6 @@ class Bet(Base):
         self.createdAt = datetime.now()
 
 
-class Group(Base):
-    __tablename__ = "Group"
-    idGroup = mapped_column(String(length=36), primary_key=True)
-    idLottery = mapped_column(Integer, ForeignKey("Lottery.idLottery"))
-    idMsg = mapped_column(Integer)
-
-    lottery = relationship("Lottery", foreign_keys="Group.idLottery")
-
-    def __init__(self, idGroup, idLottery, idMsg):
-        self.idGroup = idGroup
-        self.idLottery = idLottery
-        self.idMsg = idMsg
-
-
 if __name__ == "__main__":
     pass
     # engine = create_engine("sqlite:///user.db", echo=True)

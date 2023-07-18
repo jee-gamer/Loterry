@@ -64,12 +64,9 @@ def get_keyboard(lottery: int):
     return keyboard
 
 
-async def make_request(path, endpoint, method="GET", idGroup=None, idLottery=None, idChat=None, **kwargs):  # additional parameters made just for posting new group bot start/run lottery with
+async def make_request(path, endpoint, method="GET", **kwargs):  # additional parameters made just for posting new group bot start/run lottery with
     async with aiohttp.ClientSession() as session:
-        if not idGroup:
-            url = f"{path}{endpoint}"
-        else:
-            url = f"{path}{endpoint}?idGroup={idGroup}&idLottery={idLottery}&idChat={idChat}"
+        url = f"{path}{endpoint}"
         async with session.request(method, url, **kwargs) as response:
             if response.status == 200:
                 data = {}
@@ -132,11 +129,6 @@ async def cmd_lottery(message: types.Message):
     active = await client.get_lottery(id=height)
     frozen = await client.get_lottery(id=height-1)
 
-    postData = {  # draft
-        "idGroup": 99,
-        "idLottery": height,
-        "idChat": 99
-    }
     if active:
         await message.reply(
             f"Lottery {height} is running\n"
@@ -145,14 +137,12 @@ async def cmd_lottery(message: types.Message):
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
-        await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
     elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         await message.reply(
             f"Lottery {height} voting time is up\!\n"
             f"Register for the next round {registerDeepLink}",
             parse_mode="MarkdownV2"
         )
-        await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
     else:
         await client.start_lottery()
         await message.reply(
@@ -162,7 +152,6 @@ async def cmd_lottery(message: types.Message):
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
-        await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
 
 
 @dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))
