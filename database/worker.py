@@ -271,11 +271,11 @@ def status_check(idUser, paymentHash, replyChannel):
                 session.commit()
                 msg = {idUser: f"Deposit {depositedMoney} balance successfully \n"
                                f"Your balance is now {user.balance}"}
-                redis_service.publish(replyChannel, json.user.balance(msg))
+                redis_service.publish(replyChannel, json.dumps(msg))
             else:
-                logging.info(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
+                logging.error(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
             return
-        time.sleep(BLOCK_TASK_TIMEOUT)
+        time.sleep(USER_TASK_TIMEOUT)
 
 
 @app.task()
