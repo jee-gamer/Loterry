@@ -213,6 +213,12 @@ def notify_results(block: dict):
                 else:
                     losers.append(name)
 
+            if bet.userBet == result:
+                bet.user.balance += bet.betSize
+            else:
+                bet.user.balance -= bet.betSize
+        session.commit()
+
         if not winners and not losers:
             logging.info(f"nobody tried this lottery {startedHeight}")
             return

@@ -385,35 +385,3 @@ paths:
         responses:
           '201':
             description: Reset
-    /groups:
-      post:
-        operationId: api.post_group
-        description: Post new group that telegram bot had messaged
-        parameters:
-          - name: body
-            in: body
-            required: true
-            schema:
-              # Body schema with atomic property examples
-              type: object
-              required:
-                - idGroup
-                - idLottery
-                - idChat
-              properties:
-                idGroup:
-                  type: integer
-                  example: 99
-                idLottery:
-                  type: integer
-                  example: 99
-                idChat:
-                  type: integer
-                  example: 99
-        consumes:
-          - application/json
-        produces:
-          - application/json
-        responses:
-          '201':
-            description: Created
