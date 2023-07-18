@@ -248,34 +248,30 @@ def notify_results(block: dict):
 
 @app.task()
 def status_check(idUser, paymentHash, replyChannel):
-    invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
-                            headers={"X-Api-Key": LNBITS_API})
-    invoiceStatusData = json.loads(invoiceStatus.text)
-    logging.info(f"This is the data we got {invoiceStatusData}")
-    timeout = int(invoiceStatusData["details"]["expiry"])
+    timeNow = time.time()
 
     while True:
-        timeNow = time.time()
-
-        if timeNow >= timeout:
-            logging.info("Timeout reached")
-            msg = {idUser: f"The invoice is expired"}
-            redis_service.publish(replyChannel, json.dumps(msg))
-            return
-
         invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
                                 headers={"X-Api-Key": LNBITS_API})
         invoiceStatusData = json.loads(invoiceStatus.text)
+        logging.debug(f"Received from LNBits {invoiceStatusData}")
+        timeout = int(invoiceStatusData["details"]["expiry"])
+
+        if timeNow >= timeout:
+            logging.info("Timeout reached")
+            msg = {idUser: f"Invoice expired"}
+            redis_service.publish(replyChannel, json.dumps(msg))
+            return
+
         if invoiceStatusData["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
             if user:
                 depositedMoney = int(abs(invoiceStatusData['details']['amount'])/1000)  # the amount return negative when the payment is done for some reason
                 user.balance += depositedMoney
                 session.commit()
-                balance = user.balance
                 msg = {idUser: f"Deposit {depositedMoney} balance successfully \n"
-                               f"Your balance is now {balance}"}
-                redis_service.publish(replyChannel, json.dumps(msg))
+                               f"Your balance is now {user.balance}"}
+                redis_service.publish(replyChannel, json.user.balance(msg))
             else:
                 logging.info(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
             return
@@ -292,10 +288,10 @@ def check_invoice():  # add balance to user if got invoice
         else:
             replyChannel = "tg/notify"
         if message["type"] == "message":
-            logging.info("got invoice msg")
             str_data = message["data"].decode()
             data = json.loads(str_data)
             if "idUser" and "paymentHash" in data:
+                logging.info(f'received invoice with hash {data["paymentHash"]} for {data["idUser"]}')
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
                     status_check.apply_async((data["idUser"], data["paymentHash"], replyChannel), ignore_result=True)
