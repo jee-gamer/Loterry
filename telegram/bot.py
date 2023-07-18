@@ -148,7 +148,7 @@ async def cmd_lottery(message: types.Message):
         await make_request(DATABASE_URL, "/groups", "POST", idGroup=99, idLottery=height, idChat=99)
     elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         await message.reply(
-            f"Lottery {height} voting time is up.\n"
+            f"Lottery {height} voting time is up\!\n"
             f"Register for the next round {registerDeepLink}",
             parse_mode="MarkdownV2"
         )
