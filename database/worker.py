@@ -269,8 +269,8 @@ def status_check(idUser, paymentHash, replyChannel):
                 depositedMoney = int(abs(invoiceStatusData['details']['amount'])/1000)  # the amount return negative when the payment is done for some reason
                 user.balance += depositedMoney
                 session.commit()
-                msg = {idUser: f"Deposit {depositedMoney} balance successfully \n"
-                               f"Your balance is now {user.balance}"}
+                msg = {idUser: f"Received {depositedMoney}.\n"
+                               f"Your balance is {user.balance}"}
                 redis_service.publish(replyChannel, json.dumps(msg))
             else:
                 logging.error(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
