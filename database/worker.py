@@ -294,7 +294,7 @@ def check_invoice():  # add balance to user if got invoice
                 logging.info(f'received invoice with hash {data["paymentHash"]} for {data["idUser"]}')
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
-                    status_check.apply_async((data["idUser"], data["paymentHash"], replyChannel), ignore_result=True)
+                    status_check(data["idUser"], data["paymentHash"], replyChannel)
                 else:
                     msg = {data["idUser"]: f"User is not registered"}
                     redis_service.publish(replyChannel, json.dumps(msg))

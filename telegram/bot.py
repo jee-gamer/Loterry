@@ -72,6 +72,7 @@ async def make_request(path, endpoint, method="GET", idGroup=None, idLottery=Non
             url = f"{path}{endpoint}?idGroup={idGroup}&idLottery={idLottery}&idChat={idChat}"
         async with session.request(method, url, **kwargs) as response:
             if response.status == 200:
+                data = {}
                 if response.headers.get("Content-Type") == "text/plain":
                     try:
                         data = await response.text()
@@ -84,8 +85,7 @@ async def make_request(path, endpoint, method="GET", idGroup=None, idLottery=Non
                         logging.info(f"from bot {data}")
                     except Exception as e:
                         logging.error(f"Can't obtain json {e}")
-
-            return data
+                return data
 
 
 @dp.message_handler(commands=["start"])
