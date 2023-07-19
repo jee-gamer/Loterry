@@ -8,7 +8,7 @@ from os import environ
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default="6379")
-TEST = environ.get("BTC_TEST", default=False)
+TEST = bool(environ.get("BTC_TEST", default=False))
 
 bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}", TEST)
 
