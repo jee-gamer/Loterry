@@ -5,7 +5,7 @@ import redis
 import json
 import logging
 from database import session
-from database import Base, User, Bet, Lottery
+from database import Base, User, Bet, Chat, Lottery
 from sqlalchemy import desc
 
 from requests import request
@@ -42,6 +42,9 @@ bets_sub.subscribe("discord/bets")
 blocks_sub = redis_service.pubsub()
 blocks_sub.subscribe("blocks")
 
+chat_sub = redis_service.pubsub()
+chat_sub.subscribe("chat")
+
 invoice_sub = redis_service.pubsub()
 invoice_sub.subscribe("tg/invoice")
 invoice_sub.subscribe("discord/invoice")
@@ -55,6 +58,7 @@ withdraw_sub.subscribe("discord/withdraw")
 def setup_tasks(sender, **kwargs):
     blocks.apply_async()
     bets.apply_async()
+    get_message.apply_async()
     # active one above
     check_invoice.apply_async()
     pay_invoice.apply_async()
@@ -157,6 +161,21 @@ def blocks():
             else:
                 logging.error(f"Invalid block data received {block}")
 
+
+@app.task
+def get_message():
+    logging.info(f"getting lottery message")
+
+    for message in chat_sub.listen():
+        if message["type"] == "message":
+            str_data = message["data"].decode()
+            chatInfo = json.loads(str_data)
+            if "idChat" in chatInfo:
+                logging.info(f"GOT CHAT DATA {chatInfo['idChat']}")
+                chat = Chat[chatInfo["idChat"], chatInfo["idLottery"], chatInfo["idMessage"]]
+                session.add(chat)
+                session.commit()
+                logging.info("ADDED CHATINFO TO DATABASE")
 
 @app.task
 def notify_results(block: dict):

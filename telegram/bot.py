@@ -128,7 +128,10 @@ async def cmd_lottery(message: types.Message):
     logging.info(f"Checking running lotteries against block {height}")
     active = await client.get_lottery(id=height)
     frozen = await client.get_lottery(id=height-1)
-
+    chatInfo = {"idChat": message.chat.id,
+                "idLottery": height,
+                "idMessage": message.message_id
+                }
     if active:
         await message.reply(
             f"Lottery {height} is running\n"
@@ -137,7 +140,7 @@ async def cmd_lottery(message: types.Message):
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
-
+        await redis_service.publish('chat', json.dumps(chatInfo))
     elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         await message.reply(
             f"Lottery {height} voting time is up\!\n"
@@ -153,8 +156,7 @@ async def cmd_lottery(message: types.Message):
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
-
-
+        await redis_service.publish('chat', json.dumps(chatInfo))
 @dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))
 async def cmd_deposit(message: types.Message):
     inputs = message.text.split(" ")
