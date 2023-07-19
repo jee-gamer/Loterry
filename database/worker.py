@@ -193,8 +193,11 @@ def get_message():
 
 def freeze_message(block):
     lastHeight = block["height"]
-    startedHeight = lastHeight - 2
+    startedHeight = lastHeight - 1
     allChat = session.query(Chat).filter(Chat.idLottery == startedHeight).all()
+    if not allChat:
+        logging.info("There's no chat with freezing lottery")
+        return
     for chat in allChat:
         thisMessage = json.dumps({"idChat": chat["idChat"],
                                   "idMessage": chat["idMessage"]
@@ -202,7 +205,7 @@ def freeze_message(block):
         redis_service.publish(
             "freeze", thisMessage
         )
-    session.query(Chat).filter(Chat.idLottery == startedHeight).all().delete()  # delete msg because it's already been used
+    session.query(Chat).filter(Chat.idLottery == startedHeight).delete()  # delete msg because it's already been used
     session.commit()
 
 
