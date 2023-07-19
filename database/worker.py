@@ -172,10 +172,7 @@ def get_message():
             chatInfo = json.loads(str_data)
             if "idChat" in chatInfo:
                 logging.info(f'GOT CHAT DATA {chatInfo["idChat"]}, {chatInfo["idLottery"]}, {chatInfo["idMessage"]}')
-                idChat = int(chatInfo["idChat"])
-                idLottery = int(chatInfo["idLottery"])
-                idMessage = int(chatInfo["idMessage"])
-                chat = Chat[idChat, idLottery, idMessage]
+                chat = Chat(chatInfo["idChat"], chatInfo["idLottery"], chatInfo["idMessage"])
                 session.add(chat)
                 session.commit()
                 logging.info("ADDED CHATINFO TO DATABASE")
