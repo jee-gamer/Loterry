@@ -214,7 +214,7 @@ def notify_results(block: dict):
                     losers.append(name)
 
             if bet.userBet == result:
-                bet.user.balance += bet.betSize
+                bet.user.balance += bet.betSize/2  # we take half
             else:
                 bet.user.balance -= bet.betSize
         session.commit()

@@ -137,6 +137,7 @@ async def cmd_lottery(message: types.Message):
             reply_markup=get_keyboard(lottery=height),
             parse_mode="MarkdownV2"
         )
+
     elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         await message.reply(
             f"Lottery {height} voting time is up\!\n"
