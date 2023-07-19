@@ -151,7 +151,6 @@ async def cmd_lottery(message: types.Message):
                     "idLottery": height,
                     "idMessage": replyMsg.message_id
                     }
-        await redis_service.publish('chat', json.dumps(chatInfo))  # FOR TESTING
     else:
         await client.start_lottery()
         replyMsg = await message.reply(
@@ -283,22 +282,35 @@ async def listen():
         if message and "data" in message:
             logging.info(f"received: {message}")
             str_data = message["data"].decode()
-            try:
-                data = json.loads(str_data)
-                logging.info(f"decoded JSON: {data}")
-                for user in data.keys():
-                    user_id = int(user)
-                    logging.info(f"sending a message to {user_id}")
-                    await bot.send_message(user_id, data[user])
-            except Exception as e:
-                logging.error(f"exception during sending message {message} to user: {e}")
-                continue
+            channel = message["channel"].decode("utf-8")
+            if channel == "freeze":
+                try:
+                    chatInfo = json.loads(str_data)
+                    idChat = chatInfo["idChat"]
+                    idMessage = chatInfo["idMessage"]
+                except Exception as e:
+                    logging.error(f"exception during getting message {message} to freeze: {e}")
+                    continue
+                bot.edit_message_reply_markup(chat_id=idChat, message_id=idMessage, reply_markup=None)
+                logging.info("Remove button from the freeze lottery message")
+            else:
+                try:
+                    data = json.loads(str_data)
+                    logging.info(f"decoded JSON: {data}")
+                    for user in data.keys():
+                        user_id = int(user)
+                        logging.info(f"sending a message to {user_id}")
+                        await bot.send_message(user_id, data[user])
+                except Exception as e:
+                    logging.error(f"exception during sending message {message} to user: {e}")
+                    continue
         await asyncio.sleep(0.1)
 
 
 async def notify():
     async with notification_sub as pubsub:
         await pubsub.subscribe("tg/notify")
+        await pubsub.subscribe("freeze")
         future = asyncio.create_task(listen())
         await redis_service.publish("tg/notify", "Notification task started!")
         await future
