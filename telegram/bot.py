@@ -147,6 +147,7 @@ async def cmd_lottery(message: types.Message):
             f"Register for the next round {registerDeepLink}",
             parse_mode="MarkdownV2"
         )
+        await redis_service.publish('chat', json.dumps(chatInfo))  # FOR TESTING
     else:
         await client.start_lottery()
         await message.reply(

@@ -171,11 +171,15 @@ def get_message():
             str_data = message["data"].decode()
             chatInfo = json.loads(str_data)
             if "idChat" in chatInfo:
-                logging.info(f"GOT CHAT DATA {chatInfo['idChat']}")
-                chat = Chat[chatInfo["idChat"], chatInfo["idLottery"], chatInfo["idMessage"]]
+                logging.info(f'GOT CHAT DATA {chatInfo["idChat"]}, {chatInfo["idLottery"]}, {chatInfo["idMessage"]}')
+                idChat = int(chatInfo["idChat"])
+                idLottery = int(chatInfo["idLottery"])
+                idMessage = int(chatInfo["idMessage"])
+                chat = Chat[idChat, idLottery, idMessage]
                 session.add(chat)
                 session.commit()
                 logging.info("ADDED CHATINFO TO DATABASE")
+
 
 @app.task
 def notify_results(block: dict):
