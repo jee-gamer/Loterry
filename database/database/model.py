@@ -58,6 +58,20 @@ class Lottery(Base):
         self.createdAt = datetime.now()
 
 
+class Chat(Base):  # group chat
+    __tablename__ = "Chat"
+
+    idChat = mapped_column(Integer, primary_key=True)
+    idLottery = mapped_column(Integer)
+    idMsg = mapped_column(Integer)
+
+    def __init__(self, idChat, idLottery, idMsg):
+        """"""
+        self.idChat = idChat
+        self.idLottery = idLottery
+        self.idMsg = idMsg
+
+
 class Bet(Base):
     __tablename__ = "Bet"
     idBet = mapped_column(String(length=36), primary_key=True)
