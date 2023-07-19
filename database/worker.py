@@ -158,6 +158,7 @@ def blocks():
             if "id" in block.keys():
                 logging.info(f'Block processed {block["id"]}:{block["height"]}')
                 notify_results(block)
+                freeze_message(block)
             else:
                 logging.error(f"Invalid block data received {block}")
 
@@ -170,15 +171,41 @@ def get_message():
         if message["type"] == "message":
             str_data = message["data"].decode()
             chatInfo = json.loads(str_data)
+            logging.info("Got message from lottery")
             if "idChat" in chatInfo:
-                logging.info(f'GOT CHAT DATA {chatInfo["idChat"]}, {chatInfo["idLottery"]}, {chatInfo["idMessage"]}')
+                chat = session.query(Chat).filter(Chat.idChat == chatInfo["idChat"]).first()
+                if chat is not None and chat.idMessage == chatInfo["idMessage"]:
+                    logging.info("Trying to add duplicate message")
+                    continue
+                elif chat:
+                    chat.idMessage = chatInfo["idMessage"]
+                    chat.idLottery = chatInfo["idLottery"]
+                    session.commit()
+                    logging.info("Added chat info to database")
+                    continue
+                # if this chat is new then add new row
+                logging.info(f'Got chat data {chatInfo["idChat"]}, {chatInfo["idLottery"]}, {chatInfo["idMessage"]}')
                 chat = Chat(chatInfo["idChat"], chatInfo["idLottery"], chatInfo["idMessage"])
                 session.add(chat)
                 session.commit()
-                logging.info("ADDED CHATINFO TO DATABASE")
+                logging.info("Added chat info to database")
 
 
-@app.task
+def freeze_message(block):
+    lastHeight = block["height"]
+    startedHeight = lastHeight - 2
+    allChat = session.query(Chat).filter(Chat.idLottery == startedHeight).all()
+    for chat in allChat:
+        thisMessage = json.dumps({"idChat": chat["idChat"],
+                                  "idMessage": chat["idMessage"]
+                                  })
+        redis_service.publish(
+            "freeze", thisMessage
+        )
+    session.query(Chat).filter(Chat.idLottery == startedHeight).all().delete()  # delete msg because it's already been used
+    session.commit()
+
+
 def notify_results(block: dict):
     time.sleep(USER_TASK_TIMEOUT)
     lastHeight = block["height"]
