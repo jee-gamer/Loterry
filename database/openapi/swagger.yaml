@@ -48,8 +48,6 @@ paths:
             schema:
               # Body schema with atomic property examples
               type: object
-              required:
-                - id
               properties:
                 id:
                   type: integer

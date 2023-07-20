@@ -8,7 +8,7 @@ from os import environ
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default="6379")
-TEST = bool(environ.get("BTC_TEST", default=True))
+TEST = environ.get("BTC_TEST", default=True)
 
 bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}", TEST)
 
@@ -36,7 +36,7 @@ async def get_next_block(request):
         await bitcoin_client.next_block()
         return web.json_response({"message": "completed"})
     else:
-        return web.json_response({"message": "rejected in non-test setup"})
+        return web.json_response({"message": "rejected in non-test setup RESET"})
 
 
 @routes.get("/reset")
@@ -45,7 +45,7 @@ async def reset(request):
         await bitcoin_client.reset()
         return web.json_response({"message": "completed"})
     else:
-        return web.json_response({"message": "rejected in non-test setup"})
+        return web.json_response({"message": "rejected in non-test setup RESET"})
 
 
 @routes.get("/tip")

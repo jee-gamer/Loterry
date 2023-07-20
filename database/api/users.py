@@ -31,7 +31,7 @@ def get_users() -> dict:
 
 
 def post_user() -> dict:
-    data = request.get_json() or{'result': 'ok', 'message': 'Empty User data'}
+    data = request.get_json() or {'result': 'ok', 'message': 'Empty User data'}
     user = session.query(User).filter(User.idUser == data["id"]).first()
     if user:
         return {'result': 'error', 'error': 'User with same id already exist'}
