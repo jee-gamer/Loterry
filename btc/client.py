@@ -22,7 +22,7 @@ class BlockstreamClient:
     def __init__(self, redis_uri="localhost:6379", test=False, test_blocks=[]):
         self._test = test
         host, port = redis_uri.split(":")
-        logging.info(f"Redis URI client: {redis_uri}")
+        logging.info(f"Redis URI: {redis_uri}, test {test}")
         self._redis = redis.Redis(host=host, port=port, db=0)
 
         if not test_blocks:

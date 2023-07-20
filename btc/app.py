@@ -8,7 +8,7 @@ from os import environ
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default="6379")
-TEST = environ.get("BTC_TEST", default=True)
+TEST = environ.get("BTC_TEST", default=False)
 
 bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}", TEST)
 
@@ -18,11 +18,6 @@ logging.basicConfig(
 
 app = web.Application()
 routes = web.RouteTableDef()
-
-logging.info(REDIS_HOST)
-logging.info(REDIS_PORT)
-logging.info(TEST)
-
 
 @routes.get("/")
 async def index(request):
