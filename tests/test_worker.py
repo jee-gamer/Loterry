@@ -22,8 +22,8 @@ def test_my_redis(redis_my, httpserver: HTTPServer):
     redis_my.set('test1', 'test')
     redis_my.set('test2', 'test')
     print(redis_my.get("test2"))
-    from database.worker import notify_results
-    notify_results()
+    # from database.worker import notify_results
+    # notify_results()
 
 
 

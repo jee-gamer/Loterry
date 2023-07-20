@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from requests import request
 from json import dumps, loads
@@ -6,6 +8,7 @@ import requests
 from os import environ
 import redis
 from time import sleep
+
 
 BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
@@ -18,6 +21,7 @@ user_endpoint = f"{DATABASE_URL}/users"
 
 
 def test_reset_btc():
+    logging.info(BTC_HOST)
     response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/reset").json()
     assert response['message'] == 'completed'
 

@@ -291,7 +291,7 @@ async def listen():
                 except Exception as e:
                     logging.error(f"exception during getting message {message} to freeze: {e}")
                     continue
-                bot.edit_message_reply_markup(chat_id=idChat, message_id=idMessage, reply_markup=None)
+                await bot.edit_message_reply_markup(chat_id=idChat, message_id=idMessage, reply_markup=None)
                 logging.info(f"Tried to remove markup idChat: {idChat}, idMessage: {idMessage}")
             else:
                 try:

@@ -8,7 +8,6 @@ services:
     privileged: true
     ports:
       - '6379:6379'
-    network_mode: host
 
   database:
     env_file:
@@ -21,7 +20,6 @@ services:
       - ./cache/db:/db
     depends_on:
       - redis
-    network_mode: host
 
 
   btc_worker:
@@ -34,7 +32,6 @@ services:
     hostname: btc_worker
     depends_on:
       - redis
-    network_mode: host
 
 
   telegram_bot:
@@ -46,7 +43,7 @@ services:
     hostname: telegram_bot
     depends_on:
       - redis
-    network_mode: host
+
 
 #  discord_bot:
 #    env_file:
@@ -58,6 +55,7 @@ services:
 #
 #    depends_on:
 #      - redis
+
 networks:
  default:
   name: gate-lottery-bot

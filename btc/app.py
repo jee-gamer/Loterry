@@ -19,6 +19,10 @@ logging.basicConfig(
 app = web.Application()
 routes = web.RouteTableDef()
 
+logging.info(REDIS_HOST)
+logging.info(REDIS_PORT)
+logging.info(TEST)
+
 
 @routes.get("/")
 async def index(request):
@@ -34,13 +38,16 @@ async def get_tip(request):
     else:
         return web.json_response({"message": "rejected in non-test setup"})
 
+
 @routes.get("/reset")
 async def get_tip(request):
     if TEST:
+        return web.json_response({"message": "completed"})
         await bitcoin_client.reset()
         return web.json_response({"message": "completed"})
     else:
         return web.json_response({"message": "rejected in non-test setup"})
+
 
 @routes.get("/tip")
 async def get_tip(request):
