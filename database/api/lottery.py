@@ -1,5 +1,5 @@
 from database import session
-from database import Base, User, Bet, Lottery
+from database import Base, User, Bet, Lottery, Chat
 from flask import request, jsonify
 import logging
 from datetime import datetime
@@ -122,6 +122,17 @@ def get_winners(idLottery):  # get winner that is already registered/processed
         winners.append(name)
 
     return jsonify(winner)
+
+
+def post_message(idChat, idLottery, idMessage):
+    idChat = f"{idChat}:{idMessage}"
+    chat = session.query(Chat).filter(Chat.idChat == idChat).first()
+    if chat is not None and chat.idMessage == idMessage:
+        return {'message': 'Trying to add duplicate message'}
+    chat = Chat(idChat, idLottery)
+    session.add(chat)
+    session.commit()
+    return {'message': 'Added message to database'}
 
 
 def stop_lottery():

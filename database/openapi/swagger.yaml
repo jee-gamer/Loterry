@@ -383,3 +383,27 @@ paths:
         responses:
           '201':
             description: Reset
+    /lottery/message:
+      get:
+        operationId: api.post_message
+        description: Add new message to database
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: idChat
+            type: integer
+            required: true
+          - in: query
+            name: idLottery
+            type: integer
+            required: true
+          - in: query
+            name: idMessage
+            type: integer
+            required: true
+        responses:
+          '201':
+            description: Created

@@ -58,7 +58,7 @@ withdraw_sub.subscribe("discord/withdraw")
 def setup_tasks(sender, **kwargs):
     blocks.apply_async()
     bets.apply_async()
-    get_message.apply_async()
+    # get_message.apply_async()
     # active one above
     check_invoice.apply_async()
     pay_invoice.apply_async()
@@ -163,32 +163,32 @@ def blocks():
                 logging.error(f"Invalid block data received {block}")
 
 
-@app.task
-def get_message():
-    logging.info(f"getting lottery message")
-
-    for message in chat_sub.listen():
-        if message["type"] == "message":
-            str_data = message["data"].decode()
-            chatInfo = json.loads(str_data)
-            logging.info("Got message from lottery")
-            if "idChat" in chatInfo:
-                chat = session.query(Chat).filter(Chat.idChat == chatInfo["idChat"]).first()
-                if chat is not None and chat.idMessage == chatInfo["idMessage"]:
-                    logging.info("Trying to add duplicate message")
-                    continue
-                elif chat:
-                    chat.idMessage = chatInfo["idMessage"]
-                    chat.idLottery = chatInfo["idLottery"]
-                    session.commit()
-                    logging.info("Added chat info to database")
-                    continue
-                # if this chat is new then add new row
-                logging.info(f'Got chat data {chatInfo["idChat"]}, {chatInfo["idLottery"]}, {chatInfo["idMessage"]}')
-                chat = Chat(chatInfo["idChat"], chatInfo["idLottery"], chatInfo["idMessage"])
-                session.add(chat)
-                session.commit()
-                logging.info("Added chat info to database")
+# @app.task
+# def get_message():
+#     logging.info(f"getting lottery message")
+#
+#     for message in chat_sub.listen():
+#         if message["type"] == "message":
+#             str_data = message["data"].decode()
+#             chatInfo = json.loads(str_data)
+#             logging.info("Got message from lottery")
+#             if "idChat" in chatInfo:
+#                 chat = session.query(Chat).filter(Chat.idChat == chatInfo["idChat"]).first()
+#                 if chat is not None and chat.idMessage == chatInfo["idMessage"]:
+#                     logging.info("Trying to add duplicate message")
+#                     continue
+#                 elif chat:
+#                     chat.idMessage = chatInfo["idMessage"]
+#                     chat.idLottery = chatInfo["idLottery"]
+#                     session.commit()
+#                     logging.info("Added chat info to database")
+#                     continue
+#                 # if this chat is new then add new row
+#                 logging.info(f'Got chat data {chatInfo["idChat"]}, {chatInfo["idLottery"]}, {chatInfo["idMessage"]}')
+#                 chat = Chat(chatInfo["idChat"], chatInfo["idLottery"], chatInfo["idMessage"])
+#                 session.add(chat)
+#                 session.commit()
+#                 logging.info("Added chat info to database")
 
 
 def freeze_message(block):

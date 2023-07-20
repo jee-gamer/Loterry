@@ -140,7 +140,14 @@ async def cmd_lottery(message: types.Message):
                     "idLottery": height,
                     "idMessage": replyMsg.message_id
                     }
-        await redis_service.publish('chat', json.dumps(chatInfo))
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{DATABASE_URL}/lottery/message", params=chatInfo) as response:
+                if response.status == 200:
+                    logging.info("successfully added lottery message")
+                else:
+                    logging.info("request failed")
+
     elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         replyMsg = await message.reply(
                 f"Lottery {height} voting time is up\!\n"
@@ -151,6 +158,7 @@ async def cmd_lottery(message: types.Message):
                     "idLottery": height,
                     "idMessage": replyMsg.message_id
                     }
+
     else:
         await client.start_lottery()
         replyMsg = await message.reply(
@@ -164,7 +172,13 @@ async def cmd_lottery(message: types.Message):
                     "idLottery": height,
                     "idMessage": replyMsg.message_id
                     }
-        await redis_service.publish('chat', json.dumps(chatInfo))
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{DATABASE_URL}/lottery/message", params=chatInfo) as response:
+                if response.status == 200:
+                    logging.info("successfully added lottery message")
+                else:
+                    logging.info("request failed")
 
 
 @dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))

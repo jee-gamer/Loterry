@@ -61,17 +61,15 @@ class Lottery(Base):
 class Chat(Base):  # group chat
     __tablename__ = "Chat"
 
-    idChat = mapped_column(Integer, primary_key=True)
+    idChat = mapped_column(String, primary_key=True)
     idLottery = mapped_column(Integer, ForeignKey("Lottery.idLottery"))
-    idMessage = mapped_column(Integer)
 
     lottery = relationship("Lottery", foreign_keys="Chat.idLottery")
 
-    def __init__(self, idChat, idLottery, idMessage):
+    def __init__(self, idChat, idLottery):
         """"""
         self.idChat = idChat
         self.idLottery = idLottery
-        self.idMessage = idMessage
 
 
 class Bet(Base):
