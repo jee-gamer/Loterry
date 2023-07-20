@@ -8,6 +8,7 @@ services:
     privileged: true
     ports:
       - '6379:6379'
+    network_mode: host
 
   database:
     env_file:
@@ -20,6 +21,8 @@ services:
       - ./cache/db:/db
     depends_on:
       - redis
+    network_mode: host
+
 
   btc_worker:
     #network_mode: "host"
@@ -31,6 +34,8 @@ services:
     hostname: btc_worker
     depends_on:
       - redis
+    network_mode: host
+
 
   telegram_bot:
     env_file:
@@ -39,9 +44,9 @@ services:
     container_name: telegram_bot
     privileged: true
     hostname: telegram_bot
-
     depends_on:
       - redis
+    network_mode: host
 
 #  discord_bot:
 #    env_file:

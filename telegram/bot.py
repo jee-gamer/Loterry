@@ -136,7 +136,7 @@ async def cmd_lottery(message: types.Message):
                 reply_markup=get_keyboard(lottery=height),
                 parse_mode="MarkdownV2"
             )
-        chatInfo = {"idChat": message.chat.id,
+        chatInfo = {"idChat": replyMsg.chat.id,
                     "idLottery": height,
                     "idMessage": replyMsg.message_id
                     }
@@ -147,7 +147,7 @@ async def cmd_lottery(message: types.Message):
                 f"Register for the next round {registerDeepLink}",
                 parse_mode="MarkdownV2"
             )
-        chatInfo = {"idChat": message.chat.id,
+        chatInfo = {"idChat": replyMsg.chat.id,
                     "idLottery": height,
                     "idMessage": replyMsg.message_id
                     }
@@ -160,7 +160,7 @@ async def cmd_lottery(message: types.Message):
                 reply_markup=get_keyboard(lottery=height),
                 parse_mode="MarkdownV2"
             )
-        chatInfo = {"idChat": message.chat.id,
+        chatInfo = {"idChat": replyMsg.chat.id,
                     "idLottery": height,
                     "idMessage": replyMsg.message_id
                     }
@@ -292,7 +292,7 @@ async def listen():
                     logging.error(f"exception during getting message {message} to freeze: {e}")
                     continue
                 bot.edit_message_reply_markup(chat_id=idChat, message_id=idMessage, reply_markup=None)
-                logging.info("Remove button from the freeze lottery message")
+                logging.info(f"Tried to remove markup idChat: {idChat}, idMessage: {idMessage}")
             else:
                 try:
                     data = json.loads(str_data)
