@@ -199,8 +199,9 @@ def freeze_message(block):
         logging.info("There's no chat with freezing lottery")
         return
     for chat in allChat:
-        thisMessage = json.dumps({"idChat": chat.idChat,
-                                  "idMessage": chat.idMessage
+        idChat, idMessage = chat.idChat.split(":")
+        thisMessage = json.dumps({"idChat": idChat,
+                                  "idMessage": idMessage
                                   })
         redis_service.publish(
             "freeze", thisMessage
