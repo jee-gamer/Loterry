@@ -8,7 +8,7 @@ from os import environ
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default="6379")
-TEST = bool(environ.get("BTC_TEST", default=False))
+TEST = bool(environ.get("BTC_TEST", default=True))
 
 bitcoin_client = BlockstreamClient(f"{REDIS_HOST}:{REDIS_PORT}", TEST)
 
@@ -31,7 +31,7 @@ async def index(request):
 
 
 @routes.get("/next")
-async def get_tip(request):
+async def get_next_block(request):
     if TEST:
         await bitcoin_client.next_block()
         return web.json_response({"message": "completed"})
@@ -40,9 +40,8 @@ async def get_tip(request):
 
 
 @routes.get("/reset")
-async def get_tip(request):
+async def reset(request):
     if TEST:
-        return web.json_response({"message": "completed"})
         await bitcoin_client.reset()
         return web.json_response({"message": "completed"})
     else:
@@ -61,7 +60,7 @@ async def get_tip(request):
 
 
 @routes.get("/tip/hash")
-async def get_tip(request):
+async def get_hash(request):
     _, hash = await bitcoin_client.get_tip()
     if not hash:
         if hash == "":
