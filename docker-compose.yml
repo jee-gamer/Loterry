@@ -20,10 +20,10 @@ services:
       - ./cache/db:/db
     depends_on:
       - redis
-
+    ports:
+      - '5000:5000'
 
   btc_worker:
-    #network_mode: "host"
     env_file:
       - .env
     build: btc
@@ -32,7 +32,8 @@ services:
     hostname: btc_worker
     depends_on:
       - redis
-
+    ports:
+      - '5001:5001'
 
   telegram_bot:
     env_file:
