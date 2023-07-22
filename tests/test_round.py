@@ -16,6 +16,7 @@ DB_HOST = environ.get("DB_HOST", default="localhost")
 DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
+
 # URLs
 user_endpoint = f"{DATABASE_URL}/users"
 
@@ -24,6 +25,7 @@ def test_reset_btc():
     logging.info(BTC_HOST)
     response = request("GET", f"http://{BTC_HOST}:{BTC_PORT}/reset").json()
     assert response['message'] == 'completed'
+
 
 def test_create_user():
 
@@ -36,12 +38,14 @@ def test_create_user():
     response = requests.request("POST", user_endpoint, json=user_data).json()
     assert "message" in response
 
+
 def test_no_name():
     user_id_only = {
         "id": 2
     }
     response = requests.request("POST", user_endpoint, json=user_id_only).json()
     assert "message" in response
+
 
 def test_submit_vote():
     url = f"{DATABASE_URL}/lottery"
@@ -50,13 +54,13 @@ def test_submit_vote():
     start_height = response["height"]
     assert 797947 == start_height
     """Check that it's actually working on redis database."""
-    commands = redis.Redis(host='0.0.0.0', port=6379, db=0)
-    notifications = redis.Redis(host='0.0.0.0', port=6379, db=0)
+    commands = redis.Redis(host='redis', port=6379, db=0)
+    notifications = redis.Redis(host='redis', port=6379, db=0)
     assert commands.ping()
     cp = commands.pubsub()
     cp.subscribe('test')
 
-    notifications = redis.Redis(host='0.0.0.0', port=6379, db=0)
+    notifications = redis.Redis(host='redis', port=6379, db=0)
     assert notifications.ping()
     np = notifications.pubsub()
     np.subscribe('tg/notify')
@@ -96,7 +100,7 @@ def test_normal_round():
         assert result_height == 797948 + i
     assert result_height == 797949
 
-    notifications = redis.Redis(host='0.0.0.0', port=6379, db=0)
+    notifications = redis.Redis(host='redis', port=6379, db=0)
     assert notifications.ping()
     np = notifications.pubsub()
     np.subscribe('tg/notify')

@@ -34,7 +34,7 @@ def post_user() -> dict:
     data = request.get_json() or {'result': 'ok', 'message': 'Empty User data'}
     user = session.query(User).filter(User.idUser == data["id"]).first()
     if user:
-        return {'result': 'error', 'error': 'User with same id already exist'}
+        return {'result': 'error', 'message': 'User with same id already exist'}
     id = data.get("id")
     alias = data.get("alias") or ""
     first_name = data.get("firstName") or ""
