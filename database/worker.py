@@ -315,7 +315,7 @@ def notify_results(block: dict):
 def status_check(idUser, paymentHash, replyChannel, amount):
     time_start = time.time()
     logging.info(f"checking status for {paymentHash}, user {idUser} since {time_start}")
-    while time_start + 120 < time.time():
+    while time_start + 300 > time.time():
         response = request(
             "GET",
             f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
