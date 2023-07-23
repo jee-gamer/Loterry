@@ -384,7 +384,7 @@ def payments():  # add balance to user if got invoice
             decodeData = response.json()
             if response.status_code == 200:
                 amount = decodeData["amount_msat"]/1000
-                logging.info(f"decoded invoice {decodeData['paymentHash']} for {amount}")
+                logging.info(f"decoded invoice {decodeData} for {amount}")
             else:
                 logging.error(f"error decoding invoice from request {data}")
                 msg = {user.idUser: f"Error decoding invoice"}
