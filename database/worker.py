@@ -25,8 +25,8 @@ BTC_PORT = environ.get("BTC_PORT", default=5001)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 LNBITS_API = environ.get("LNBITS_API")
 LNBITS_ADMIN_API = environ.get("LNBITS_ADMIN_API")
-USER_TASK_TIMEOUT=int(environ.get("USER_TASK_TIMEOUT", default=1))
-BLOCK_TASK_TIMEOUT=int(environ.get("BLOCK_TASK_TIMEOUT", default=60))
+USER_TASK_TIMEOUT = int(environ.get("USER_TASK_TIMEOUT", default=1))
+BLOCK_TASK_TIMEOUT = int(environ.get("BLOCK_TASK_TIMEOUT", default=60))
 FEE = int(environ.get("FEE", default=1))
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
@@ -60,6 +60,7 @@ payments_sub.subscribe("discord/invoice")
 payments_sub.subscribe("tg/withdraw")
 payments_sub.subscribe("discord/withdraw")
 
+
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
     blocks.apply_async()
@@ -67,8 +68,8 @@ def setup_tasks(sender, **kwargs):
     # get_message.apply_async()
     # active one above
     payments.apply_async()
-    #check_invoice.apply_async()
-    #pay_invoice.apply_async()
+    # check_invoice.apply_async()
+    # pay_invoice.apply_async()
     # seems like redis can run in background without taking space on the thread, so we have to put active one above
 
 
@@ -105,7 +106,7 @@ def bets():
                     elif bet == "even":
                         bet = 2
                     else:
-                        logging.error(f'unknown bet type {bet}')
+                        logging.error(f"unknown bet type {bet}")
                 except Exception as e:
                     logging.error(f"couldn't convert Bet data {e}")
                     redis_service.publish(
@@ -117,9 +118,7 @@ def bets():
 
                 if not lottery == lastHeight:
                     thisMessage = json.dumps({id: "Time for voting is up!"})
-                    redis_service.publish(
-                        replyChannel, thisMessage
-                    )
+                    redis_service.publish(replyChannel, thisMessage)
                     continue
 
                 user = session.query(User).filter(User.idUser == id).first()
@@ -131,25 +130,33 @@ def bets():
                         session.add(thisBet)
                         session.commit()
                         logging.info(
-                            f'commited bet {bet} for lottery {lottery} in database. Now messaging {id}'
+                            f"commited bet {bet} for lottery {lottery} in database. Now messaging {id}"
                         )
                         logging.info(
-                            f'committing balance {new_balance} for {id}. Previous {user.balance}'
+                            f"committing balance {new_balance} for {id}. Previous {user.balance}"
                         )
-                        user.balance = new_balance  # increase the balance for testing purpose
+                        user.balance = (
+                            new_balance  # increase the balance for testing purpose
+                        )
                         session.add(user)
                         session.commit()
                         # TODO: Update balance of the user
-                        thisMessage = json.dumps({id: f"Submitted {'odd' if bet == 1 else 'even'} for {lottery}"})
+                        thisMessage = json.dumps(
+                            {
+                                id: f"Submitted {'odd' if bet == 1 else 'even'} for {lottery}"
+                            }
+                        )
                     else:
-                        thisMessage = json.dumps({id: "Not enough balance. Please, /deposit some sats"})
+                        thisMessage = json.dumps(
+                            {id: "Not enough balance. Please, /deposit some sats"}
+                        )
                 else:
-                    logging.error(f'received bet from non-registered user {id}')
-                    thisMessage = json.dumps({id: "Restart the bot (/start) to register user"})
+                    logging.error(f"received bet from non-registered user {id}")
+                    thisMessage = json.dumps(
+                        {id: "Restart the bot (/start) to register user"}
+                    )
 
-                redis_service.publish(
-                    replyChannel, thisMessage
-                )
+                redis_service.publish(replyChannel, thisMessage)
             else:
                 logging.error(f"Invalid message data received {data}")
 
@@ -207,15 +214,18 @@ def freeze_message(block):
         return
     for chat in allChat:
         idChat, idMessage = chat.idChat.split(":")
-        thisMessage = json.dumps({"idChat": idChat,
-                                  "idMessage": idMessage,
-                                  "idLottery": startedHeight,
-                                  "height": lastHeight,
-                                  })
-        redis_service.publish(
-            "freeze", thisMessage
+        thisMessage = json.dumps(
+            {
+                "idChat": idChat,
+                "idMessage": idMessage,
+                "idLottery": startedHeight,
+                "height": lastHeight,
+            }
         )
-    session.query(Chat).filter(Chat.idLottery == startedHeight).delete()  # delete msg because it's already been used
+        redis_service.publish("freeze", thisMessage)
+    session.query(Chat).filter(
+        Chat.idLottery == startedHeight
+    ).delete()  # delete msg because it's already been used
     session.commit()
 
 
@@ -223,7 +233,9 @@ def notify_results(block: dict):
     time.sleep(USER_TASK_TIMEOUT)
     lastHeight = block["height"]
     startedHeight = lastHeight - 2
-    logging.info(f"Setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}")
+    logging.info(
+        f"Setting-up lotteries, current blockchain height {lastHeight}, to be determined {startedHeight}"
+    )
     lottery = session.query(Lottery).filter(Lottery.idLottery == startedHeight).first()
     # The first scenario: we have each State C, D, E
 
@@ -243,17 +255,19 @@ def notify_results(block: dict):
             result = 2
         else:
             result = 1
-        logging.info(f"Result {result} for {startedHeight}:{currentHash} commited into database")
+        logging.info(
+            f"Result {result} for {startedHeight}:{currentHash} commited into database"
+        )
 
         shortHash = currentHash[:6] + "-" + currentHash[-6:]
 
         bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
 
-        if not bets: # one_or_none() -- an option
+        if not bets:  # one_or_none() -- an option
             logging.info("No user voted on this lottery")
             return
 
-        tgSub = []   # time to get all user that voted on this lottery
+        tgSub = []  # time to get all user that voted on this lottery
         discordSub = []
         winners = []
         losers = []
@@ -274,10 +288,10 @@ def notify_results(block: dict):
                     losers.append(name)
 
             if bet.userBet == result:
-                if bet.betSize*2-FEE <= 0:
-                    bet.user.balance += int(bet.betSize*1.5)
+                if bet.betSize * 2 - FEE <= 0:
+                    bet.user.balance += int(bet.betSize * 1.5)
                 else:
-                    bet.user.balance += bet.betSize*2-FEE
+                    bet.user.balance += bet.betSize * 2 - FEE
         session.commit()
 
         if not winners and not losers:
@@ -285,32 +299,36 @@ def notify_results(block: dict):
             return
         elif not winners:
             for idUser in tgSub:
-                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
-                redis_service.publish(
-                    "tg/notify", thisMessage
+                thisMessage = json.dumps(
+                    {idUser: f"Time is up and No one have won the lottery!"}
                 )
+                redis_service.publish("tg/notify", thisMessage)
             for idUser in discordSub:
-                thisMessage = json.dumps({idUser: f"Time is up and No one have won the lottery!"})
-                redis_service.publish(
-                    "discord/notify", thisMessage
+                thisMessage = json.dumps(
+                    {idUser: f"Time is up and No one have won the lottery!"}
                 )
+                redis_service.publish("discord/notify", thisMessage)
         else:
             for idUser in tgSub:
-                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                  f"This lottery hash: {shortHash}\n"
-                                                  f"Winners are {', '.join(winners)}\n"
-                                                  f"Losers are {', '.join(losers)}"})
-                redis_service.publish(
-                    "tg/notify", thisMessage
+                thisMessage = json.dumps(
+                    {
+                        idUser: f"Lottery have ended!\n"
+                        f"This lottery hash: {shortHash}\n"
+                        f"Winners are {', '.join(winners)}\n"
+                        f"Losers are {', '.join(losers)}"
+                    }
                 )
+                redis_service.publish("tg/notify", thisMessage)
             for idUser in discordSub:
-                thisMessage = json.dumps({idUser: f"Lottery have ended!\n"
-                                                  f"This lottery hash: {shortHash}\n"
-                                                  f"Winners are {', '.join(winners)}\n"
-                                                  f"Losers are {', '.join(losers)}"})
-                redis_service.publish(
-                    "discord/notify", thisMessage
+                thisMessage = json.dumps(
+                    {
+                        idUser: f"Lottery have ended!\n"
+                        f"This lottery hash: {shortHash}\n"
+                        f"Winners are {', '.join(winners)}\n"
+                        f"Losers are {', '.join(losers)}"
+                    }
                 )
+                redis_service.publish("discord/notify", thisMessage)
 
 
 @app.task()
@@ -318,8 +336,11 @@ def status_check(idUser, paymentHash, replyChannel):
     timeNow = time.time()
     logging.info(f"checking status for {paymentHash}, user {idUser} since {timeNow}")
     while True:
-        invoiceStatus = request("GET", f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
-                                headers={"X-Api-Key": LNBITS_API})
+        invoiceStatus = request(
+            "GET",
+            f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
+            headers={"X-Api-Key": LNBITS_API},
+        )
         invoiceStatusData = json.loads(invoiceStatus.text)
         logging.debug(f"Received from LNBits {invoiceStatusData}")
         timeout = int(invoiceStatusData["details"]["expiry"])
@@ -333,14 +354,20 @@ def status_check(idUser, paymentHash, replyChannel):
         if invoiceStatusData["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
             if user:
-                depositedMoney = int(abs(invoiceStatusData['details']['amount'])/1000)  # the amount return negative when the payment is done for some reason
+                depositedMoney = int(
+                    abs(invoiceStatusData["details"]["amount"]) / 1000
+                )  # the amount return negative when the payment is done for some reason
                 user.balance += depositedMoney
                 session.commit()
-                msg = {idUser: f"Received {depositedMoney}.\n"
-                               f"Your balance is {user.balance}"}
+                msg = {
+                    idUser: f"Received {depositedMoney}.\n"
+                    f"Your balance is {user.balance}"
+                }
                 redis_service.publish(replyChannel, json.dumps(msg))
             else:
-                logging.error(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
+                logging.error(
+                    f"User:{idUser} doesn't exist for some reason"
+                )  # it must exist in order to come to this point
             return
         time.sleep(USER_TASK_TIMEOUT)
 
@@ -359,7 +386,9 @@ def payments():  # add balance to user if got invoice
             data = json.loads(str_data)
             logging.info(f"received invoice request {data}")
             if "idUser" and "paymentHash" in data:
-                logging.info(f'received invoice with hash {data["paymentHash"]} for {data["idUser"]}')
+                logging.info(
+                    f'received invoice with hash {data["paymentHash"]} for {data["idUser"]}'
+                )
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
                     status_check(data["idUser"], data["paymentHash"], replyChannel)
@@ -370,115 +399,52 @@ def payments():  # add balance to user if got invoice
             str_data = message["data"].decode()
             data = json.loads(str_data)
             logging.info(f"received withdrawal request {data}")
-            user = session.query(User).filter(User.idUser == data["idUser"]).first() #  ( I guess it doesn't update when I overwrite it in db brower but it works anyway)
+            user = (
+                session.query(User).filter(User.idUser == data["idUser"]).first()
+            )  #  ( I guess it doesn't update when I overwrite it in db brower but it works anyway)
             if not user:
                 logging.info("User doesn't exist")
                 msg = {user.idUser: f"User is not registered"}
                 redis_service.publish(replyChannel, json.dumps(msg))
                 continue
-            withdrawInfo = {
-                "data": data["bolt11"]
-            }
-            response = request("POST", f"https://legend.lnbits.com/api/v1/payments/decode", json=withdrawInfo,
-                               headers={"X-Api-Key": LNBITS_API})
+            withdrawInfo = {"data": data["bolt11"]}
+            response = request(
+                "POST",
+                f"https://legend.lnbits.com/api/v1/payments/decode",
+                json=withdrawInfo,
+                headers={"X-Api-Key": LNBITS_API},
+            )
             decodeData = response.json()
             if response.status_code == 200:
-                amount = decodeData["amount_msat"]/1000
-                logging.info(f"decoded invoice {decodeData} for {amount}")
+                amount = decodeData["amount_msat"] / 1000
+                logging.info(
+                    f"decoded invoice {decodeData['payment_hash']} for {amount}"
+                )
             else:
                 logging.error(f"error decoding invoice from request {data}")
                 msg = {user.idUser: f"Error decoding invoice"}
                 redis_service.publish(replyChannel, json.dumps(msg))
                 continue
             if amount <= user.balance:
-                logging.info(f"enough balance, proceed with payment, withdrawing {amount}")
+                logging.info(
+                    f"enough balance, proceed with payment, withdrawing {amount}"
+                )
                 user.balance = user.balance - amount
                 session.commit()
                 logging.info(f"user balance {user.idUser} updated - {user.balance}")
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
-                request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
-                        headers={"X-Api-Key": LNBITS_ADMIN_API})  # admin key
+                request(
+                    "POST",
+                    f"https://legend.lnbits.com/api/v1/payments",
+                    json=withdrawInfo,
+                    headers={"X-Api-Key": LNBITS_ADMIN_API},
+                )  # admin key
                 msg = {user.idUser: f"Withdraw submitted"}
                 redis_service.publish(replyChannel, json.dumps(msg))
-                status_check(data["idUser"], decodeData["paymentHash"], replyChannel)
+                status_check(data["idUser"], decodeData["payment_hash"], replyChannel)
             else:
-                logging.info(f"not enough money, balance is {user.balance}, trying to withdraw {amount}")
+                logging.info(
+                    f"not enough money, balance is {user.balance}, trying to withdraw {amount}"
+                )
                 msg = {user.idUser: f"User balance isn't enough"}
                 redis_service.publish(replyChannel, json.dumps(msg))
-
-
-@app.task()
-def check_invoice():  # add balance to user if got invoice
-    for message in invoice_sub.listen():
-        time.sleep(USER_TASK_TIMEOUT)
-        channel = message["channel"].decode("utf-8")
-        if channel == "discord/invoice":
-            replyChannel = "discord/notify"
-        else:
-            replyChannel = "tg/notify"
-        if message["type"] == "message":
-            str_data = message["data"].decode()
-            data = json.loads(str_data)
-            if "idUser" and "paymentHash" in data:
-                logging.info(f'received invoice with hash {data["paymentHash"]} for {data["idUser"]}')
-                user = session.query(User).filter(User.idUser == data["idUser"]).first()
-                if user:
-                    status_check(data["idUser"], data["paymentHash"], replyChannel)
-                else:
-                    msg = {data["idUser"]: f"User is not registered"}
-                    redis_service.publish(replyChannel, json.dumps(msg))
-
-
-@app.task()
-def pay_invoice():  # pay user that request withdraw and balance is valid
-    for message in withdraw_sub.listen():
-        time.sleep(USER_TASK_TIMEOUT)
-        channel = message["channel"].decode("utf-8")
-        if channel == "discord/withdraw":
-            replyChannel = "discord/notify"
-        else:
-            replyChannel = "tg/notify"
-        if message["type"] == "message":
-            logging.info("got invoice msg")
-            str_data = message["data"].decode()
-            data = json.loads(str_data)
-            logging.info(data)
-            user = session.query(User).filter(User.idUser == data["idUser"]).first() #  ( I guess it doesn't update when I overwrite it in db brower but it works anyway)
-            if not user:
-                logging.info("User doesn't exist")
-                msg = {user.idUser: f"User is not registered"}
-                redis_service.publish(replyChannel, json.dumps(msg))
-                continue
-            withdrawInfo = {
-                "data": data["bolt11"]
-            }
-            response = request("POST", f"https://legend.lnbits.com/api/v1/payments/decode", json=withdrawInfo,
-                               headers={"X-Api-Key": LNBITS_API})
-            logging.info("SUCCESS OR NAH")
-            decodeData = response.json()
-            if response.status_code == 200:
-                logging.info(f"decoded invoice {decodeData}")
-                amount = decodeData["amount_msat"]/1000
-            else:
-                logging.info(f"Error decoding invoice from request {data}")
-                msg = {user.idUser: f"Error decoding invoice"}
-                redis_service.publish(replyChannel, json.dumps(msg))
-                continue
-            if amount <= user.balance:
-                logging.info(f"enough balance, proceed with payment, withdrawing {amount}")
-                user.balance = user.balance - amount
-                session.commit()
-                withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
-                request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
-                        headers={"X-Api-Key": LNBITS_ADMIN_API})  # admin key
-                msg = {user.idUser: f"withdraw {amount} sats complete"}
-                redis_service.publish(replyChannel, json.dumps(msg))
-            else:
-                logging.info(f"User balance isn't enough, Balance is {user.balance}, trying to withdraw {amount}")
-                msg = {user.idUser: f"User balance isn't enough"}
-                redis_service.publish(replyChannel, json.dumps(msg))
-
-
-@app.task()
-def ads(arg):
-    logging.info(f"Ad message {arg}")
