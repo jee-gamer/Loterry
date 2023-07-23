@@ -411,9 +411,6 @@ def payments():  # add balance to user if got invoice
                 logging.info(
                     f"enough balance, proceed with payment, withdrawing {amount}"
                 )
-                user.balance = user.balance - amount
-                session.commit()
-                logging.info(f"user balance {user.idUser} updated - {user.balance}")
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
                 response = request(
                     "POST",
