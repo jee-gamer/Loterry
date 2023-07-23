@@ -54,6 +54,11 @@ withdraw_sub = redis_service.pubsub()
 withdraw_sub.subscribe("tg/withdraw")
 withdraw_sub.subscribe("discord/withdraw")
 
+payments_sub = redis_service.pubsub()
+payments_sub.subscribe("tg/invoice")
+payments_sub.subscribe("discord/invoice")
+payments_sub.subscribe("tg/withdraw")
+payments_sub.subscribe("discord/withdraw")
 
 @app.on_after_configure.connect
 def setup_tasks(sender, **kwargs):
@@ -61,8 +66,9 @@ def setup_tasks(sender, **kwargs):
     bets.apply_async()
     # get_message.apply_async()
     # active one above
-    check_invoice.apply_async()
-    pay_invoice.apply_async()
+    payments.apply_async()
+    #check_invoice.apply_async()
+    #pay_invoice.apply_async()
     # seems like redis can run in background without taking space on the thread, so we have to put active one above
 
 
@@ -337,6 +343,66 @@ def status_check(idUser, paymentHash, replyChannel):
                 logging.error(f"User:{idUser} doesn't exist for some reason")  # it must exist in order to come to this point
             return
         time.sleep(USER_TASK_TIMEOUT)
+
+
+@app.task()
+def payments():  # add balance to user if got invoice
+    for message in payments_sub.listen():
+        time.sleep(USER_TASK_TIMEOUT)
+        channel = message["channel"].decode("utf-8")
+        if channel == "discord/invoice":
+            replyChannel = "discord/notify"
+        else:
+            replyChannel = "tg/notify"
+        if message["type"] == "message" and "invoice" in channel:
+            str_data = message["data"].decode()
+            data = json.loads(str_data)
+            logging.info(f"received invoice request {data}")
+            if "idUser" and "paymentHash" in data:
+                logging.info(f'received invoice with hash {data["paymentHash"]} for {data["idUser"]}')
+                user = session.query(User).filter(User.idUser == data["idUser"]).first()
+                if user:
+                    status_check(data["idUser"], data["paymentHash"], replyChannel)
+                else:
+                    msg = {data["idUser"]: f"User is not registered"}
+                    redis_service.publish(replyChannel, json.dumps(msg))
+        if message["type"] == "message" and "withdraw" in channel:
+            str_data = message["data"].decode()
+            data = json.loads(str_data)
+            logging.info(f"received withdrawal request {data}")
+            user = session.query(User).filter(User.idUser == data["idUser"]).first() #  ( I guess it doesn't update when I overwrite it in db brower but it works anyway)
+            if not user:
+                logging.info("User doesn't exist")
+                msg = {user.idUser: f"User is not registered"}
+                redis_service.publish(replyChannel, json.dumps(msg))
+                continue
+            withdrawInfo = {
+                "data": data["bolt11"]
+            }
+            response = request("POST", f"https://legend.lnbits.com/api/v1/payments/decode", json=withdrawInfo,
+                               headers={"X-Api-Key": LNBITS_API})
+            decodeData = response.json()
+            if response.status_code == 200:
+                logging.info(f"decoded invoice {decodeData}")
+                amount = decodeData["amount_msat"]/1000
+            else:
+                logging.error(f"Error decoding invoice from request {data}")
+                msg = {user.idUser: f"Error decoding invoice"}
+                redis_service.publish(replyChannel, json.dumps(msg))
+                continue
+            if amount <= user.balance:
+                logging.info(f"enough balance, proceed with payment, withdrawing {amount}")
+                user.balance = user.balance - amount
+                session.commit()
+                withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
+                request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
+                        headers={"X-Api-Key": LNBITS_ADMIN_API})  # admin key
+                msg = {user.idUser: f"withdraw {amount} sats complete"}
+                redis_service.publish(replyChannel, json.dumps(msg))
+            else:
+                logging.info(f"not enough money, balance is {user.balance}, trying to withdraw {amount}")
+                msg = {user.idUser: f"User balance isn't enough"}
+                redis_service.publish(replyChannel, json.dumps(msg))
 
 
 @app.task()

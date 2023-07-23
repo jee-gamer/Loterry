@@ -227,33 +227,17 @@ async def cmd_deposit(message: types.Message):
 
             qr = pyqrcode.create(paymentRequest)
             with io.BytesIO() as virtual_file:
-                qr.png(file=virtual_file)
+                qr.png(file=virtual_file, scale=3)
                 await message.reply_photo(
-                    photo=virtual_file.getvalue(), caption=f"{paymentRequest}"
+                    photo=virtual_file.getvalue(), caption=f"`{paymentRequest}`", parse_mode="MarkDownV2"
                 )
 
 
-@dp.message_handler(
-    RegexpCommandsFilter(
-        regexp_commands=["withdraw\s(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+"]
-    )
-)  # any string after withdraw
+@dp.message_handler(regexp="\b(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)\b")
 async def cmd_withdraw(message: types.Message):
-    inputs = message.text.split(" ")
-
-    pattern = r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+"
-    bolt11 = re.match(pattern, inputs[1])
-    if not bolt11:
-        logging.info("bolt11 value is incorrect")
-        return await message.reply("Incorrect invoiceId provided")
-    else:
-        bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])
-        amount = (
-            int(bolt11.group(2)) / 10
-        )  # THIS COUNTING SYSTEM IS BROKEN BROKEN BETTER FIX
-        invoiceInfo = {"idUser": message.from_user.id, "bolt11": inputs[1]}
-        logging.info(f"sending invoice info {invoiceInfo}")
-        await redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))
+    invoiceInfo = {"idUser": message.from_user.id, "bolt11": message.text}
+    logging.info(f"sending invoice {message.text} from {message.from_user.id}")
+    await redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))
 
 
 @dp.message_handler(commands=["balance"])
