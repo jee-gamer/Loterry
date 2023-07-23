@@ -106,6 +106,7 @@ class BlockstreamClient:
 
     async def sync_tip(self):
         if not await self._redis.ping():
+            logging.error("No connection with redis")
             raise ConnectionError("No connection with redis")
         else:
             logging.info("Redis pinged. Started syncing")

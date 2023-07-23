@@ -92,6 +92,7 @@ async def get_all_blocks(request):
 
 
 async def background_tasks(app):
+    logging.info("Starting sync thread")
     app["btc_worker"] = asyncio.create_task(bitcoin_client.sync_tip())
 
     yield

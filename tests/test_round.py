@@ -11,7 +11,7 @@ from time import sleep
 
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
-REDIS_PORT = environ.get("REDIS_PORT", default=5001)
+REDIS_PORT = environ.get("REDIS_PORT", default=6379)
 BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 DB_HOST = environ.get("DB_HOST", default="localhost")
@@ -57,7 +57,6 @@ def test_submit_vote():
     assert 797947 == start_height
     """Check that it's actually working on redis database."""
     commands = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
-    notifications = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
     assert commands.ping()
     cp = commands.pubsub()
     cp.subscribe('test')
