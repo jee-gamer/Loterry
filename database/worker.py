@@ -383,10 +383,10 @@ def payments():  # add balance to user if got invoice
                                headers={"X-Api-Key": LNBITS_API})
             decodeData = response.json()
             if response.status_code == 200:
-                logging.info(f"decoded invoice {decodeData}")
                 amount = decodeData["amount_msat"]/1000
+                logging.info(f"decoded invoice {decodeData['paymentHash']} for {amount}")
             else:
-                logging.error(f"Error decoding invoice from request {data}")
+                logging.error(f"error decoding invoice from request {data}")
                 msg = {user.idUser: f"Error decoding invoice"}
                 redis_service.publish(replyChannel, json.dumps(msg))
                 continue
@@ -394,11 +394,13 @@ def payments():  # add balance to user if got invoice
                 logging.info(f"enough balance, proceed with payment, withdrawing {amount}")
                 user.balance = user.balance - amount
                 session.commit()
+                logging.info(f"user balance {user.idUser} updated - {user.balance}")
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
                 request("POST", f"https://legend.lnbits.com/api/v1/payments", json=withdrawInfo,
                         headers={"X-Api-Key": LNBITS_ADMIN_API})  # admin key
-                msg = {user.idUser: f"withdraw {amount} sats complete"}
+                msg = {user.idUser: f"Withdraw submitted"}
                 redis_service.publish(replyChannel, json.dumps(msg))
+                status_check(data["idUser"], decodeData["paymentHash"], replyChannel)
             else:
                 logging.info(f"not enough money, balance is {user.balance}, trying to withdraw {amount}")
                 msg = {user.idUser: f"User balance isn't enough"}
