@@ -433,15 +433,22 @@ def payments():  # add balance to user if got invoice
                 session.commit()
                 logging.info(f"user balance {user.idUser} updated - {user.balance}")
                 withdrawInfo = {"out": True, "bolt11": data["bolt11"]}
-                request(
+                response = request(
                     "POST",
                     f"https://legend.lnbits.com/api/v1/payments",
                     json=withdrawInfo,
                     headers={"X-Api-Key": LNBITS_ADMIN_API},
-                )  # admin key
-                msg = {user.idUser: f"Withdraw submitted"}
-                redis_service.publish(replyChannel, json.dumps(msg))
-                status_check(data["idUser"], decodeData["payment_hash"], replyChannel)
+                )
+                if response.status_code == 201:
+                    payment = response.json()
+                    logging.info(f"received {response.status_code} from LnBits for payment {payment['payment_hash']}")
+                    msg = {user.idUser: f"Withdraw submitted {payment['payment_hash']}"}
+                    redis_service.publish(replyChannel, json.dumps(msg))
+                    #status_check(data["idUser"], decodeData["payment_hash"], replyChannel)
+                else:
+                    logging.error(f"received {response.status_code} from LnBits")
+                    msg = {user.idUser: f"Withdraw failed"}
+                    redis_service.publish(replyChannel, json.dumps(msg))
             else:
                 logging.info(
                     f"not enough money, balance is {user.balance}, trying to withdraw {amount}"
