@@ -16,6 +16,9 @@ services:
     container_name: dataservice
     privileged: true
     hostname: worker
+    secrets:
+      - source: lnbits
+        target: lnbits.ini
     volumes:
       - ./cache/db:/db
     depends_on:
@@ -60,3 +63,6 @@ services:
 networks:
  default:
   name: gate-lottery-bot
+secrets:
+  lnbits:
+   file: ./cache/secrets/lnbits.ini

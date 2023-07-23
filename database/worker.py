@@ -1,3 +1,6 @@
+import configparser
+from os.path import isfile
+
 from celery import Celery
 from celery.schedules import crontab
 from os import environ
@@ -28,6 +31,12 @@ LNBITS_ADMIN_API = environ.get("LNBITS_ADMIN_API")
 USER_TASK_TIMEOUT = int(environ.get("USER_TASK_TIMEOUT", default=1))
 BLOCK_TASK_TIMEOUT = int(environ.get("BLOCK_TASK_TIMEOUT", default=60))
 FEE = int(environ.get("FEE", default=1))
+
+config = configparser.ConfigParser()
+if isfile('/run/secrets/lnbits.ini'):
+    config.read_file(open('/run/secrets/lnbits.ini'))
+else:
+    config.read_file(open('./cache/secrets/lnbits.ini'))
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 
@@ -412,7 +421,7 @@ def payments():  # add balance to user if got invoice
                 "POST",
                 f"https://legend.lnbits.com/api/v1/payments/decode",
                 json=withdrawInfo,
-                headers={"X-Api-Key": LNBITS_API},
+                headers={"X-Api-Key": config['KEYS']['ADMIN']},
             )
             decodeData = response.json()
             if response.status_code == 200:
