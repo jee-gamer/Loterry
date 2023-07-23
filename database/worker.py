@@ -202,7 +202,9 @@ def freeze_message(block):
     for chat in allChat:
         idChat, idMessage = chat.idChat.split(":")
         thisMessage = json.dumps({"idChat": idChat,
-                                  "idMessage": idMessage
+                                  "idMessage": idMessage,
+                                  "idLottery": startedHeight,
+                                  "height": lastHeight,
                                   })
         redis_service.publish(
             "freeze", thisMessage

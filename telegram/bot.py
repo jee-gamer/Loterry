@@ -64,7 +64,9 @@ def get_keyboard(lottery: int):
     return keyboard
 
 
-async def make_request(path, endpoint, method="GET", **kwargs):  # additional parameters made just for posting new group bot start/run lottery with
+async def make_request(
+    path, endpoint, method="GET", **kwargs
+):  # additional parameters made just for posting new group bot start/run lottery with
     async with aiohttp.ClientSession() as session:
         url = f"{path}{endpoint}"
         async with session.request(method, url, **kwargs) as response:
@@ -127,92 +129,107 @@ async def cmd_lottery(message: types.Message):
 
     logging.info(f"Checking running lotteries against block {height}")
     active = await client.get_lottery(id=height)
-    frozen = await client.get_lottery(id=height-1)
+    frozen = await client.get_lottery(id=height - 1)
     if active:
         replyMsg = await message.reply(
-                f"Lottery {height} is running\n"
-                f"You can vote odd or even for block {height + 2}\n"
-                f"Make sure you registered {registerDeepLink}",
-                reply_markup=get_keyboard(lottery=height),
-                parse_mode="MarkdownV2"
-            )
-        chatInfo = {"idChat": replyMsg.chat.id,
-                    "idLottery": height,
-                    "idMessage": replyMsg.message_id
-                    }
+            f"Lottery {height} is running\n"
+            f"You can vote odd or even for block {height + 2}\n"
+            f"Make sure you registered {registerDeepLink}",
+            reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2",
+        )
+        chatInfo = {
+            "idChat": replyMsg.chat.id,
+            "idLottery": height,
+            "idMessage": replyMsg.message_id,
+        }
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{DATABASE_URL}/lottery/message", params=chatInfo) as response:
+            async with session.get(
+                f"{DATABASE_URL}/lottery/message", params=chatInfo
+            ) as response:
                 if response.status == 200:
                     logging.info("successfully added lottery message")
                 else:
                     logging.info("request failed")
 
-    elif frozen:  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
+    elif (
+        frozen
+    ):  # because we disable the voting when the height move 1st time then stop lottery the 2nd time
         replyMsg = await message.reply(
-                f"Lottery {height} voting time is up\!\n"
-                f"Register for the next round {registerDeepLink}",
-                parse_mode="MarkdownV2"
-            )
-        chatInfo = {"idChat": replyMsg.chat.id,
-                    "idLottery": height,
-                    "idMessage": replyMsg.message_id
-                    }
+            f"Lottery {height} voting time is up\!\n"
+            f"Register for the next round {registerDeepLink}",
+            parse_mode="MarkdownV2",
+        )
+        chatInfo = {
+            "idChat": replyMsg.chat.id,
+            "idLottery": height,
+            "idMessage": replyMsg.message_id,
+        }
 
     else:
         await client.start_lottery()
         replyMsg = await message.reply(
-                f"Lottery {height} started,\n"
-                f"You can vote odd or even for block {height + 2}\n"
-                f"Make sure you registered {registerDeepLink}",
-                reply_markup=get_keyboard(lottery=height),
-                parse_mode="MarkdownV2"
-            )
-        chatInfo = {"idChat": replyMsg.chat.id,
-                    "idLottery": height,
-                    "idMessage": replyMsg.message_id
-                    }
+            f"Lottery {height} started,\n"
+            f"You can vote odd or even for block {height + 2}\n"
+            f"Make sure you registered {registerDeepLink}",
+            reply_markup=get_keyboard(lottery=height),
+            parse_mode="MarkdownV2",
+        )
+        chatInfo = {
+            "idChat": replyMsg.chat.id,
+            "idLottery": height,
+            "idMessage": replyMsg.message_id,
+        }
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{DATABASE_URL}/lottery/message", params=chatInfo) as response:
+            async with session.get(
+                f"{DATABASE_URL}/lottery/message", params=chatInfo
+            ) as response:
                 if response.status == 200:
                     logging.info("successfully added lottery message")
                 else:
                     logging.info("request failed")
 
 
-@dp.message_handler(RegexpCommandsFilter(regexp_commands=['deposit\s([0-9]+)']))
+@dp.message_handler(RegexpCommandsFilter(regexp_commands=["deposit\s([0-9]+)"]))
 async def cmd_deposit(message: types.Message):
     inputs = message.text.split(" ")
     try:
         amount = int(inputs[1])
     except ValueError:
-        return await message.reply(
-            "Incorrect number provided"
-        )
+        return await message.reply("Incorrect number provided")
 
     async with aiohttp.ClientSession() as session:
         header = {"X-Api-Key": LNBITS_API}
-        data = {"out": False, "amount": amount, "memo": f"{message.from_user.id}", "expiry": 7200}  # 2 hour
-        async with session.post(f"https://legend.lnbits.com/api/v1/payments",
-                                headers=header,
-                                json=data) as response:
+        data = {
+            "out": False,
+            "amount": amount,
+            "memo": f"{message.from_user.id}",
+            "expiry": 7200,
+        }  # 2 hour
+        async with session.post(
+            f"https://legend.lnbits.com/api/v1/payments", headers=header, json=data
+        ) as response:
             data = await response.json()
             try:
-                paymentRequest = data['payment_request']
-                invoiceInfo = {"idUser": message.from_user.id,
-                               "paymentHash": data['payment_hash']
-                               }
+                paymentRequest = data["payment_request"]
+                invoiceInfo = {
+                    "idUser": message.from_user.id,
+                    "paymentHash": data["payment_hash"],
+                }
 
-                await redis_service.publish('tg/invoice', json.dumps(invoiceInfo))
+                await redis_service.publish("tg/invoice", json.dumps(invoiceInfo))
             except Exception as e:
                 logging.info(e)
-            return await message.reply(
-                f"{paymentRequest}"
-            )
+            return await message.reply(f"{paymentRequest}")
 
 
-@dp.message_handler(RegexpCommandsFilter(regexp_commands=['withdraw\s(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+']))  # any string after withdraw
+@dp.message_handler(
+    RegexpCommandsFilter(
+        regexp_commands=["withdraw\s(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+"]
+    )
+)  # any string after withdraw
 async def cmd_withdraw(message: types.Message):
     inputs = message.text.split(" ")
 
@@ -220,17 +237,15 @@ async def cmd_withdraw(message: types.Message):
     bolt11 = re.match(pattern, inputs[1])
     if not bolt11:
         logging.info("bolt11 value is incorrect")
-        return await message.reply(
-            "Incorrect invoiceId provided"
-        )
+        return await message.reply("Incorrect invoiceId provided")
     else:
         bolt11 = re.search(r"^(lnbc)([0-9]+)[a-zA-Z0-9]+[0-9a-zA-Z=]+", inputs[1])
-        amount = int(bolt11.group(2))/10  # THIS COUNTING SYSTEM IS BROKEN BROKEN BETTER FIX
-        invoiceInfo = {"idUser": message.from_user.id,
-                       "bolt11": inputs[1]
-                       }
+        amount = (
+            int(bolt11.group(2)) / 10
+        )  # THIS COUNTING SYSTEM IS BROKEN BROKEN BETTER FIX
+        invoiceInfo = {"idUser": message.from_user.id, "bolt11": inputs[1]}
         logging.info(f"sending invoice info {invoiceInfo}")
-        await redis_service.publish('tg/withdraw', json.dumps(invoiceInfo))
+        await redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))
 
 
 @dp.message_handler(commands=["balance"])
@@ -242,8 +257,11 @@ async def cmd_balance(message: types.Message):
             balance = await response.json()
             logging.info(balance)
             registerDeepLink = "[here](https://t.me/Hahafunnybot?start=default)"
-            if balance == {'message': 'User not found'} or balance == -1:
-                await message.reply(f"User is not registered \n register {registerDeepLink}", parse_mode="MarkDownV2")
+            if balance == {"message": "User not found"} or balance == -1:
+                await message.reply(
+                    f"User is not registered \n register {registerDeepLink}",
+                    parse_mode="MarkDownV2",
+                )
             else:
                 await message.reply(f"You have {balance} balance")
 
@@ -278,9 +296,7 @@ async def callback_bet_action(
         f'Sent user {query.from_user.id} bet {callback_data["action"]} in Lottery {callback_data["lottery"]}'
     )
 
-    return await query.answer(
-        text="Submitted", show_alert=True
-    )
+    return await query.answer(text="Submitted", show_alert=True)
 
 
 @dp.errors_handler(
@@ -302,11 +318,22 @@ async def listen():
                     chatInfo = json.loads(str_data)
                     idChat = chatInfo["idChat"]
                     idMessage = chatInfo["idMessage"]
+                    idLottery = chatInfo["idLottery"]
+                    height = chatInfo["height"]
                 except Exception as e:
-                    logging.error(f"exception during getting message {message} to freeze: {e}")
+                    logging.error(
+                        f"exception during getting message {message} to freeze: {e}"
+                    )
                     continue
-                await bot.edit_message_reply_markup(chat_id=idChat, message_id=idMessage, reply_markup=None)
-                logging.info(f"Tried to remove markup idChat: {idChat}, idMessage: {idMessage}")
+                await bot.edit_message_text(
+                    text=f"Frozen {idLottery} at {height}. Finishes in the next block!",
+                    chat_id=idChat,
+                    message_id=idMessage,
+                    reply_markup=None,
+                )
+                logging.info(
+                    f"Tried to remove markup idChat: {idChat}, idMessage: {idMessage}"
+                )
             else:
                 try:
                     data = json.loads(str_data)
@@ -316,7 +343,9 @@ async def listen():
                         logging.info(f"sending a message to {user_id}")
                         await bot.send_message(user_id, data[user])
                 except Exception as e:
-                    logging.error(f"exception during sending message {message} to user: {e}")
+                    logging.error(
+                        f"exception during sending message {message} to user: {e}"
+                    )
                     continue
         await asyncio.sleep(0.1)
 
