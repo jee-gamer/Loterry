@@ -125,7 +125,7 @@ def bets():
                 lastHeight = make_request_btc("GET", "/tip")
 
                 if not lottery == lastHeight:
-                    thisMessage = json.dumps({id: "Time for voting is up!"})
+                    thisMessage = json.dumps({id: "Time for voting is up\!"})
                     redis_service.publish(replyChannel, thisMessage)
                     continue
 
@@ -280,19 +280,19 @@ def notify_results(block: dict):
         elif not winners:
             for idUser in tgSub:
                 thisMessage = json.dumps(
-                    {idUser: f"Time is up and No one have won the lottery!"}
+                    {idUser: f"Time is up and No one have won the lottery\!"}
                 )
                 redis_service.publish("tg/notify", thisMessage)
             for idUser in discordSub:
                 thisMessage = json.dumps(
-                    {idUser: f"Time is up and No one have won the lottery!"}
+                    {idUser: f"Time is up and No one have won the lottery\!"}
                 )
                 redis_service.publish("discord/notify", thisMessage)
         else:
             for idUser in tgSub:
                 thisMessage = json.dumps(
                     {
-                        idUser: f"Lottery have ended!\n"
+                        idUser: f"Lottery have ended\!\n"
                         f"This lottery hash: {shortHash}\n"
                         f"Winners are {', '.join(winners)}\n"
                         f"Losers are {', '.join(losers)}"
@@ -302,7 +302,7 @@ def notify_results(block: dict):
             for idUser in discordSub:
                 thisMessage = json.dumps(
                     {
-                        idUser: f"Lottery have ended!\n"
+                        idUser: f"Lottery have ended\!\n"
                         f"This lottery hash: {shortHash}\n"
                         f"Winners are {', '.join(winners)}\n"
                         f"Losers are {', '.join(losers)}"
@@ -316,26 +316,32 @@ def status_check(idUser, paymentHash, replyChannel):
     timeNow = time.time()
     logging.info(f"checking status for {paymentHash}, user {idUser} since {timeNow}")
     while True:
-        invoiceStatus = request(
+        response = request(
             "GET",
             f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
             headers={"X-Api-Key": LNBITS_API},
         )
-        invoiceStatusData = json.loads(invoiceStatus.text)
-        logging.debug(f"Received from LNBits {invoiceStatusData}")
-        timeout = int(invoiceStatusData["details"]["expiry"])
+        if response.status_code != 200:
+            msg = {
+                idUser: f"Couldnt obtain payment status. Please, try again later"
+            }
+            redis_service.publish(replyChannel, json.dumps(msg))
+            return
+        payment = response.json()
+        logging.debug(f"Received from LNBits {payment}")
+        timeout = int(payment["details"]["expiry"])
 
         if timeNow >= timeout:
             logging.info(f"timeout for {paymentHash}")
             msg = {idUser: f"Invoice expired"}
             redis_service.publish(replyChannel, json.dumps(msg))
             return
-        logging.info(f"payment {paymentHash}: {invoiceStatusData['paid']}")
-        if invoiceStatusData["paid"]:
+        logging.info(f"payment {paymentHash}: {payment['paid']}")
+        if payment["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
             if user:
                 depositedMoney = int(
-                    abs(invoiceStatusData["details"]["amount"]) / 1000
+                    abs(payment["details"]["amount"]) / 1000
                 )  # the amount return negative when the payment is done for some reason
                 user.balance += depositedMoney
                 session.commit()
@@ -422,9 +428,9 @@ def payments():  # add balance to user if got invoice
                 if response.status_code == 201:
                     payment = response.json()
                     logging.info(f"received {response.status_code} from LnBits for payment {payment['payment_hash']}")
-                    msg = {user.idUser: f"Withdraw submitted {payment['payment_hash']}"}
+                    msg = {user.idUser: f"Withdraw submitted `{payment['payment_hash']}`"}
                     redis_service.publish(replyChannel, json.dumps(msg))
-                    #status_check(data["idUser"], decodeData["payment_hash"], replyChannel)
+                    status_check(data["idUser"], decodeData["payment_hash"], replyChannel)
                 else:
                     logging.error(f"received {response.status_code}. Dump {response.text}")
                     msg = {user.idUser: f"Withdraw failed"}

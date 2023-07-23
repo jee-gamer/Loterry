@@ -333,7 +333,7 @@ async def listen():
                     for user in data.keys():
                         user_id = int(user)
                         logging.info(f"sending a message to {user_id}")
-                        await bot.send_message(user_id, data[user])
+                        await bot.send_message(user_id, data[user], parse_mode="MarkDownV2")
                 except Exception as e:
                     logging.error(
                         f"exception during sending message {message} to user: {e}"
