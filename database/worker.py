@@ -312,42 +312,33 @@ def notify_results(block: dict):
 
 
 @app.task()
-def status_check(idUser, paymentHash, replyChannel):
-    timeNow = time.time()
-    logging.info(f"checking status for {paymentHash}, user {idUser} since {timeNow}")
-    while True:
+def status_check(idUser, paymentHash, replyChannel, amount):
+    time_start = time.time()
+    logging.info(f"checking status for {paymentHash}, user {idUser} since {time_start}")
+    while time_start + 120 < time.time():
         response = request(
             "GET",
             f"https://legend.lnbits.com/api/v1/payments/{paymentHash}",
             headers={"X-Api-Key": LNBITS_API},
         )
+
         if response.status_code != 200:
             msg = {
-                idUser: f"Couldnt obtain payment status. Please, try again later"
+                idUser: f"Couldnt obtain payment status\. Please, try again later"
             }
             redis_service.publish(replyChannel, json.dumps(msg))
             return
-        payment = response.json()
-        logging.debug(f"Received from LNBits {payment}")
-        timeout = int(payment["details"]["expiry"])
 
-        if timeNow >= timeout:
-            logging.info(f"timeout for {paymentHash}")
-            msg = {idUser: f"Invoice expired"}
-            redis_service.publish(replyChannel, json.dumps(msg))
-            return
-        logging.info(f"payment {paymentHash}: {payment['paid']}")
+        payment = response.json()
+        logging.info(f"payment {paymentHash} paid - {payment['paid']}")
+
         if payment["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
             if user:
-                depositedMoney = int(
-                    abs(payment["details"]["amount"]) / 1000
-                )  # the amount return negative when the payment is done for some reason
-                user.balance += depositedMoney
+                user.balance += amount # positive - deposit; negative - withdrawal
                 session.commit()
                 msg = {
-                    idUser: f"Received {depositedMoney}.\n"
-                    f"Your balance is {user.balance}"
+                    idUser: f"Your balance updated: {user.balance}"
                 }
                 redis_service.publish(replyChannel, json.dumps(msg))
             else:
@@ -356,6 +347,11 @@ def status_check(idUser, paymentHash, replyChannel):
                 )  # it must exist in order to come to this point
             return
         time.sleep(USER_TASK_TIMEOUT)
+
+    logging.info(f"timeout for {paymentHash}")
+    msg = {idUser: f"Expired\. Please try again later"}
+    redis_service.publish(replyChannel, json.dumps(msg))
+    return
 
 
 @app.task()
@@ -377,7 +373,7 @@ def payments():  # add balance to user if got invoice
                 )
                 user = session.query(User).filter(User.idUser == data["idUser"]).first()
                 if user:
-                    status_check(data["idUser"], data["paymentHash"], replyChannel)
+                    status_check(data["idUser"], data["paymentHash"], replyChannel, data["amount"])
                 else:
                     msg = {data["idUser"]: f"User is not registered"}
                     redis_service.publish(replyChannel, json.dumps(msg))
@@ -430,7 +426,7 @@ def payments():  # add balance to user if got invoice
                     logging.info(f"received {response.status_code} from LnBits for payment {payment['payment_hash']}")
                     msg = {user.idUser: f"Withdraw submitted `{payment['payment_hash']}`"}
                     redis_service.publish(replyChannel, json.dumps(msg))
-                    status_check(data["idUser"], decodeData["payment_hash"], replyChannel)
+                    status_check(data["idUser"], decodeData["payment_hash"], replyChannel, -amount)
                 else:
                     logging.error(f"received {response.status_code}. Dump {response.text}")
                     msg = {user.idUser: f"Withdraw failed"}
