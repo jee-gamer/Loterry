@@ -10,6 +10,8 @@ import redis
 from time import sleep
 
 
+REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
+REDIS_PORT = environ.get("REDIS_PORT", default=5001)
 BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 DB_HOST = environ.get("DB_HOST", default="localhost")
@@ -54,13 +56,13 @@ def test_submit_vote():
     start_height = response["height"]
     assert 797947 == start_height
     """Check that it's actually working on redis database."""
-    commands = redis.Redis(host="localhost", port=6379, db=0)
-    notifications = redis.Redis(host="localhost", port=6379, db=0)
+    commands = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    notifications = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
     assert commands.ping()
     cp = commands.pubsub()
     cp.subscribe('test')
 
-    notifications = redis.Redis(host="localhost", port=6379, db=0)
+    notifications = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
     assert notifications.ping()
     np = notifications.pubsub()
     np.subscribe('tg/notify')
@@ -82,7 +84,8 @@ def test_submit_vote():
     )
     m = np.get_message(timeout=5.0)
     assert 1 == m["data"]
-    assert {"1": "Submitted bet successfully"} == m["data"]
+    m = np.get_message(timeout=5.0)
+    assert b'{"1": "Submitted bet successfully"}' == m["data"]
 
 
 def test_normal_round():
@@ -99,7 +102,7 @@ def test_normal_round():
         assert result_height == 797948 + i
     assert result_height == 797949
 
-    notifications = redis.Redis(host='redis', port=6379, db=0)
+    notifications = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
     assert notifications.ping()
     np = notifications.pubsub()
     np.subscribe('tg/notify')
