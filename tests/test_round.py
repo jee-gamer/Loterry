@@ -54,13 +54,13 @@ def test_submit_vote():
     start_height = response["height"]
     assert 797947 == start_height
     """Check that it's actually working on redis database."""
-    commands = redis.Redis(host='redis', port=6379, db=0)
-    notifications = redis.Redis(host='redis', port=6379, db=0)
+    commands = redis.Redis(host="localhost", port=6379, db=0)
+    notifications = redis.Redis(host="localhost", port=6379, db=0)
     assert commands.ping()
     cp = commands.pubsub()
     cp.subscribe('test')
 
-    notifications = redis.Redis(host='redis', port=6379, db=0)
+    notifications = redis.Redis(host="localhost", port=6379, db=0)
     assert notifications.ping()
     np = notifications.pubsub()
     np.subscribe('tg/notify')
@@ -82,8 +82,7 @@ def test_submit_vote():
     )
     m = np.get_message(timeout=5.0)
     assert 1 == m["data"]
-    m = np.get_message(timeout=5.0)
-    assert b'{"1": "Submitted bet successfully"}' == m["data"]
+    assert {"1": "Submitted bet successfully"} == m["data"]
 
 
 def test_normal_round():
