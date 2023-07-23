@@ -27,7 +27,7 @@ LNBITS_API = environ.get("LNBITS_API")
 LNBITS_ADMIN_API = environ.get("LNBITS_ADMIN_API")
 USER_TASK_TIMEOUT=int(environ.get("USER_TASK_TIMEOUT", default=1))
 BLOCK_TASK_TIMEOUT=int(environ.get("BLOCK_TASK_TIMEOUT", default=60))
-FEE = float(environ.get("FEE", default="0.5"))
+FEE = int(environ.get("FEE", default=1))
 
 app = Celery(broker=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 
@@ -268,7 +268,10 @@ def notify_results(block: dict):
                     losers.append(name)
 
             if bet.userBet == result:
-                bet.user.balance += bet.betSize*2*(1-FEE)  # we take half
+                if bet.betSize*2-FEE <= 0:
+                    bet.user.balance += int(bet.betSize*1.5)
+                else:
+                    bet.user.balance += bet.betSize*2-FEE
         session.commit()
 
         if not winners and not losers:

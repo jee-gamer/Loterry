@@ -1,9 +1,11 @@
+import io
 import json
 import logging
 import re
 import typing
 import aiohttp
 import asyncio
+import pyqrcode
 
 
 from aiogram import Bot, Dispatcher, executor, types
@@ -222,7 +224,13 @@ async def cmd_deposit(message: types.Message):
                 await redis_service.publish("tg/invoice", json.dumps(invoiceInfo))
             except Exception as e:
                 logging.info(e)
-            return await message.reply(f"{paymentRequest}")
+
+            qr = pyqrcode.create(paymentRequest)
+            with io.BytesIO() as virtual_file:
+                qr.png(file=virtual_file)
+                await message.reply_photo(
+                    photo=virtual_file.getvalue(), caption=f"{paymentRequest}"
+                )
 
 
 @dp.message_handler(

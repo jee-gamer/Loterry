@@ -41,7 +41,7 @@ class User(Base):
         self.updatedAt = self.createdAt
         self.enabled = False
         self.balance = 0
-        self.betSize = 1
+        self.betSize = 10
 
 
 class Lottery(Base):
