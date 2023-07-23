@@ -335,7 +335,7 @@ def status_check(idUser, paymentHash, replyChannel, amount):
         if payment["paid"]:
             user = session.query(User).filter(User.idUser == idUser).first()
             if user:
-                user.balance += amount # positive - deposit; negative - withdrawal
+                user.balance += int(amount) # positive - deposit; negative - withdrawal
                 session.commit()
                 msg = {
                     idUser: f"Your balance updated: {user.balance}"
