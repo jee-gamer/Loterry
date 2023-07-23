@@ -219,6 +219,7 @@ async def cmd_deposit(message: types.Message):
                 invoiceInfo = {
                     "idUser": message.from_user.id,
                     "paymentHash": data["payment_hash"],
+                    "amount": amount,
                 }
 
                 await redis_service.publish("tg/invoice", json.dumps(invoiceInfo))
