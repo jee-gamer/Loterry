@@ -233,9 +233,9 @@ async def cmd_deposit(message: types.Message):
                 )
 
 
-@dp.message_handler(regexp="\b(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)\b")
+@dp.message_handler(regexp='(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)')
 async def cmd_withdraw(message: types.Message):
-    invoiceInfo = {"idUser": message.from_user.id, "bolt11": message.text}
+    invoiceInfo = {"idUser": message.from_user.id, "bolt11": message.text.strip()}
     logging.info(f"sending invoice {message.text} from {message.from_user.id}")
     await redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))
 
