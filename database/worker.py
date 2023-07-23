@@ -27,7 +27,6 @@ BTC_HOST = environ.get("BTC_HOST", default="localhost")
 BTC_PORT = environ.get("BTC_PORT", default=5001)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 LNBITS_API = environ.get("LNBITS_API")
-LNBITS_ADMIN_API = environ.get("LNBITS_ADMIN_API")
 USER_TASK_TIMEOUT = int(environ.get("USER_TASK_TIMEOUT", default=1))
 BLOCK_TASK_TIMEOUT = int(environ.get("BLOCK_TASK_TIMEOUT", default=60))
 FEE = int(environ.get("FEE", default=1))
@@ -184,34 +183,6 @@ def blocks():
                 freeze_message(block)
             else:
                 logging.error(f"Invalid block data received {block}")
-
-
-# @app.task
-# def get_message():
-#     logging.info(f"getting lottery message")
-#
-#     for message in chat_sub.listen():
-#         if message["type"] == "message":
-#             str_data = message["data"].decode()
-#             chatInfo = json.loads(str_data)
-#             logging.info("Got message from lottery")
-#             if "idChat" in chatInfo:
-#                 chat = session.query(Chat).filter(Chat.idChat == chatInfo["idChat"]).first()
-#                 if chat is not None and chat.idMessage == chatInfo["idMessage"]:
-#                     logging.info("Trying to add duplicate message")
-#                     continue
-#                 elif chat:
-#                     chat.idMessage = chatInfo["idMessage"]
-#                     chat.idLottery = chatInfo["idLottery"]
-#                     session.commit()
-#                     logging.info("Added chat info to database")
-#                     continue
-#                 # if this chat is new then add new row
-#                 logging.info(f'Got chat data {chatInfo["idChat"]}, {chatInfo["idLottery"]}, {chatInfo["idMessage"]}')
-#                 chat = Chat(chatInfo["idChat"], chatInfo["idLottery"], chatInfo["idMessage"])
-#                 session.add(chat)
-#                 session.commit()
-#                 logging.info("Added chat info to database")
 
 
 def freeze_message(block):
@@ -421,7 +392,7 @@ def payments():  # add balance to user if got invoice
                 "POST",
                 f"https://legend.lnbits.com/api/v1/payments/decode",
                 json=withdrawInfo,
-                headers={"X-Api-Key": config['KEYS']['ADMIN']},
+                headers={"X-Api-Key": LNBITS_API},
             )
             decodeData = response.json()
             if response.status_code == 200:
@@ -446,7 +417,7 @@ def payments():  # add balance to user if got invoice
                     "POST",
                     f"https://legend.lnbits.com/api/v1/payments",
                     json=withdrawInfo,
-                    headers={"X-Api-Key": LNBITS_ADMIN_API},
+                    headers={"X-Api-Key": config['KEYS']['ADMIN']},
                 )
                 if response.status_code == 201:
                     payment = response.json()
@@ -455,7 +426,7 @@ def payments():  # add balance to user if got invoice
                     redis_service.publish(replyChannel, json.dumps(msg))
                     #status_check(data["idUser"], decodeData["payment_hash"], replyChannel)
                 else:
-                    logging.error(f"received {response.status_code} from LnBits")
+                    logging.error(f"received {response.status_code}. Dump {response.text}")
                     msg = {user.idUser: f"Withdraw failed"}
                     redis_service.publish(replyChannel, json.dumps(msg))
             else:
