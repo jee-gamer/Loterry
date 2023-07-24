@@ -239,7 +239,7 @@ def notify_results(block: dict):
             f"Result {result} for {startedHeight}:{currentHash} commited into database"
         )
 
-        shortHash = currentHash[:6] + "-" + currentHash[-6:]
+        shortHash = "`" + currentHash[:6] + "\-" + currentHash[-6:] + "`" #escape - for MarkdownV2 formatting
 
         bets = session.query(Bet).filter(Bet.idLottery == startedHeight).all()
 
