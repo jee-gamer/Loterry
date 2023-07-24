@@ -113,6 +113,8 @@ async def cmd_start(message: types.Message):
                     "type /withdraw #invoiceId to withdraw money"
                     "\n"
                     "type /balance to check your balance in the bot"
+                    "\n"
+                    "type /bet #amount to change your default betSize"
                 )
             else:
                 logging.error("Couldnt add new user")
@@ -232,6 +234,29 @@ async def cmd_deposit(message: types.Message):
                 await message.reply_photo(
                     photo=virtual_file.getvalue(), caption=f"`{paymentRequest}`", parse_mode="MarkDownV2"
                 )
+
+
+@dp.message_handler(RegexpCommandsFilter(regexp_commands=["bet\s([0-9]+)"]))
+async def cmd_deposit(message: types.Message):
+    inputs = message.text.split(" ")
+    try:
+        amount = int(inputs[1])
+    except ValueError:
+        return await message.reply("Incorrect number provided")
+    changeInfo = {
+        "id": message.from_user.id,
+        "betSize": amount
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+                f"{DATABASE_URL}/users/postBetSize", params=changeInfo
+        ) as response:
+            if response.status == 204:  # request has succeeded ( that's how this one works )
+                logging.info("Successfully changed betSize setting")
+                await message.reply("Successfully changed betSize setting")
+            else:
+                logging.info("Request failed")
+                await message.reply("Request failed")
 
 
 @dp.message_handler(regexp='(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)')

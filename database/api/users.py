@@ -92,3 +92,11 @@ def post_user_vote() -> dict:  # need to check if lottery exist or working!
     session.add(bet)
     session.commit()
     return {'result': 'ok', 'message': 'data received'}
+
+
+def post_bet_setting(id, betSize):
+    user = session.query(User).filter(User.idUser == id).first()
+    if not user:
+        return {'result': 'ok', 'message': 'User vote not found'}
+    user.betSize = betSize
+    session.commit()

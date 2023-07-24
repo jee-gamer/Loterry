@@ -144,7 +144,7 @@ def bets():
                             f"committing balance {new_balance} for {id}. Previous {user.balance}"
                         )
                         user.balance = (
-                            new_balance  # increase the balance for testing purpose
+                            new_balance  # update user balance
                         )
                         session.add(user)
                         session.commit()

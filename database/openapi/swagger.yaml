@@ -407,3 +407,23 @@ paths:
         responses:
           '201':
             description: Created
+    /users/postBetSize:
+      get:
+        operationId: api.post_bet_setting
+        description: Modify user's betSize setting in database
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - in: query
+            name: id
+            type: integer
+            required: true
+          - in: query
+            name: betSize
+            type: integer
+            required: true
+        responses:
+          '201':
+            description: Created
