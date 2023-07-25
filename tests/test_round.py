@@ -9,7 +9,9 @@ import requests
 from os import environ
 import redis
 from time import sleep
+from dotenv import load_dotenv
 
+load_dotenv("test.env")
 
 REDIS_HOST = environ.get("REDIS_HOST", default="localhost")
 REDIS_PORT = environ.get("REDIS_PORT", default=6379)
@@ -55,25 +57,30 @@ def test_deposit():
     redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
     amount = 10
     idUser = 2
+    user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
+    oldBalance = user["balance"]
     header = {"X-Api-Key": LNBITS_API}
     data = {
         "out": False,
         "amount": amount,
-        "memo": idUser,  #idUser
+        "memo": "testing_deposit",
         "expiry": 7200,
     }  # 2 hour
-    response = requests.request("POST", f"https://legend.lnbits.com/api/v1/payments", headers=header, json=data)
-    response = response.json()
-    logging.info(response)
-    # STUCK WITH REQUEST
+    response = requests.request("POST", f"https://legend.lnbits.com/api/v1/payments", headers=header, json=data).json()
+    paymentRequest = response["payment_request"]
     invoiceInfo = {
         "idUser": idUser,
         "paymentHash": response["payment_hash"],
         "amount": amount,
     }
     assert "paymentHash" in invoiceInfo
-    redis_service.publish("tg/invoice", json.dumps(invoiceInfo))
+    redis_service.publish("tg/invoice", json.dumps(invoiceInfo))  # make it check if invoice is paid
+
+    invoiceInfo = {"idUser": idUser, "bolt11": paymentRequest}   # now pay for the invoice, in this case deposit
+    redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))
+
     user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
+    assert user["balance"] == oldBalance + amount
 
 
 def test_submit_vote():
@@ -111,7 +118,7 @@ def test_submit_vote():
     m = np.get_message(timeout=5.0)
     assert 1 == m["data"]
     m = np.get_message(timeout=5.0)
-    assert b'{"1": "Not enough balance. Please, /deposit some sats"}' == m["data"]
+    assert b'{"1": "Not enough balance\\\\. Please, /deposit some sats"}' == m["data"]
 
 
 def test_normal_round():
