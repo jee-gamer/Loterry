@@ -62,7 +62,8 @@ def test_deposit():
         "memo": idUser,  #idUser
         "expiry": 7200,
     }  # 2 hour
-    response = requests.request("POST", f"https://legend.lnbits.com/api/v1/payments", headers=header, json=data).json()
+    response = requests.request("POST", f"https://legend.lnbits.com/api/v1/payments", headers=header, json=data)
+    response = response.json()
     logging.info(response)
     # STUCK WITH REQUEST
     invoiceInfo = {
@@ -73,6 +74,7 @@ def test_deposit():
     assert "paymentHash" in invoiceInfo
     redis_service.publish("tg/invoice", json.dumps(invoiceInfo))
     user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
+
 
 def test_submit_vote():
     url = f"{DATABASE_URL}/lottery"

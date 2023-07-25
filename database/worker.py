@@ -156,7 +156,7 @@ def bets():
                         )
                     else:
                         thisMessage = json.dumps(
-                            {id: "Not enough balance. Please, /deposit some sats"}
+                            {id: "Not enough balance\. Please, /deposit some sats"}
                         )
                 else:
                     logging.error(f"received bet from non-registered user {id}")
