@@ -3,6 +3,7 @@ import logging
 import pytest
 from requests import request
 from json import dumps, loads
+import json
 from uuid import uuid4
 import requests
 from os import environ
@@ -18,6 +19,7 @@ DB_HOST = environ.get("DB_HOST", default="localhost")
 DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
+LNBITS_API = environ.get("LNBITS_API")
 
 # URLs
 user_endpoint = f"{DATABASE_URL}/users"
@@ -49,6 +51,29 @@ def test_no_name():
     assert "message" in response
 
 
+def test_deposit():
+    redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    amount = 10
+    idUser = 2
+    header = {"X-Api-Key": LNBITS_API}
+    data = {
+        "out": False,
+        "amount": amount,
+        "memo": idUser,  #idUser
+        "expiry": 7200,
+    }  # 2 hour
+    response = requests.request("POST", f"https://legend.lnbits.com/api/v1/payments", headers=header, json=data).json()
+    logging.info(response)
+    # STUCK WITH REQUEST
+    invoiceInfo = {
+        "idUser": idUser,
+        "paymentHash": response["payment_hash"],
+        "amount": amount,
+    }
+    assert "paymentHash" in invoiceInfo
+    redis_service.publish("tg/invoice", json.dumps(invoiceInfo))
+    user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
+
 def test_submit_vote():
     url = f"{DATABASE_URL}/lottery"
     response = requests.request("POST", url).json()
@@ -71,9 +96,9 @@ def test_submit_vote():
     assert 1 == m["data"]
     m = cp.get_message()
     assert str(start_height).encode() == m["data"]
-    commands.publish("tg/bets", dumps(
+    commands.publish("tg/bets", dumps(  # Test betting with no balance
             {
-                "uuid": uuid4().hex, # common thing in software development
+                "uuid": uuid4().hex,
                 "idUser": 1,
                 "idLottery": start_height,
                 "userBet": "odd",
@@ -84,7 +109,7 @@ def test_submit_vote():
     m = np.get_message(timeout=5.0)
     assert 1 == m["data"]
     m = np.get_message(timeout=5.0)
-    assert b'{"1": "Submitted bet successfully"}' == m["data"]
+    assert b'{"1": "Not enough balance. Please, /deposit some sats"}' == m["data"]
 
 
 def test_normal_round():
