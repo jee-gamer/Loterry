@@ -1,4 +1,6 @@
 import logging
+import re
+import time
 
 import pytest
 from requests import request
@@ -10,6 +12,8 @@ from os import environ
 import redis
 from time import sleep
 from dotenv import load_dotenv
+import configparser
+from os.path import isfile
 
 load_dotenv("test.env")
 
@@ -22,7 +26,7 @@ DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
 LNBITS_API = environ.get("LNBITS_API")
-
+LNBITS_ADMIN = environ.get("LNBITS_ADMIN_API")
 # URLs
 user_endpoint = f"{DATABASE_URL}/users"
 
@@ -74,10 +78,19 @@ def test_deposit():
         "amount": amount,
     }
     assert "paymentHash" in invoiceInfo
+    regexp = r'lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+'
+    assert re.match(regexp, paymentRequest)
     redis_service.publish("tg/invoice", json.dumps(invoiceInfo))  # make it check if invoice is paid
 
-    invoiceInfo = {"idUser": idUser, "bolt11": paymentRequest}   # now pay for the invoice, in this case deposit
-    redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))
+    withdrawInfo = {"out": True, "bolt11": paymentRequest}   # pay for it
+    response = request(
+        "POST",
+        f"https://legend.lnbits.com/api/v1/payments",
+        json=withdrawInfo,
+        headers={"X-Api-Key": LNBITS_ADMIN},
+    )
+
+    time.sleep(2)
 
     user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
     assert user["balance"] == oldBalance + amount
