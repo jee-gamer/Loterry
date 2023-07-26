@@ -90,7 +90,7 @@ def test_deposit():
         headers={"X-Api-Key": LNBITS_ADMIN},
     )
 
-    time.sleep(2)
+    time.sleep(1)
 
     user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
     assert user["balance"] == oldBalance + amount
@@ -123,8 +123,7 @@ def test_submit_vote():
                 "uuid": uuid4().hex,
                 "idUser": 1,
                 "idLottery": start_height,
-                "userBet": "odd",
-                "betSize": 1000,
+                "userBet": "odd"
             }
         ),
     )
@@ -132,6 +131,50 @@ def test_submit_vote():
     assert 1 == m["data"]
     m = np.get_message(timeout=5.0)
     assert b'{"1": "Not enough balance\\\\. Please, /deposit some sats"}' == m["data"]
+
+    commands.publish("tg/bets", dumps(  # Test betting with balance
+        {
+            "uuid": uuid4().hex,
+            "idUser": 2,
+            "idLottery": start_height,
+            "userBet": "odd",
+        }
+    ),
+                     )
+    m = np.get_message(timeout=5.0)
+    assert b"Submitted" in m["data"]
+
+
+def test_withdraw():
+    # CREATE INVOICE JUST LIKE DEPOSIT TEST
+    redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    amount = 5
+    idUser = 2
+    user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
+    oldBalance = user["balance"]
+    header = {"X-Api-Key": LNBITS_API}
+    data = {
+        "out": False,
+        "amount": amount,
+        "memo": "testing_withdraw",
+        "expiry": 7200,
+    }  # 2 hour
+    response = requests.request("POST", f"https://legend.lnbits.com/api/v1/payments", headers=header, json=data).json()
+    paymentRequest = response["payment_request"]
+    invoiceInfo = {
+        "idUser": idUser,
+        "paymentHash": response["payment_hash"],
+        "amount": amount,
+    }
+    assert "paymentHash" in invoiceInfo
+    regexp = r'lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+'
+    assert re.match(regexp, paymentRequest)
+
+    invoiceInfo = {"idUser": idUser, "bolt11": paymentRequest}
+    redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))  # pay it by withdraw function
+    time.sleep(1)
+    user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
+    assert user["balance"] == oldBalance  # Because it pay the invoice itself created so the end should be equal
 
 
 def test_normal_round():
