@@ -26,6 +26,7 @@ DB_PORT = environ.get("DB_PORT", default=5000)
 DATABASE_URL = f"http://{DB_HOST}:{DB_PORT}/api"
 
 LNBITS_API = environ.get("LNBITS_API")
+LNBITS_API2 = environ.get("LNBITS_API2")
 LNBITS_ADMIN = environ.get("LNBITS_ADMIN_API")
 # URLs
 user_endpoint = f"{DATABASE_URL}/users"
@@ -148,11 +149,11 @@ def test_submit_vote():
 def test_withdraw():
     # CREATE INVOICE JUST LIKE DEPOSIT TEST
     redis_service = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
-    amount = 5
+    amount = 1
     idUser = 2
     user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
     oldBalance = user["balance"]
-    header = {"X-Api-Key": LNBITS_API}
+    header = {"X-Api-Key": LNBITS_API2}  # Requesting payment from test wallet
     data = {
         "out": False,
         "amount": amount,
@@ -172,9 +173,9 @@ def test_withdraw():
 
     invoiceInfo = {"idUser": idUser, "bolt11": paymentRequest}
     redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))  # pay it by withdraw function
-    time.sleep(1)
+    time.sleep(4)
     user = requests.request("GET", f"{DATABASE_URL}/users?id={idUser}").json()
-    assert user["balance"] == oldBalance  # Because it pay the invoice itself created so the end should be equal
+    assert user["balance"] == oldBalance - amount
 
 
 def test_normal_round():

@@ -259,9 +259,14 @@ async def cmd_deposit(message: types.Message):
                 await message.reply("Request failed")
 
 
-@dp.message_handler(regexp='(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)')
+@dp.message_handler(RegexpCommandsFilter(regexp_commands=["withdraw\s(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)"]))
 async def cmd_withdraw(message: types.Message):
-    invoiceInfo = {"idUser": message.from_user.id, "bolt11": message.text.strip()}
+    inputs = message.text.split(" ")
+    try:
+        bolt11 = inputs[1]
+    except ValueError:
+        return await message.reply("Incorrect paymentRequest provided")
+    invoiceInfo = {"idUser": message.from_user.id, "bolt11": bolt11}
     logging.info(f"sending invoice {message.text} from {message.from_user.id}")
     await redis_service.publish("tg/withdraw", json.dumps(invoiceInfo))
 
