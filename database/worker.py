@@ -253,19 +253,20 @@ def notify_results(block: dict):
         losers = []
 
         for bet in bets:
+            if bet.user is None:  # if user is not registered (remove later)
+                name = f"UserId_{bet.idUser}"
+            else:
+                name = bet.user.alias
+            if bet.userBet == result and name not in winners:
+                winners.append(name)
+            elif bet.userBet != result and name not in losers:
+                losers.append(name)
+
             if bet.idUser not in tgSub and bet.idUser not in discordSub:
                 if len(str(bet.idUser)) == 18:
                     discordSub.append(bet.idUser)
                 else:
                     tgSub.append(bet.idUser)
-                if bet.user is None:  # if user is not registered (remove later)
-                    name = f"UserId_{bet.idUser}"
-                else:
-                    name = bet.user.alias
-                if bet.userBet == result:
-                    winners.append(name)
-                else:
-                    losers.append(name)
 
             if bet.userBet == result:
                 if bet.betSize * 2 - FEE <= 0:
