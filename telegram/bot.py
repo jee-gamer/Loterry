@@ -1,7 +1,6 @@
 import io
 import json
 import logging
-import re
 import typing
 import aiohttp
 import asyncio

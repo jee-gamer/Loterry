@@ -2,14 +2,12 @@ import configparser
 from os.path import isfile
 
 from celery import Celery
-from celery.schedules import crontab
 from os import environ
 import redis
 import json
 import logging
 from database import session
 from database import Base, User, Bet, Chat, Lottery
-from sqlalchemy import desc
 
 from requests import request
 import time
@@ -73,12 +71,7 @@ payments_sub.subscribe("discord/withdraw")
 def setup_tasks(sender, **kwargs):
     blocks.apply_async()
     bets.apply_async()
-    # get_message.apply_async()
-    # active one above
     payments.apply_async()
-    # check_invoice.apply_async()
-    # pay_invoice.apply_async()
-    # seems like redis can run in background without taking space on the thread, so we have to put active one above
 
 
 def make_request_btc(method, endpoint):
