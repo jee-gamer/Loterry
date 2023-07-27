@@ -249,7 +249,7 @@ async def cmd_deposit(message: types.Message):
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(
-                f"{DATABASE_URL}/users/postBetSize", params=changeInfo
+                f"{DATABASE_URL}/users/bet", params=changeInfo
         ) as response:
             if response.status == 204:  # request has succeeded ( that's how this one works )
                 logging.info("Successfully changed betSize setting")
@@ -259,7 +259,7 @@ async def cmd_deposit(message: types.Message):
                 await message.reply("Request failed")
 
 
-@dp.message_handler(RegexpCommandsFilter(regexp_commands=["withdraw\s(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)"]))
+@dp.message_handler(RegexpCommandsFilter(regexp_commands=["withdraw\s(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)"]), regexp='(lnbc[0-9]+[a-zA-Z0-9]+[0-9a-zA-Z=]+)')
 async def cmd_withdraw(message: types.Message):
     inputs = message.text.split(" ")
     try:
