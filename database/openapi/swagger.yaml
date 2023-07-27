@@ -407,9 +407,9 @@ paths:
         responses:
           '201':
             description: Created
-    /users/postBetSize:
+    /users/bet:
       get:
-        operationId: api.post_bet_setting
+        operationId: api.set_bet_size
         description: Modify user's betSize setting in database
         consumes:
           - application/json
